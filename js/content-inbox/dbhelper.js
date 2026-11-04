@@ -24,6 +24,16 @@
 		return r;
 	}
 	yair.model.updateDb = function (success, error) {
+		var done = success, failed = error;
+		success = function () {
+			yair.model.invalidateConversations();
+			done.apply(this, arguments);
+		};
+		// A failed run may still have stored some messages
+		error = function () {
+			yair.model.invalidateConversations();
+			if (typeof failed === 'function') failed.apply(this, arguments);
+		};
 		yair.proxy(['yair', 'db', 'countObjectsInStore'], [db_tables.privateMessages.name], function (num) {
 			if (yair.cfg.data.pmInboxInitialized && num > 10) {
 				// Only fetch until we reach messages we already have
@@ -39,7 +49,10 @@
 		});
 	};
 	yair.model.reindexPrivateMessages = function (success, error) {
-		crawlAllSources(false, success, error);
+		crawlAllSources(false, function () {
+			yair.model.invalidateConversations();
+			success.apply(this, arguments);
+		}, error);
 	};
 
 	// Reddit moved private message history out of messages.json and into a
@@ -493,14 +506,34 @@
 			return (msg.author && msg.author[0] === '#') ? msg.dest : msg.author;
 		}
 	}
+	// Every stored conversation, read from the database once per page and kept
+	// until something changes it (indexing, reset, or restore). Switching
+	// folders, searching, and sorting all work from this copy.
+	var conversationCache = null;
+	var waiting = null;
+	yair.model.invalidateConversations = function () {
+		conversationCache = null;
+	};
 	yair.model.getConversations = function (callback) {
+		if (conversationCache) return callback(conversationCache);
+		if (waiting) return waiting.push(callback);
+		waiting = [callback];
 		var queryParams = [db_tables.privateMessages.name, 'created_utc', true, 0, -1];
 		yair.proxy(['yair', 'db', 'get'], queryParams, function (messages) {
-			var conversations = yair.model.getConversationsFromMessages(messages);
-			callback(conversations);
+			conversationCache = yair.model.getConversationsFromMessages(messages || []);
+			var callbacks = waiting;
+			waiting = null;
+			callbacks.forEach(function (cb) {
+				cb(conversationCache);
+			});
 		});
 	};
 	yair.model.getConversation = function (name, callback) {
+		if (conversationCache) {
+			for (var c = 0; c < conversationCache.length; c++) {
+				if (conversationCache[c].id === name) return callback(conversationCache[c]);
+			}
+		}
 		var index = {
 			key: 'first_message_name'
 			, value: name

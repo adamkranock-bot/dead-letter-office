@@ -105,6 +105,22 @@ async function launch(profile = PROFILE) {
   await page.waitForTimeout(700);
   check('clear button restores the full list', await page.locator('.yair-message-row').count() === 13 && !page.url().includes('search='));
 
+  // 2a0. Browsing works from the page's copy instead of re-reading the database
+  await sw.evaluate(() => {
+    self.__dbGets = 0;
+    const original = yair.db.get;
+    yair.db.get = function () { self.__dbGets++; return original.apply(this, arguments); };
+  });
+  for (const folder of ['.yair-saved', '.yair-archived', '.yair-inbox']) {
+    await page.click('.yair-sidebar-nav.inbox ' + folder);
+    await page.waitForTimeout(300);
+  }
+  await page.fill('#YAIRSearchInput', 'filler');
+  await page.waitForTimeout(700);
+  await page.click('#YAIRSearchClear');
+  await page.waitForTimeout(500);
+  check('switching folders and searching don\'t re-read the database', await sw.evaluate(() => self.__dbGets) === 0, await sw.evaluate(() => self.__dbGets));
+
   // 2a. Search syntax
   const searchFor = async (q) => {
     await page.fill('#YAIRSearchInput', q);
