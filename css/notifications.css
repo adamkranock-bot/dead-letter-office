@@ -1,109 +1,168 @@
+/* Toolbar popup, in the same "Airmail" style as the inbox (css/yair.css) */
+
+@font-face { font-family: 'YAIR Public Sans'; src: url('../fonts/public-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'YAIR Public Sans'; src: url('../fonts/public-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'YAIR Public Sans'; src: url('../fonts/public-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'YAIR Literata'; src: url('../fonts/literata-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+
+:root {
+	--paper: #F5F6F8;
+	--sheet: #FFFFFF;
+	--ink: #22283A;
+	--ink-soft: #4E5669;
+	--postmark: #8A91A2;
+	--rule: #E2E5EB;
+	--hover: #EEF0F4;
+	--air-red: #C9353D;
+	--air-blue: #2F55A4;
+	--air-blue-ink: #FFFFFF;
+	--focus: rgba(47, 85, 164, 0.35);
+}
+@media (prefers-color-scheme: dark) {
+	:root {
+		--paper: #131720;
+		--sheet: #1A1F2B;
+		--ink: #E4E8F0;
+		--ink-soft: #B3BACA;
+		--postmark: #7F889B;
+		--rule: #282F3E;
+		--hover: #212838;
+		--air-red: #E8646A;
+		--air-blue: #8AA6EE;
+		--air-blue-ink: #10162A;
+		--focus: rgba(138, 166, 238, 0.4);
+	}
+}
+
+* { box-sizing: border-box; }
 body {
+	width: 380px;
+	max-height: 520px;
+	margin: 0;
+	padding: 0;
 	overflow-x: hidden;
 	overflow-y: auto;
-	max-height: 350px;
-	margin: 2px 4px;
-	border-radius: 5px;
-	padding: 0;
-	color: #333;
-	font-family: verdana, arial, helvetica, sans-serif;
+	background: var(--sheet);
+	color: var(--ink);
+	font: 14px/1.4 'YAIR Public Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+	-webkit-font-smoothing: antialiased;
 }
 
-body.popup {
-	width: 400px;
-}
-
-#notifications {
-	font-size: 14px;
-}
-
-.notification {
-	border: transparent 1px solid;
-	padding: 5px;
-}
-
-.notification:hover {
-	background: #F7F7F7;
-	cursor: pointer;
-}
-
-#tagline {
-	font-size: 13px;
-	font-weight: bold;
-	font-style: normal;
-	margin-bottom: 5px;
-	margin-top: 0;
-}
-
-.date {
-	font-size: 10px;
-	float: right;
-	color: #A4A4A4;
-	padding-top: 2px;
-}
-
-.no-notifications {
-	padding: 5px;
-}
-
-.subjectLine #truncate {
-	letter-spacing: normal;
-	font-style: normal;
-}
-
-.no-notifications h4 {
-	text-align: center;
-	font-weight: normal;
-	color: silver;
-}
-
+/* Header with the airmail edge */
 #control {
-	background-color: #0DD3BB;
-	padding: 2px;
-	height: 26px;
-	text-align: center;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 16px 14px 12px 16px;
+	background: var(--paper);
+	border-bottom: 1px solid var(--rule);
 }
-
-#control p {
-    float: left;
-    font-size: 14px;
-    font-weight: bold;
-    color: white;
-    margin: 4px;
-	cursor: default;
+#control::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 4px;
+	background: repeating-linear-gradient(-45deg,
+		var(--air-red) 0 7px, transparent 7px 12px,
+		var(--air-blue) 12px 19px, transparent 19px 24px);
 }
+.brand { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.wordmark { font: 600 20px/1.1 'YAIR Literata', Georgia, serif; color: var(--ink); }
+.status { margin-top: 2px; font-size: 12px; color: var(--postmark); }
 
-#control .forceRefresh {
-	float: right;
-}
-
-#control .forceRefresh {
-	cursor: pointer;
-	font-style: unset;
-	border: 0;
+.icon-button {
+	width: 32px;
+	height: 32px;
 	padding: 0;
-	width: 17px;
-	height: 17px;
-	margin: 4px;
-	/* Relative to this stylesheet, so it works in Chrome and Firefox alike */
-	background: url("../images/sprites.png") no-repeat;
+	border: 0;
+	border-radius: 8px;
+	background: transparent;
+	color: var(--ink-soft);
+	cursor: pointer;
+}
+.icon-button::before {
+	content: '';
+	display: block;
+	width: 18px;
+	height: 18px;
+	margin: auto;
+	background: currentColor;
+	-webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19.5 12a7.5 7.5 0 1 1-2.2-5.3'/%3E%3Cpath d='M19.5 4v4.5H15'/%3E%3C/svg%3E") center / 18px no-repeat;
+	mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M19.5 12a7.5 7.5 0 1 1-2.2-5.3'/%3E%3Cpath d='M19.5 4v4.5H15'/%3E%3C/svg%3E") center / 18px no-repeat;
+}
+.icon-button:hover { background: var(--hover); color: var(--ink); }
+.forceRefresh.spin::before { animation: spin 0.9s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.open-inbox {
+	height: 32px;
+	padding: 0 14px;
+	border: 1px solid var(--air-blue);
+	border-radius: 8px;
+	background: var(--air-blue);
+	color: var(--air-blue-ink);
+	font: 600 13px 'YAIR Public Sans', sans-serif;
+	white-space: nowrap;
+	cursor: pointer;
+}
+.open-inbox:hover { filter: brightness(1.08); }
+
+button:focus-visible, .notification:focus-visible { outline: 2px solid var(--air-blue); outline-offset: 2px; }
+
+/* Unread messages */
+#notifications { padding: 4px 0; }
+.notification {
+	position: relative;
+	padding: 11px 16px 12px 19px;
+	border-bottom: 1px solid var(--rule);
+	cursor: pointer;
+}
+.notification:last-child { border-bottom: 0; }
+.notification::before {
+	content: '';
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: var(--air-red);
+}
+.notification:hover { background: var(--hover); }
+#tagline {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	margin: 0 0 3px;
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--ink);
+}
+#tagline .author { font-weight: 700; flex: none; }
+#tagline .subjectLine { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-weight: 500; }
+.date { margin-left: auto; flex: none; font-size: 11.5px; font-weight: 400; color: var(--postmark); }
+.notification .body {
+	color: var(--ink-soft);
+	font-size: 13px;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
 }
 
-#control .forceRefresh:focus-visible {
-	outline: 2px solid white;
-}
-
-.notification:focus-visible {
-	outline: 2px solid #0DD3BB;
-}
-
+.no-notifications { padding: 28px 16px 30px; text-align: center; }
+.no-notifications h4 { margin: 0; font-weight: 500; font-size: 13.5px; color: var(--postmark); }
 .notifications-error {
-	padding: 5px;
-	color: #a33;
-	font-size: 12px;
+	margin: 10px 14px 4px;
+	padding: 8px 10px;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--air-red) 10%, transparent);
+	color: var(--air-red);
+	font-size: 12.5px;
 }
 
-.spin {
-	transition: all 1.5s ease;
-	transform: rotate(360deg);
-}
+@media (prefers-reduced-motion: reduce) { .forceRefresh.spin::before { animation-duration: 2.7s; } }
