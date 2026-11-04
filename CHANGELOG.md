@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.0
+Packages for every major browser.
+
+* `npm run build` now produces a package per browser from the same source: **Chrome** (and Brave, Opera, Vivaldi), **Microsoft Edge**, **Firefox 140+**, and **Safari**. Each gets its own manifest: a service worker for Chromium; an event page, permanent add-on ID, and "no data collected" declaration for Firefox; an event page for Safari.
+* `scripts/safari.sh` wraps the Safari package into an Xcode app with Apple's converter (run on a Mac).
+* Replies and mark-as-read requests now go through the extension's background instead of the page, so they work the same in every browser; the old Firefox user-agent check is gone.
+* An HTML-decoding helper no longer assigns `innerHTML`.
+* CI builds all four packages, lints the Firefox one with Mozilla's linter, and runs the end-to-end suite against the built Chrome package.
+
 ## 1.1.0
 Much better search.
 

@@ -29,15 +29,6 @@ function safeFilename(str) {
 	return name.substring(0, 100) || 'conversation';
 }
 
-// URL for a same-site Reddit API call. Firefox content scripts need an
-// absolute URL; Chrome works best with a relative one.
-function redditApiUrl(path) {
-	if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-		return 'https://www.reddit.com' + path;
-	}
-	return path;
-}
-
 // Trigger a file download of `text` from the page
 function downloadText(filename, text, mimeType) {
 	var blob = new Blob([text], {
@@ -57,9 +48,8 @@ function downloadText(filename, text, mimeType) {
 }
 
 function htmlDecode(str) {
-	var ele = document.createElement('span');
-	ele.innerHTML = str;
-	return ele.innerText;
+	// Parsing (rather than assigning innerHTML on a live element) can't run anything
+	return new DOMParser().parseFromString(String(str), 'text/html').documentElement.textContent;
 }
 
 function isMessageHTMLEncoded(message) {

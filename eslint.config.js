@@ -39,7 +39,7 @@ module.exports = [
 				$: 'readonly', jQuery: 'readonly', Quill: 'readonly', TurndownService: 'readonly', SnuOwnd: 'readonly',
 				yair: 'writable',
 				getUsername: 'readonly', isLoggedIn: 'readonly', htmlDecode: 'readonly', escapeHtml: 'readonly',
-				decodeBasicEntities: 'readonly', safeFilename: 'readonly', redditApiUrl: 'readonly', downloadText: 'readonly',
+				decodeBasicEntities: 'readonly', safeFilename: 'readonly', downloadText: 'readonly',
 				isMessageHTMLEncoded: 'readonly', throttle: 'readonly', ObjectValues: 'readonly', replaceAll: 'readonly',
 				parseQueryString: 'readonly', getTime: 'readonly', sysDateStr: 'readonly',
 				sysTimeStr: 'readonly', dateString: 'readonly', longDateString: 'readonly', isElementInViewport: 'readonly',
@@ -73,6 +73,10 @@ module.exports = [
 				{ name: '$', message: 'jQuery is not loaded in the background.' },
 			],
 		},
+	},
+	{
+		files: ['scripts/**/*.mjs'],
+		languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
 	},
 	{
 		files: ['eslint.config.js', 'test/**/*.js'],

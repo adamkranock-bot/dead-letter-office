@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 const { createMockReddit } = require('./mock-reddit');
 
-const EXT = path.resolve(__dirname, '..', '..');
+const EXT = process.env.DLO_EXT ? path.resolve(process.env.DLO_EXT) : path.resolve(__dirname, '..', '..');
 const DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'yair-e2e-'));
 const PROFILE = path.join(DIR, 'profile');
 let PORT = 0;
