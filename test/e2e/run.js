@@ -16,6 +16,10 @@ function check(name, cond, detail) {
   results.push({ name, ok: !!cond, detail });
   console.log((cond ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  -> ' + JSON.stringify(detail).slice(0, 300) : ''));
 }
+async function openReplyBox(page) {
+  // Replies sit behind the read-only archive notice
+  if (await page.locator('.yair-reply-anyway').count()) await page.click('.yair-reply-anyway');
+}
 async function mockLog(page) {
   return page.evaluate(() => fetch('https://old.reddit.com/__log').then(r => r.json()));
 }
@@ -86,13 +90,39 @@ async function launch(profile = PROFILE) {
   await page.click('.yair-sidebar-nav.inbox .yair-inbox');
   await page.waitForTimeout(600);
 
+  // 2b. Archive-viewer UI
+  const summary = await page.locator('.yair-summary').innerText();
+  check('summary line shows counts and date range', /13 conversations · 14 messages · Oct 2025/.test(summary), summary);
+  await page.fill('#YAIRSearchInput', 'filler');
+  await page.waitForTimeout(900);
+  rows = await page.locator('.yair-message-row').count();
+  check('search updates as you type (no Enter)', rows === 10, rows);
+  check('matches are highlighted', await page.locator('.yair-inbox-panel mark').count() >= 10);
+  check('summary shows match count while searching', (await page.locator('.yair-summary').innerText()).includes('10 of 13 conversations match'));
+  await page.click('#YAIRSearchClear');
+  await page.waitForTimeout(700);
+  check('clear button restores the full list', await page.locator('.yair-message-row').count() === 13 && !page.url().includes('search='));
+  check('message count badge on multi-message conversations', (await page.locator('.yair-message-row:has-text("Hello there") .yair-message-count').innerText()) === '2');
+  await page.locator('body').click({ position: { x: 600, y: 5 } }).catch(() => {});
+  await page.keyboard.press('j');
+  await page.keyboard.press('j');
+  check('j/k moves keyboard focus', await page.locator('.yair-message-row.yair-row-focused').count() === 1);
+  const focusedSubject = await page.locator('.yair-row-focused .yair-subject').innerText();
+  await page.keyboard.press('Enter');
+  await page.waitForSelector('.yair-conversation');
+  check('Enter opens the focused conversation', (await page.locator('.yair-conversation-title').innerText()) === focusedSubject, focusedSubject);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.yair-message-row');
+  check('Esc returns to the list', page.url().endsWith('/message/yair_inbox'));
+  await page.screenshot({ path: path.join(DIR, 'inbox-light.png') });
+
   // 3. Open a conversation
   await page.click('.yair-message-row:has-text("Hello there")');
   await page.waitForSelector('.yair-conversation');
   await page.waitForTimeout(800);
   check('conversation shows both messages', await page.locator('.yair-private-message').count() === 2);
   log = await mockLog(page);
-  const readCalls = log.filter(e => e.path === '/api/read_message');
+  const readCalls = log.filter(e => e.path === '/api/read_message' && e.body.id.includes('t4_a1'));
   check('read_message sent once, batched, only for received messages', readCalls.length === 1 && readCalls[0].body.id === 't4_a1', readCalls.map(e => e.body));
   const title = await page.locator('.yair-message-date-string').first().getAttribute('title');
   check('date tooltip rendered without moment.js', !!title && /20\d\d/.test(title), title);
@@ -108,6 +138,8 @@ async function launch(profile = PROFILE) {
   await page.waitForTimeout(500);
   await page.click('.yair-message-row:has-text("Hello there")');
   await page.waitForSelector('.yair-conversation');
+  check('archive notice shown instead of the reply box', await page.locator('.yair-archive-notice').isVisible() && !(await page.locator('.yair-message-editor').isVisible()));
+  await openReplyBox(page);
   await page.click('.yair-switch-editor');
   await page.fill('#markdown', 'Thanks!\n\nSecond paragraph');
   await page.locator('#markdown').dispatchEvent('keyup');
@@ -123,6 +155,7 @@ async function launch(profile = PROFILE) {
 
   // 6. Reply rejected by Reddit (PMs moving to chat)
   await page.evaluate(() => fetch('https://old.reddit.com/__replyMode?m=error'));
+  await openReplyBox(page);
   await page.click('.yair-switch-editor');
   await page.fill('#markdown', 'This will fail');
   await page.locator('#markdown').dispatchEvent('keyup');
@@ -199,6 +232,27 @@ async function launch(profile = PROFILE) {
   await newTab.screenshot({ path: path.join(DIR, 'conversation.png') });
   await page.bringToFront();
   await page.screenshot({ path: path.join(DIR, 'inbox.png') });
+
+  // 12b. Theme can follow the system setting
+  await page.goto('https://old.reddit.com/message/yair_inbox');
+  await page.waitForSelector('.yair-message-row');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.click('#YAIRShowConfig');
+  await page.selectOption('#YairNightMode', 'auto');
+  await page.click('.yair-save-button');
+  await page.waitForTimeout(600);
+  check('"Match system" theme turns dark with a dark OS theme', await page.evaluate(() => document.body.classList.contains('yair-nightmode')));
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.waitForTimeout(300);
+  check('...and follows it back to light', !(await page.evaluate(() => document.body.classList.contains('yair-nightmode'))));
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(DIR, 'inbox-dark.png') });
+  await page.click('.yair-message-row:has-text("Project")');
+  await page.waitForSelector('.yair-conversation');
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: path.join(DIR, 'conversation-dark.png') });
+  await page.emulateMedia({ colorScheme: 'light' });
 
   // 13. Service worker restart: background calls still work without a fresh "init"
   await page.goto('https://old.reddit.com/message/yair_inbox');

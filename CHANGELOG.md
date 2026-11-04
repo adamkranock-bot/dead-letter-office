@@ -37,6 +37,15 @@ Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manif
 * Reddit stopped serving private message history through `message/messages.json` (it now returns an empty list) and redirects old Reddit's message pages to a read-only archive on new Reddit. YAIR now reads that archive page (`www.reddit.com/message/messages/`), follows its infinite-scroll pages (`/svc/shreddit/pm-archive/<cursor>`, paced and retried if Reddit rate limits), and stores the messages in the same local database, so search, folders, and export work as before. The JSON listing is still read too, in case Reddit delivers anything there.
 * Message bodies from the archive are Reddit's rendered HTML, so they're sanitized (no scripts, event handlers, or `javascript:` links) before display, and plain text is derived for search and export. Original Markdown isn't available from the archive. Reddit's archive holds your most recent 1,000 messages.
 
+**Interface**
+* Summary line above the list: number of conversations and messages and the date range, or "N of M conversations match" while searching.
+* Year dividers in the conversation list.
+* Search updates as you type (in the current folder, not just the inbox), highlights matches, and has a clear button; Esc clears it.
+* Message count badge on conversations with more than one message, and the full date on hover.
+* The reply box now sits behind a notice that Reddit keeps these messages as a read-only archive, with a link to Reddit Chat and a "Reply here anyway" button. It opens straight away if you have a saved draft.
+* Theme setting: Light, Dark, or Match system (follows the OS light/dark setting live).
+* Keyboard shortcuts: j/k to move, Enter or o to open, x to select, / to search, Esc or u to go back. Listed under Settings > About.
+
 **New**
 * Settings → Administration → **Export All** (text or JSON) downloads every stored conversation, including saved/archived flags in JSON.
 * Search box placeholder lists the `from:`, `subject:`, and `message:` prefixes.

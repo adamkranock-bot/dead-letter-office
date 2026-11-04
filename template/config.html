@@ -27,12 +27,14 @@
 					</p>
 				</div>
 				<div id="NightMode-config">
-					<div class="yair-checkbox">
-						<input class="styled-checkbox" type="checkbox" id="YairNightMode">
-						<label for="YairNightMode">Night Mode</label>
-					</div>
+					<select id="YairNightMode">
+						<option value="off">Light</option>
+						<option value="on">Dark</option>
+						<option value="auto">Match system</option>
+					</select>
+					<label for="YairNightMode">Theme</label>
 					<p class="yair-config-info">
-						Use YAIR's dark theme. YAIR supports Reddit Enhancement Suite's night mode, but if you'd prefer to turn on a dark interface seperate from that, or don't use RES, you can do so by selecting this option.
+						YAIR also follows Reddit Enhancement Suite's night mode. "Match system" switches with your operating system's light/dark setting.
 					</p>
 				</div>
 				<div id="MessageOrder-config">
@@ -91,6 +93,10 @@
 			<div class="yair-config-content" data-tab-content="about">
 				<p>
 					YAIR was built by <a href="/user/adhesivecheese">/u/AdhesiveCheese</a>, building off the groundwork laid by Reddit Inbox Revamp and Reddit notifier. YAIR's design is inspired by first and foremost by RIR, but also Gmail and Reddit's Beta Modmail.
+				</p>
+				<h3>Keyboard shortcuts</h3>
+				<p>
+					<kbd>j</kbd>/<kbd>k</kbd> next/previous conversation, <kbd>Enter</kbd> or <kbd>o</kbd> open, <kbd>x</kbd> select, <kbd>/</kbd> search, <kbd>Esc</kbd> or <kbd>u</kbd> back to the list.
 				</p>
 				<h3>Feedback and Support</h3>
 				<p>
