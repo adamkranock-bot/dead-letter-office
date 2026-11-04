@@ -273,7 +273,7 @@ async function launch(profile = PROFILE) {
   const badge = await sw.evaluate(() => chrome.action.getBadgeText({}));
   check('badge counts unread private messages only', badge === '1', { badge, children: notif });
   const alarms = await sw.evaluate(() => chrome.alarms.getAll());
-  check('refresh scheduled with chrome.alarms', alarms.some(a => a.name === 'yair-refresh-notifications' && a.periodInMinutes === 1), alarms);
+  check('unread check scheduled every 15 minutes by default', alarms.some(a => a.name === 'yair-refresh-notifications' && a.periodInMinutes === 15), alarms);
   let popup = await ctx.newPage();
   popup.on('pageerror', e => errors.push('[popup] ' + e.message));
   await popup.goto(`chrome-extension://${extId}/template/notifications_panel.html`);
@@ -304,6 +304,20 @@ async function launch(profile = PROFILE) {
   await newTab.screenshot({ path: path.join(DIR, 'conversation.png') });
   await page.bringToFront();
   await page.screenshot({ path: path.join(DIR, 'inbox.png') });
+
+  // 12a. Unread checks can be turned off
+  await page.goto('https://old.reddit.com/message/dlo_inbox');
+  await page.waitForSelector('.yair-message-row');
+  await page.click('#YAIRShowConfig');
+  await page.selectOption('#YAIRRefreshInterval', '0');
+  await page.click('.yair-save-button');
+  await page.waitForTimeout(800);
+  const alarmsOff = await sw.evaluate(() => chrome.alarms.getAll());
+  check('"Off" stops background unread checks', !alarmsOff.some(a => a.name === 'yair-refresh-notifications'), alarmsOff);
+  await page.click('#YAIRShowConfig');
+  await page.selectOption('#YAIRRefreshInterval', '900000');
+  await page.click('.yair-save-button');
+  await page.waitForTimeout(500);
 
   // 12b. Theme can follow the system setting
   await page.goto('https://old.reddit.com/message/dlo_inbox');

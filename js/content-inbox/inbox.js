@@ -641,7 +641,13 @@
 
 			//set dropdown state
 			var $inboxRefreshInterval = $config.find("#YAIRRefreshInterval");
-			$inboxRefreshInterval.val(yair.cfg.data.inboxRefreshInterval).change();
+			var currentInterval = String(yair.cfg.data.inboxRefreshInterval);
+			if (!$inboxRefreshInterval.find('option[value="' + currentInterval + '"]').length) {
+				// A value from an older version that's no longer in the list
+				var minutes = Math.round(+currentInterval / 60000);
+				$('<option>').attr('value', currentInterval).text(minutes <= 1 ? 'Every minute' : 'Every ' + minutes + ' minutes').appendTo($inboxRefreshInterval);
+			}
+			$inboxRefreshInterval.val(currentInterval);
 			
 			// Save settings
 			$config.find('.yair-config-footer .yair-save-button').on('click', function () {
