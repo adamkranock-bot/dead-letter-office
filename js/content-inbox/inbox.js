@@ -798,6 +798,7 @@
 		resetInbox: function () {
 			yair.view.showLoading('Clearing inbox');
 			yair.proxy(['yair', 'db', 'clearObjectStore'], [db_tables.privateMessages.name], function () {
+				yair.model.invalidateConversations();
 				yair.cfg.set('pmInboxInitialized', false);
 				yair.cfg.set('archiveThreads', {});
 				yair.controller.reloadInbox();
