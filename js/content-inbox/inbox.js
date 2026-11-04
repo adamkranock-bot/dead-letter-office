@@ -77,6 +77,8 @@
 			}
 			yair.proxy(['drafts', 'get'], [conversation.id], function (response) {
 				if (!response) { return; }
+				// A saved draft means you were replying, so skip the archive notice
+				$conversation.find('.yair-reply-anyway').trigger('click');
 				$visInput.html(yair.markdown.render(response));
 				$input.text(response);
 				$preview.html(yair.markdown.render(response));
@@ -123,6 +125,7 @@
 			}
 			else {
 				yair.view.addEditor();
+				yair.view.addArchiveNotice($conversation);
 				// TODO: This should be a function
 				var throttledDraftSave = throttle(function (inputText) {
 					yair.proxy(['drafts', 'set'], [conversation.id, inputText]);
@@ -223,13 +226,79 @@
 				yair.model.directoryFilter(filteredConversations);
 				yair.model.showModmailInInbox(filteredConversations);
 				yair.$e.mainPanel.empty();
+				yair.view.addInboxSummary(conversations, filteredConversations);
+				yair.model.cache.lastYear = null;
+				yair.model.cache.focusIndex = -1;
 				if (!filteredConversations.length) {
-					$('<div class="yair-load-more">').text(yair._get.searchObj ? 'No conversations match your search.' : 'Nothing here.').appendTo(yair.$e.mainPanel);
+					$('<div class="yair-empty-state">').text(yair._get.searchObj ? 'No conversations match your search.' : 'Nothing here.').appendTo(yair.$e.mainPanel);
 				}
 				yair.view.addConversationsToInbox(filteredConversations);
 			});
 			// Hide overlay
 			if (hideOverlay) yair.view.hideOverlay();
+		}
+		// "276 conversations · 1,000 messages · Dec 2015 – Mar 2025", or the match count when searching
+		, addInboxSummary: function (all, shown) {
+			var numberFormat = (typeof Intl !== 'undefined') ? new Intl.NumberFormat() : null;
+			var fmt = function (n) { return numberFormat ? numberFormat.format(n) : String(n); };
+			var monthYear = function (ts) {
+				var d = new Date(ts * 1000);
+				return MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+			};
+			var messages = 0, oldest = Infinity, newest = 0;
+			shown.forEach(function (c) {
+				messages += c.messages.length;
+				c.messages.forEach(function (m) {
+					if (m.created_utc && m.created_utc < oldest) oldest = m.created_utc;
+					if (m.created_utc > newest) newest = m.created_utc;
+				});
+			});
+			var parts = [];
+			if (yair._get.searchObj) {
+				parts.push(fmt(shown.length) + ' of ' + fmt(all.length) + ' conversations match');
+			}
+			else {
+				parts.push(fmt(shown.length) + (shown.length === 1 ? ' conversation' : ' conversations'));
+			}
+			parts.push(fmt(messages) + (messages === 1 ? ' message' : ' messages'));
+			if (newest) {
+				var range = monthYear(oldest) === monthYear(newest) ? monthYear(newest) : monthYear(oldest) + ' \u2013 ' + monthYear(newest);
+				parts.push(range);
+			}
+			var $summary = $('<div class="yair-summary">').text(parts.join(' \u00b7 '));
+			if (yair._get.searchObj) {
+				$('<button class="yair-summary-clear" type="button">').text('Clear search').on('click', yair.controller.clearSearch).appendTo($summary);
+			}
+			$summary.appendTo(yair.$e.mainPanel);
+		}
+		// Wrap occurrences of the current search terms in <mark>, using text nodes only
+		, highlight: function ($el, field) {
+			var searchObj = yair._get.searchObj;
+			if (!searchObj) return;
+			var terms = [];
+			if (field === 'subject' && searchObj.subject) terms = searchObj.subject;
+			if (field === 'text' && searchObj.message) terms = searchObj.message;
+			if (field === 'correspondent' && searchObj.from) terms = [searchObj.from];
+			terms = terms.filter(function (t) { return t && t.trim(); });
+			if (!terms.length) return;
+			var re = new RegExp('(' + terms.map(escapeRegExp).join('|') + ')', 'gi');
+			$el.contents().filter(function () { return this.nodeType === 3; }).each(function () {
+				var parts = this.textContent.split(re);
+				if (parts.length < 2) return;
+				var frag = document.createDocumentFragment();
+				parts.forEach(function (part, i) {
+					if (!part) return;
+					if (i % 2 === 1) {
+						var mark = document.createElement('mark');
+						mark.textContent = part;
+						frag.appendChild(mark);
+					}
+					else {
+						frag.appendChild(document.createTextNode(part));
+					}
+				});
+				this.parentNode.replaceChild(frag, this);
+			});
 		}
 		, setFavicon: function () {
 			var icon = '16.png';
@@ -293,10 +362,17 @@
 			var correspondentHref = (correspondent && correspondent.charAt(0) === "#") ?
 				'https://www.reddit.com/r/' + encodeURIComponent(correspondent.substring(1)) :
 				'https://www.reddit.com/user/' + encodeURIComponent(correspondent || '');
-			$row.find('.yair-correspondent').empty().append($('<a class="author">').attr('href', correspondentHref).text(correspondent || '[unknown]'));
-			$row.find('.yair-subject').text(subject);
-			$row.find('.yair-text').text(message);
-			$row.find('.yair-datetime').text(dateString(datetime));
+			var $author = $('<a class="author">').attr('href', correspondentHref).text(correspondent || '[unknown]');
+			$row.find('.yair-correspondent').empty().append($author);
+			yair.view.highlight($author, 'correspondent');
+			var count = conversation.messages.length;
+			if (count > 1) {
+				$('<span class="yair-message-count">').text(count).attr('title', count + ' messages in this conversation').appendTo($row.find('.yair-correspondent'));
+			}
+			yair.view.highlight($row.find('.yair-subject').text(subject), 'subject');
+			yair.view.highlight($row.find('.yair-text').text(message), 'text');
+			$row.find('.yair-datetime').text(dateString(datetime)).attr('title', yairTime.full(datetime));
+			$row.attr('tabindex', '-1');
 			var $checkbox = $row.find('input');
 			$checkbox.on('change', function () {
 				$row.toggleClass('yair-row-checked');
@@ -346,9 +422,7 @@
 			if (yair.cfg.data.compactMode) {
 				yair.$e.body.addClass('yair-compact-mode');
 			}
-			if (yair.cfg.data.nightMode) {
-				yair.$e.body.addClass('yair-nightmode');
-			}
+			yair.view.applyTheme();
 			// Load page content
 			yair.$e.content.html(yair.templates.inbox_layout);
 			yair.$e.mainPanel = $('.yair-inbox-panel');
@@ -371,21 +445,102 @@
 					yair.view.update();
 				}
 			});
-			// Bind our searchbar
+			// Bind our searchbar: results update as you type
+			var $clear = $('#YAIRSearchClear');
+			var syncClear = function () {
+				$clear.toggleClass('yair-hide', !yair.$e.search.val());
+			};
+			var liveSearch = (function () {
+				var timer = null;
+				return function () {
+					clearTimeout(timer);
+					timer = setTimeout(function () {
+						yair.controller.search(yair.$e.search.val(), true);
+					}, 250);
+				};
+			})();
 			yair.$e.searchBtn.on('click', function () {
 				yair.controller.search(yair.$e.search.val());
 			});
-			yair.$e.search.on('keyup', function (e) {
-				// Should eventually also do something with auto complete or something like that
-				if (e.keyCode === 13) yair.controller.search(yair.$e.search.val());
+			yair.$e.search.on('input', function () {
+				syncClear();
+				liveSearch();
 			});
+			yair.$e.search.on('keydown', function (e) {
+				if (e.key === 'Enter') yair.controller.search(yair.$e.search.val());
+				if (e.key === 'Escape') {
+					yair.controller.clearSearch();
+					yair.$e.search.blur();
+				}
+			});
+			$clear.on('click', function () {
+				yair.controller.clearSearch();
+				yair.$e.search.trigger('focus');
+			});
+			yair.view.bindKeyboard();
 			// If the URL includes a search, place the search in the search bar
 			if (yair._get.search) {
 				yair.$e.search.val(decodeURIComponent(yair._get.search));
 			}
+			$('#YAIRSearchClear').toggleClass('yair-hide', !yair.$e.search.val());
 			if ( !$("#new_modmail").length && !$("#modmail").length) {
 				$(".yair-modmail").css("display","none");
 			}
+		}
+		// nightMode: false (light), true (dark), or 'auto' (follow the system setting)
+		, applyTheme: function () {
+			var mode = yair.cfg.data.nightMode;
+			var media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+			var dark = mode === 'auto' ? !!(media && media.matches) : !!mode;
+			yair.$e.body.toggleClass('yair-nightmode', dark);
+			if (media && !yair.model.cache.themeListener) {
+				yair.model.cache.themeListener = true;
+				var onChange = function () {
+					if (yair.cfg.data.nightMode === 'auto') yair.view.applyTheme();
+				};
+				if (media.addEventListener) media.addEventListener('change', onChange);
+				else if (media.addListener) media.addListener(onChange);
+			}
+		}
+		// j/k move through conversations, Enter/o opens, Esc/u goes back, / searches
+		, bindKeyboard: function () {
+			$(document).on('keydown.yairKeys', function (e) {
+				if (e.ctrlKey || e.metaKey || e.altKey) return;
+				var target = e.target;
+				if (target && (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName) || target.isContentEditable)) return;
+				if (yair.$e.overlay.hasClass('show')) return;
+				if (yair.show === 'conversation') {
+					if (e.key === 'Escape' || e.key === 'u') {
+						e.preventDefault();
+						yair.controller.backToList();
+					}
+					return;
+				}
+				var $rows = yair.$e.mainPanel.find('.yair-message-row');
+				if (!$rows.length) return;
+				var index = yair.model.cache.focusIndex;
+				if (e.key === 'j' || e.key === 'k') {
+					e.preventDefault();
+					index = Math.max(0, Math.min($rows.length - 1, index + (e.key === 'j' ? 1 : -1)));
+					yair.model.cache.focusIndex = index;
+					$rows.removeClass('yair-row-focused');
+					var row = $rows.eq(index).addClass('yair-row-focused')[0];
+					row.focus({ preventScroll: true });
+					row.scrollIntoView({ block: 'nearest' });
+				}
+				else if ((e.key === 'Enter' || e.key === 'o') && index >= 0) {
+					e.preventDefault();
+					$rows.eq(index).trigger('click');
+				}
+				else if (e.key === 'x' && index >= 0) {
+					e.preventDefault();
+					$rows.eq(index).find('input[type="checkbox"]').trigger('click');
+				}
+				else if (e.key === '/') {
+					e.preventDefault();
+					yair.$e.search.trigger('focus');
+				}
+			});
 		}
 		, bindActionButtons: function(){
             $('#YAIRBulkDelete').on('click', yair.controller.action.bulkDelete);
@@ -453,7 +608,7 @@
 			$compactMode.prop('checked', yair.cfg.data.compactMode);
 
 			var $nightMode = $config.find('#YairNightMode');
-			$nightMode.prop('checked', yair.cfg.data.nightMode);
+			$nightMode.val(yair.cfg.data.nightMode === 'auto' ? 'auto' : (yair.cfg.data.nightMode ? 'on' : 'off'));
 			
 			var $showNewFirst = $config.find('#YAIRNewFirst');
 			$showNewFirst.prop('checked', yair.cfg.data.conversationNewToOld);
@@ -466,19 +621,16 @@
 			$config.find('.yair-config-footer .yair-save-button').on('click', function () {
 				var showModmail = $showModMail.prop('checked');
 				var compactMode = $compactMode.prop('checked');
-				var nightMode = $nightMode.prop('checked');
+				var nightModeChoice = $nightMode.val();
+				var nightMode = nightModeChoice === 'auto' ? 'auto' : nightModeChoice === 'on';
 				var showNewFirst = $showNewFirst.prop('checked');
 				var inboxRefreshInterval = $inboxRefreshInterval.val();
 				// Same element initLayout uses, so the setting can be turned off again
 				yair.$e.body.toggleClass('yair-compact-mode', compactMode);
-				if (nightMode) {
-					yair.$e.body.addClass('yair-nightmode'); 
-				} else {
-					yair.$e.body.removeClass('yair-nightmode');
-				}
 				yair.cfg.set('showModmail', showModmail);
 				yair.cfg.set('compactMode', compactMode);
 				yair.cfg.set('nightMode', nightMode);
+				yair.view.applyTheme();
 				yair.cfg.set('conversationNewToOld', showNewFirst);
 				yair.cfg.set('inboxRefreshInterval', parseInt(inboxRefreshInterval, 10));
 				if (yair.show === "conversation") {
@@ -558,6 +710,14 @@
 			var conversationsAdded = 0;
 			for (var i = 0; i < copy.length; i++) {
 				var conversation = copy[i];
+				// Year divider whenever the year changes (conversations are newest first)
+				var year = conversation.last_update ? new Date(conversation.last_update * 1000).getFullYear() : null;
+				if (year && year !== yair.model.cache.lastYear) {
+					if (yair.model.cache.lastYear !== null || year !== new Date().getFullYear()) {
+						$('<div class="yair-year-divider">').text(year).appendTo(yair.$e.mainPanel);
+					}
+					yair.model.cache.lastYear = year;
+				}
 				// Add message to inbox
 				yair.view.addMessageInInbox(conversation);
 				// If the maximum number of conversations has been added
@@ -589,6 +749,20 @@
 			};
 			$(window).on('scroll', scrollCallback);
 			scrollCallback();
+		}
+		// Reddit made private messages a read-only archive, so lead with that and
+		// keep the reply box one click away instead of inviting a refused reply.
+		, addArchiveNotice: function ($conversation) {
+			var $editor = $conversation.find('.yair-message-editor').addClass('yair-hide');
+			var $notice = $('<div class="yair-archive-notice">');
+			$('<p>').text('Reddit has moved direct messages to Chat and keeps old private messages as a read-only archive, so a reply sent from here may be refused.').appendTo($notice);
+			var $actions = $('<div class="yair-archive-notice-actions">').appendTo($notice);
+			$('<a class="yair-button" target="_blank" rel="noopener">').attr('href', 'https://chat.reddit.com/').text('Open Reddit Chat').appendTo($actions);
+			$('<button type="button" class="yair-button yair-button-plain yair-reply-anyway">').text('Reply here anyway').on('click', function () {
+				$notice.remove();
+				$editor.removeClass('yair-hide');
+			}).appendTo($actions);
+			$notice.insertBefore($editor);
 		}
 		, addEditor: function () {
 			$(".yair-switch-editor").on('click', function () {
@@ -691,6 +865,7 @@
 		}
 		, showMessageClick: function () {
 			var conversation = $(this).data('conversation');
+			yair.model.cache.listUrl = location.pathname + location.search;
 			history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_conversation/' + conversation.id);
 			yair.controller.parseUrl();
 			yair.view.showConversation(conversation);
@@ -707,9 +882,30 @@
 				console.error("DB has NOT been updated", arguments);
 			});
 		}
-		, search: function (query) {
-			history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox?search=' + encodeURIComponent(query));
+		// Searches within the current folder. Live (as-you-type) searches replace
+		// the history entry instead of adding one per keystroke.
+		, search: function (query, live) {
+			var folder = (yair.show && yair.show !== 'conversation') ? location.pathname : '/message/yair_inbox';
+			var url = query ? folder + '?search=' + encodeURIComponent(query) : folder;
+			if (url === location.pathname + location.search) return;
+			history[live ? 'replaceState' : 'pushState']({}, yair.cfg.data.pageTitle, url);
 			yair.view.update();
+		}
+		, clearSearch: function () {
+			yair.$e.search.val('');
+			$('#YAIRSearchClear').addClass('yair-hide');
+			yair.controller.search('', true);
+		}
+		// Leave a conversation for the folder it was opened from
+		, backToList: function () {
+			if (yair.model.cache.listUrl) {
+				history.pushState({}, yair.cfg.data.pageTitle, yair.model.cache.listUrl);
+				yair.view.update();
+			}
+			else {
+				history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+				yair.view.update();
+			}
 		}
 		, parseUrl: function () {
 			delete yair['showid'];

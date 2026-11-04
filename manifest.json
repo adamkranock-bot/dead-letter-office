@@ -50,7 +50,8 @@
 				"css/ui.css",
 				"css/quill.core.css",
 				"css/quill.snow.css",
-				"css/alerts.css"
+				"css/alerts.css",
+				"css/yair-archive.css"
 			],
 			"js": [
 				"js/content-inbox/jquery-3.7.1.min.js",

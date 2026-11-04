@@ -43,7 +43,7 @@ module.exports = [
 				isMessageHTMLEncoded: 'readonly', throttle: 'readonly', ObjectValues: 'readonly', replaceAll: 'readonly',
 				parseQueryString: 'readonly', parseSearchQuery: 'readonly', getTime: 'readonly', sysDateStr: 'readonly',
 				sysTimeStr: 'readonly', dateString: 'readonly', longDateString: 'readonly', isElementInViewport: 'readonly',
-				killEvent: 'readonly', stopEvent: 'readonly', onExtLoaded: 'readonly',
+				killEvent: 'readonly', stopEvent: 'readonly', onExtLoaded: 'readonly', escapeRegExp: 'readonly',
 			},
 		},
 	},
