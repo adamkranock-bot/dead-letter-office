@@ -13,7 +13,7 @@
 				reject(req.error);
 			};
 			req.onblocked = function () {
-				console.warn("YAIR: database upgrade blocked by another open connection", username);
+				console.warn("DLO: database upgrade blocked by another open connection", username);
 			};
 			req.onsuccess = function () {
 				var db = req.result;
@@ -60,7 +60,7 @@
 				resolve(req.result);
 			};
 			req.onerror = function () {
-				console.error("YAIR: " + label + " failed", req.error);
+				console.error("DLO: " + label + " failed", req.error);
 				reject(req.error);
 			};
 		});
@@ -88,7 +88,7 @@
 		return new Promise(function (resolve) {
 			var req = store.index(index).openCursor(keyRange, reverse ? 'prev' : 'next');
 			req.onerror = function () {
-				console.error("YAIR: cursor failed", req.error);
+				console.error("DLO: cursor failed", req.error);
 				// Return whatever was collected before the failure
 				resolve(results);
 			};
@@ -129,7 +129,7 @@
 						e.stopPropagation();
 					}
 					else {
-						console.error("YAIR: failed to write to DB", req.error, obj);
+						console.error("DLO: failed to write to DB", req.error, obj);
 						e.preventDefault();
 					}
 				};
@@ -139,7 +139,7 @@
 			};
 			tx.onerror = function () {
 				// Individual request errors are handled above; this is for anything else
-				if (tx.error) console.error("YAIR: transaction error", tx.error);
+				if (tx.error) console.error("DLO: transaction error", tx.error);
 			};
 			tx.onabort = function () {
 				reject(tx.error || new Error('Transaction aborted'));

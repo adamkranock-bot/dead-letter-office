@@ -1,16 +1,16 @@
-// Toolbar popup: lists unread private messages and opens them in YAIR.
+// Toolbar popup: lists unread private messages and opens them in Dead Letter Office.
 // All message text is inserted with textContent, never as HTML.
 (function () {
 	var container = document.getElementById('notifications');
 	var refreshButton = document.querySelector('.forceRefresh');
 	var openInboxButton = document.getElementById('openInbox');
 	var statusLine = document.getElementById('unreadStatus');
-	var INBOX_URL = 'https://old.reddit.com/message/yair_inbox';
+	var INBOX_URL = 'https://old.reddit.com/message/dlo_inbox';
 
-	// Switch to an open YAIR tab if there is one, otherwise open the inbox
+	// Switch to an open Dead Letter Office tab if there is one, otherwise open it
 	function openInbox() {
 		chrome.tabs.query({
-			url: 'https://*.reddit.com/message/yair_*'
+			url: ['https://*.reddit.com/message/dlo_*', 'https://*.reddit.com/message/yair_*']
 		}, function (tabs) {
 			void chrome.runtime.lastError;
 			var tab = tabs && tabs[0];
@@ -56,7 +56,7 @@
 
 	function conversationUrl(data) {
 		var first = data.first_message_name || ('t4_' + data.id);
-		return 'https://old.reddit.com/message/yair_conversation/' + encodeURIComponent(first);
+		return 'https://old.reddit.com/message/dlo_conversation/' + encodeURIComponent(first);
 	}
 
 	function showEmpty(message) {

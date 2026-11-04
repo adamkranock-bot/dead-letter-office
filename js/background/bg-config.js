@@ -6,7 +6,7 @@ var yair_default_cfg = {
 	, pmInboxInitialized: false
 	, replyInboxInitialized: false
 	, maxInitialMessagesShown: 50
-	, pageTitle: 'Reddit - YAIR'
+	, pageTitle: 'Dead Letter Office'
 	, deleted: []
 	, saved: []
 	, showModmail: false

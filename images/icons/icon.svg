@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <title>Dead Letter Office</title>
+  <defs>
+    <pattern id="airmail" width="22" height="22" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="22" height="22" fill="#FFFFFF"/>
+      <rect width="8" height="22" fill="#C9353D"/>
+      <rect x="11" width="8" height="22" fill="#2F55A4"/>
+    </pattern>
+  </defs>
+  <!-- envelope with an airmail border -->
+  <rect x="8" y="24" width="112" height="80" rx="11" fill="url(#airmail)"/>
+  <rect x="8" y="24" width="112" height="80" rx="11" fill="none" stroke="#22283A" stroke-width="3"/>
+  <rect x="18" y="34" width="92" height="60" rx="4" fill="#FFFFFF"/>
+  <!-- postmark -->
+  <circle cx="88" cy="58" r="13" fill="none" stroke="#22283A" stroke-opacity=".28" stroke-width="2.5"/>
+  <path d="M66 82c6-4 12 4 18 0s12 4 18 0" fill="none" stroke="#22283A" stroke-opacity=".28" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- flap -->
+  <path d="M19 37l45 32 45-32" fill="none" stroke="#22283A" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

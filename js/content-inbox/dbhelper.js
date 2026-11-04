@@ -53,7 +53,7 @@
 				done((fromJson || 0) + (fromArchive || 0));
 			}, function (message) {
 				// The JSON part worked; report the archive problem without losing it
-				console.error("YAIR archive indexing failed:", message);
+				console.error("DLO archive indexing failed:", message);
 				if (typeof fail === "function") fail(message);
 			});
 		}, fail);
@@ -79,7 +79,7 @@
 			}, function (response) {
 				if (!response || response.__yairError || typeof response.html !== "string") {
 					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
-					if (reason === yair.CONTEXT_GONE) return fail("YAIR was updated or reloaded. Reload this page to keep going.");
+					if (reason === yair.CONTEXT_GONE) return fail("Dead Letter Office was updated or reloaded. Reload this page to keep going.");
 					fail("Couldn't load your message archive from Reddit (" + reason + "). Are you logged in on www.reddit.com?");
 					return;
 				}
@@ -159,7 +159,7 @@
 						}
 						// Gone on Reddit's side: don't keep asking. Anything else is retried next time.
 						if (/HTTP (404|403)/.test(reason || "")) known[id] = 9e15;
-						console.warn("YAIR: couldn't read conversation " + id + ":", reason);
+						console.warn("DLO: couldn't read conversation " + id + ":", reason);
 						return step();
 					}
 					var page = yair.helper.parseArchiveHtml(response.html, {
@@ -197,7 +197,7 @@
 							}, function (chunk) {
 								if (!chunk || chunk.__yairError || typeof chunk.html !== "string") {
 									// Leave this conversation unmarked so it's tried again next time
-									console.warn("YAIR: couldn't read part of conversation " + id + ":", chunk && chunk.__yairError);
+									console.warn("DLO: couldn't read part of conversation " + id + ":", chunk && chunk.__yairError);
 									return step();
 								}
 								var part = yair.helper.parseArchiveHtml(chunk.html, {
@@ -434,7 +434,7 @@
 			}, function (response) {
 				if (!response || response.__yairError || !response.data || !response.data.children) {
 					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
-					if (reason === yair.CONTEXT_GONE) return failed("YAIR was updated or reloaded. Reload this page to keep going.");
+					if (reason === yair.CONTEXT_GONE) return failed("Dead Letter Office was updated or reloaded. Reload this page to keep going.");
 					failed("Couldn't load your messages from Reddit (" + reason + "). Are you still logged in?");
 					return;
 				}

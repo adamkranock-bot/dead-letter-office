@@ -1,11 +1,12 @@
 {
 	"manifest_version": 3,
-	"name": "YAIR",
-	"version": "0.4.0.13",
-	"version_name": "0.4.0 (build 13)",
-	"description": "Revamps the Reddit private message inbox",
+	"name": "Dead Letter Office",
+	"version": "1.0.0",
+	"version_name": "1.0.0",
+	"description": "A searchable, exportable archive of your Reddit private messages.",
 	"icons": {
 		"16": "images/icons/16.png",
+		"32": "images/icons/32.png",
 		"48": "images/icons/48.png",
 		"128": "images/icons/128.png"
 	},
@@ -46,6 +47,7 @@
 		},
 		{
 			"matches": [
+				"https://*.reddit.com/message/dlo_*",
 				"https://*.reddit.com/message/yair_*"
 			],
 			"css": [
@@ -86,13 +88,18 @@
 		]
 	},
 	"action": {
-		"default_title": "YAIR",
-		"default_popup": "template/notifications_panel.html"
+		"default_title": "Dead Letter Office",
+		"default_popup": "template/notifications_panel.html",
+		"default_icon": {
+			"16": "images/icons/16.png",
+			"32": "images/icons/32.png"
+		}
 	},
 	"minimum_chrome_version": "121",
 	"browser_specific_settings": {
 		"gecko": {
 			"strict_min_version": "121.0"
 		}
-	}
+	},
+	"short_name": "DLO"
 }

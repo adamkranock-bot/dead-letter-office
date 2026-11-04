@@ -63,7 +63,7 @@ async function launch(profile = PROFILE) {
   page.on('response', r => { if (r.status() >= 400) errors.push('[http ' + r.status() + '] ' + r.url()); });
 
   // 1. First load: full index
-  await page.goto('https://old.reddit.com/message/yair_inbox');
+  await page.goto('https://old.reddit.com/message/dlo_inbox');
   await page.waitForSelector('.yair-message-row', { timeout: 20000 });
   await page.waitForTimeout(800);
   let rows = await page.locator('.yair-message-row').count();
@@ -75,6 +75,12 @@ async function launch(profile = PROFILE) {
   check('subreddit correspondent links to /r/', (await page.locator('.yair-correspondent a', { hasText: '#modsub' }).getAttribute('href')) === 'https://www.reddit.com/r/modsub');
   check('no script injection via subject', await page.evaluate(() => window.__xss) === undefined);
   check('bulk "Mark Selected Read" is bound to mark read', await page.locator('#YAIRBulkMarkRead').innerText().then(t => t.includes('Mark Selected Read')));
+
+  // 1b. Rebrand: old YAIR addresses still work and show the new address
+  await page.goto('https://old.reddit.com/message/yair_inbox');
+  await page.waitForSelector('.yair-message-row');
+  check('old /message/yair_inbox links redirect to /message/dlo_inbox', page.url().endsWith('/message/dlo_inbox'), page.url());
+  check('page title and wordmark say Dead Letter Office', (await page.title()) === 'Dead Letter Office' && (await page.locator('.dlo-full').innerText()) === 'Dead Letter Office', await page.title());
 
   // 2. Search with message: prefix (used to throw)
   await page.fill('#YAIRSearchInput', 'message:magicword');
@@ -113,7 +119,7 @@ async function launch(profile = PROFILE) {
   check('Enter opens the focused conversation', (await page.locator('.yair-conversation-title').innerText()) === focusedSubject, focusedSubject);
   await page.keyboard.press('Escape');
   await page.waitForSelector('.yair-message-row');
-  check('Esc returns to the list', page.url().endsWith('/message/yair_inbox'));
+  check('Esc returns to the list', page.url().endsWith('/message/dlo_inbox'));
   await page.screenshot({ path: path.join(DIR, 'inbox-light.png') });
 
   // 2c. Sort and filter by thread length, year, and who wrote last
@@ -181,7 +187,7 @@ async function launch(profile = PROFILE) {
   await page.click('.yair-sidebar-nav.inbox .yair-archived .icon-archive');
   await page.waitForTimeout(800);
   rows = await page.locator('.yair-message-row').count();
-  check('sidebar archive icon does not archive the open conversation', rows === 0 && page.url().endsWith('yair_archived'), { rows, url: page.url() });
+  check('sidebar archive icon does not archive the open conversation', rows === 0 && page.url().endsWith('dlo_archived'), { rows, url: page.url() });
 
   // 5. Reply
   await page.click('.yair-sidebar-nav.inbox .yair-inbox');
@@ -229,7 +235,7 @@ async function launch(profile = PROFILE) {
   await page.click('.conversation-header-right .icon-archive');
   await page.waitForTimeout(1200);
   rows = await page.locator('.yair-message-row').count();
-  check('archiving from conversation returns to inbox without it', rows === 12 && page.url().endsWith('yair_inbox'), { rows, url: page.url() });
+  check('archiving from conversation returns to inbox without it', rows === 12 && page.url().endsWith('dlo_inbox'), { rows, url: page.url() });
   await page.click('.yair-sidebar-nav.inbox .yair-archived');
   await page.waitForTimeout(600);
   check('archived folder lists it', await page.locator('.yair-message-row').count() === 1);
@@ -272,7 +278,8 @@ async function launch(profile = PROFILE) {
   check('popup lists the unread PM', await popup.locator('.notification').count() === 1);
   check('popup shows subject as text, not HTML', (await popup.locator('.subjectLine').innerText()).includes('<img') && await popup.locator('#notifications img').count() === 0);
   check('popup header shows the unread count', (await popup.locator('#unreadStatus').innerText()) === '1 unread message');
-  const yairTabs = () => ctx.pages().filter(pg => !pg.isClosed() && /\/message\/yair_/.test(pg.url())).length;
+  check('popup is branded Dead Letter Office', (await popup.locator('.wordmark').innerText()).includes('Dead Letter Office') && (await popup.title()) === 'Dead Letter Office');
+  const yairTabs = () => ctx.pages().filter(pg => !pg.isClosed() && /\/message\/dlo_/.test(pg.url())).length;
   const tabsBefore = yairTabs();
   const hasOpenInbox = await popup.locator('#openInbox').isVisible();
   await popup.click('#openInbox').catch(() => {});
@@ -286,7 +293,7 @@ async function launch(profile = PROFILE) {
   await popup.screenshot({ path: path.join(DIR, 'popup.png') });
   const [newTab] = await Promise.all([ctx.waitForEvent('page'), popup.click('.notification')]);
   await newTab.waitForSelector('.yair-conversation', { timeout: 15000 });
-  check('clicking a notification opens it in YAIR', newTab.url().endsWith('/message/yair_conversation/t4_b1'), newTab.url());
+  check('clicking a notification opens it in YAIR', newTab.url().endsWith('/message/dlo_conversation/t4_b1'), newTab.url());
   log = await mockLog(newTab);
   check('popup click marked it read on www.reddit.com', log.some(e => e.path === '/api/read_message' && e.host === 'www.reddit.com' && e.body.id === 't4_b1'));
   const badge2 = await sw.evaluate(() => chrome.action.getBadgeText({}));
@@ -296,7 +303,7 @@ async function launch(profile = PROFILE) {
   await page.screenshot({ path: path.join(DIR, 'inbox.png') });
 
   // 12b. Theme can follow the system setting
-  await page.goto('https://old.reddit.com/message/yair_inbox');
+  await page.goto('https://old.reddit.com/message/dlo_inbox');
   await page.waitForSelector('.yair-message-row');
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.click('#YAIRShowConfig');
@@ -317,7 +324,7 @@ async function launch(profile = PROFILE) {
   await page.emulateMedia({ colorScheme: 'light' });
 
   // 13. Service worker restart: background calls still work without a fresh "init"
-  await page.goto('https://old.reddit.com/message/yair_inbox');
+  await page.goto('https://old.reddit.com/message/dlo_inbox');
   await page.waitForSelector('.yair-message-row');
   const cdp = await ctx.newCDPSession(page);
   await cdp.send('ServiceWorker.enable').catch(() => {});
@@ -351,7 +358,7 @@ async function launch(profile = PROFILE) {
     await p.goto('https://old.reddit.com/__source?s=archive');
     await p.goto('https://old.reddit.com/__longthread');
     const before = (await mockLog(p)).length;
-    await p.goto('https://old.reddit.com/message/yair_inbox');
+    await p.goto('https://old.reddit.com/message/dlo_inbox');
     await p.waitForSelector('.yair-message-row', { timeout: 20000 });
     await p.waitForTimeout(800);
     const rowsA = await p.locator('.yair-message-row').count();
@@ -393,7 +400,7 @@ async function launch(profile = PROFILE) {
     await p.waitForTimeout(500);
     check('archive: search over archived bodies works', await p.locator('.yair-message-row').count() === 1);
     const b2 = (await mockLog(p)).length;
-    await p.goto('https://old.reddit.com/message/yair_inbox');
+    await p.goto('https://old.reddit.com/message/dlo_inbox');
     await p.waitForSelector('.yair-message-row');
     await p.waitForTimeout(800);
     alog = (await mockLog(p)).slice(b2).filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/pm-archive/')));
@@ -407,7 +414,7 @@ async function launch(profile = PROFILE) {
     await pop.goto(`chrome-extension://${a.extId}/template/notifications_panel.html`);
     const [opened] = await Promise.all([a.ctx.waitForEvent('page'), pop.click('#openInbox')]);
     await opened.waitForLoadState();
-    check('Open inbox opens YAIR when no YAIR tab exists', opened.url() === 'https://old.reddit.com/message/yair_inbox', opened.url());
+    check('Open inbox opens YAIR when no YAIR tab exists', opened.url() === 'https://old.reddit.com/message/dlo_inbox', opened.url());
     await opened.waitForSelector('.yair-message-row', { timeout: 15000 }).catch(() => {});
     await opened.goto('https://old.reddit.com/__source?s=json');
     await a.ctx.close();

@@ -1,5 +1,5 @@
 /*
- * YAIR 0.4 theme: "Airmail"
+ * Dead Letter Office theme: "Airmail"
  *
  * Private messages are now an archive of letters, so the inbox is styled as
  * one: navy ink on cool paper, Public Sans for the interface, Literata for
@@ -49,8 +49,9 @@ body {
 	--mod-tint: rgba(47, 85, 164, 0.06);
 	--mark: rgba(201, 53, 61, 0.14);
 	--shadow: 0 1px 2px rgba(34, 40, 58, 0.06), 0 8px 24px -12px rgba(34, 40, 58, 0.18);
-	--ui: 'YAIR Public Sans', 'Public Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-	--letter: 'YAIR Literata', Literata, Georgia, 'Times New Roman', serif;
+	--dlo-mark: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E %3Cdefs%3E  %3Cpattern id=%22airmail%22 width=%224.2%22 height=%224.2%22 patternUnits=%22userSpaceOnUse%22 patternTransform=%22rotate%2845%29%22%3E   %3Crect width=%224.2%22 height=%224.2%22 fill=%22%23FFFFFF%22/%3E   %3Crect width=%221.6%22 height=%224.2%22 fill=%22%23C9353D%22/%3E   %3Crect x=%222.1%22 width=%221.6%22 height=%224.2%22 fill=%22%232F55A4%22/%3E  %3C/pattern%3E %3C/defs%3E %3Crect x=%220.5%22 y=%222.5%22 width=%2215%22 height=%2211%22 rx=%221.6%22 fill=%22url%28%23airmail%29%22 stroke=%22%2322283A%22 stroke-width=%221%22/%3E %3Crect x=%222.5%22 y=%224.5%22 width=%2211%22 height=%227%22 rx=%22.6%22 fill=%22%23FFFFFF%22/%3E %3Cpath d=%22M2.8 5l5.2 3.6L13.2 5%22 fill=%22none%22 stroke=%22%2322283A%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E");
+	--ui: 'DLO Public Sans', 'Public Sans', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+	--letter: 'DLO Literata', Literata, Georgia, 'Times New Roman', serif;
 	--sidebar: 232px;
 	--header-h: 60px;
 }
@@ -222,21 +223,34 @@ button.icon { appearance: none; }
 }
 .yair-sidebar-title {
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: space-between;
 	padding: 2px 8px 18px;
 	margin-bottom: 6px;
 }
-.yair-sidebar-title .title-message a {
+.yair-sidebar-title .title-message a.dlo-wordmark {
+	display: flex;
+	align-items: center;
+	gap: 10px;
 	font-family: var(--letter);
-	font-size: 26px;
+	font-size: 21px;
 	font-weight: 600;
+	line-height: 1.02;
 	letter-spacing: -0.01em;
 	color: var(--ink);
 }
+.dlo-mark {
+	flex: none;
+	width: 34px;
+	height: 34px;
+	background: var(--dlo-mark) center / contain no-repeat;
+}
+.dlo-name { display: block; }
+.dlo-full { display: block; max-width: 7.2em; }
+.dlo-short { display: none; }
 .yair-sidebar-title .title-message .yair-tagline {
 	display: block;
-	margin-top: 1px;
+	margin-top: 8px;
 	font-family: var(--ui);
 	font-size: 12px;
 	color: var(--postmark);
@@ -1141,7 +1155,10 @@ button.icon { appearance: none; }
 	.yair-sidebar-label,
 	.yair-sidebar-footer #YAIRShowConfig { font-size: 0; }
 	.yair-sidebar-title { flex-direction: column; gap: 10px; padding: 0 0 12px; }
-	.yair-sidebar-title .title-message a { font-size: 18px; }
+	.yair-sidebar-title .title-message a.dlo-wordmark { flex-direction: column; gap: 4px; font-size: 15px; }
+	.dlo-full { display: none; }
+	.dlo-short { display: block; }
+	.dlo-mark { width: 30px; height: 30px; }
 	.yair-sidebar-nav .nav-item, .yair-sidebar-footer #YAIRShowConfig { justify-content: center; padding: 10px 0; }
 	.yair-sidebar-panel .yair-sidebar-menu { padding: 14px 8px 80px; }
 	.yair-sidebar-options .options-item { font-size: 0; justify-content: center; }
