@@ -3,6 +3,39 @@
 (function () {
 	var container = document.getElementById('notifications');
 	var refreshButton = document.querySelector('.forceRefresh');
+	var openInboxButton = document.getElementById('openInbox');
+	var statusLine = document.getElementById('unreadStatus');
+	var INBOX_URL = 'https://old.reddit.com/message/yair_inbox';
+
+	// Switch to an open YAIR tab if there is one, otherwise open the inbox
+	function openInbox() {
+		chrome.tabs.query({
+			url: 'https://*.reddit.com/message/yair_*'
+		}, function (tabs) {
+			void chrome.runtime.lastError;
+			var tab = tabs && tabs[0];
+			if (tab) {
+				chrome.tabs.update(tab.id, {
+					active: true
+				});
+				if (chrome.windows && tab.windowId !== undefined) {
+					chrome.windows.update(tab.windowId, {
+						focused: true
+					});
+				}
+				window.close();
+			}
+			else {
+				chrome.tabs.create({
+					url: INBOX_URL
+				});
+			}
+		});
+	}
+
+	function setStatus(count) {
+		statusLine.textContent = count ? (count === 1 ? '1 unread message' : count + ' unread messages') : 'No unread messages';
+	}
 
 	function el(tag, className, text) {
 		var e = document.createElement(tag);
@@ -43,7 +76,8 @@
 		var pms = children.filter(function (item) {
 			return item.kind === 't4';
 		});
-		if (!pms.length) return showEmpty();
+		setStatus(pms.length);
+		if (!pms.length) return showEmpty('No unread messages');
 		container.textContent = '';
 		pms.forEach(function (item) {
 			var data = item.data;
@@ -55,7 +89,6 @@
 			var title = el('h4');
 			title.id = 'tagline';
 			title.appendChild(el('span', 'author', data.author ? data.author : '#' + (data.subreddit || '')));
-			title.appendChild(document.createTextNode(' • '));
 			title.appendChild(el('span', 'subjectLine', truncate(data.subject, 60)));
 			title.appendChild(el('div', 'date', yairTime.fromNow(data.created_utc)));
 			row.appendChild(title);
@@ -87,7 +120,9 @@
 		var modhash = notifications && notifications.data ? notifications.data.modhash : '';
 		var url = row.dataset.readUrl;
 		row.remove();
-		if (!container.querySelector('.notification')) showEmpty();
+		var left = container.querySelectorAll('.notification').length;
+		setStatus(left);
+		if (!left) showEmpty('No unread messages');
 		chrome.runtime.sendMessage({
 			action: 'markAsRead'
 			, name: row.dataset.id
@@ -115,6 +150,7 @@
 		}
 	});
 	refreshButton.addEventListener('click', refresh);
+	openInboxButton.addEventListener('click', openInbox);
 
 	// Show the cached list straight away, then refresh it if we have nothing
 	chrome.storage.local.get(['notifications'], function (items) {

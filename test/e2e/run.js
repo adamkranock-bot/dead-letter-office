@@ -265,12 +265,24 @@ async function launch(profile = PROFILE) {
   check('badge counts unread private messages only', badge === '1', { badge, children: notif });
   const alarms = await sw.evaluate(() => chrome.alarms.getAll());
   check('refresh scheduled with chrome.alarms', alarms.some(a => a.name === 'yair-refresh-notifications' && a.periodInMinutes === 1), alarms);
-  const popup = await ctx.newPage();
+  let popup = await ctx.newPage();
   popup.on('pageerror', e => errors.push('[popup] ' + e.message));
   await popup.goto(`chrome-extension://${extId}/template/notifications_panel.html`);
   await popup.waitForSelector('.notification');
   check('popup lists the unread PM', await popup.locator('.notification').count() === 1);
   check('popup shows subject as text, not HTML', (await popup.locator('.subjectLine').innerText()).includes('<img') && await popup.locator('#notifications img').count() === 0);
+  check('popup header shows the unread count', (await popup.locator('#unreadStatus').innerText()) === '1 unread message');
+  const yairTabs = () => ctx.pages().filter(pg => !pg.isClosed() && /\/message\/yair_/.test(pg.url())).length;
+  const tabsBefore = yairTabs();
+  const hasOpenInbox = await popup.locator('#openInbox').isVisible();
+  await popup.click('#openInbox').catch(() => {});
+  await new Promise(r => setTimeout(r, 800));
+  check('Open inbox switches to the existing YAIR tab instead of opening another', hasOpenInbox && yairTabs() === tabsBefore, { before: tabsBefore, after: yairTabs() });
+  if (popup.isClosed()) {
+    popup = await ctx.newPage();
+    await popup.goto(`chrome-extension://${extId}/template/notifications_panel.html`);
+    await popup.waitForSelector('.notification');
+  }
   await popup.screenshot({ path: path.join(DIR, 'popup.png') });
   const [newTab] = await Promise.all([ctx.waitForEvent('page'), popup.click('.notification')]);
   await newTab.waitForSelector('.yair-conversation', { timeout: 15000 });
@@ -368,7 +380,15 @@ async function launch(profile = PROFILE) {
     alog = (await mockLog(p)).slice(b2).filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/')));
     check('archive: reload with nothing new reads one archive page', alog.length === 1, alog.map(e => e.path + e.query));
     check('archive: no script errors', errs.length === 0, errs);
-    await p.goto('https://old.reddit.com/__source?s=json');
+    // With no YAIR tab open, the popup's Open inbox button opens one
+    await p.close();
+    const pop = await a.ctx.newPage();
+    await pop.goto(`chrome-extension://${a.extId}/template/notifications_panel.html`);
+    const [opened] = await Promise.all([a.ctx.waitForEvent('page'), pop.click('#openInbox')]);
+    await opened.waitForLoadState();
+    check('Open inbox opens YAIR when no YAIR tab exists', opened.url() === 'https://old.reddit.com/message/yair_inbox', opened.url());
+    await opened.waitForSelector('.yair-message-row', { timeout: 15000 }).catch(() => {});
+    await opened.goto('https://old.reddit.com/__source?s=json');
     await a.ctx.close();
   })();
 
