@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.0.0
+A leaner, sturdier archive. Reddit's message archive is read-only, so the parts of the extension that wrote to it are gone, and the rest has been tightened up.
+
+**Breaking**
+* **Replying, drafts, and composing are removed.** Reddit no longer accepts replies to archived messages, so the reply box, the Drafts folder, `is:draft`, and the editor libraries (Quill, Turndown, SnuOwnd) are gone. Drafts saved by older versions are not carried over; copy anything you need before updating.
+* **Internal names changed from `yair` to `dlo`.** Settings move from `YAIR_USER_CONFIG` to `DLO_USER_CONFIG`, and each account's messages move from the `YAIR_Messages<user>` database to `DLO_Messages<user>`, automatically, the first time they're used. The old copies are deleted only after the new ones are written. Old `/message/yair_*` links still redirect.
+
+**New**
+* **Back up and restore.** *Settings → Administration → Restore from backup* adds the conversations in a JSON backup (from Dead Letter Office or YAIR) to the current account, with their saved and archived flags. It refuses another account's backup and never changes or removes what's already there.
+* **Diagnostics download** for bug reports: counts, timings, and a description of Reddit's page structure, with no message text, subjects, or usernames.
+* **Layout-change detection.** If Reddit changes its archive page so nothing can be read, the archive says so (instead of looking empty) and keeps showing what's already stored.
+* **Unread checks** default to every 15 minutes (instead of every minute) and can be turned **Off**. Installs still on the old one-minute default move to 15 minutes once.
+
+**Faster and safer**
+* Switching folders, sorting, and searching use an in-memory copy instead of re-reading the database each time.
+* Every message body goes through one sanitiser: no scripts, event handlers, inline styles, frames, `javascript:` links, or insecure images, and links open with `noopener`.
+* Leftovers from the Manifest V2 migration (the offscreen document and its permission) are removed.
+* The inbox script is split into modules (`view-*`, `controller*`, `model`, `keyboard`, `main`).
+* Unit tests run the parser against Reddit's real archive markup (text redacted), alongside the end-to-end suite.
+
 ## 1.2.0
 Packages for every major browser.
 
