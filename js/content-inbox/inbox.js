@@ -222,16 +222,22 @@
 			// Drafts are needed for filtering, so fetch them before filtering and rendering
 			yair.proxy(['drafts', 'getAllKeys'], [], function (draftsKeys) {
 				yair.model.cache.draftsKeys = draftsKeys || [];
-				var filteredConversations = conversations.slice();
+				// Folder first, so counts like "34 of 276" are relative to the folder you're in
+				var folderConversations = conversations.slice();
+				yair.model.directoryFilter(folderConversations);
+				yair.model.showModmailInInbox(folderConversations);
+				yair.view.updateListToolbar(folderConversations);
+				var filteredConversations = folderConversations.slice();
 				yair.model.searchFilter(filteredConversations);
-				yair.model.directoryFilter(filteredConversations);
-				yair.model.showModmailInInbox(filteredConversations);
+				yair.model.listFilter(filteredConversations);
+				yair.model.sortConversations(filteredConversations);
 				yair.$e.mainPanel.empty();
-				yair.view.addInboxSummary(conversations, filteredConversations);
-				yair.model.cache.lastYear = null;
+				yair.view.addInboxSummary(folderConversations, filteredConversations);
+				yair.model.cache.lastGroup = null;
 				yair.model.cache.focusIndex = -1;
 				if (!filteredConversations.length) {
-					$('<div class="yair-empty-state">').text(yair._get.searchObj ? 'No conversations match your search.' : 'Nothing here.').appendTo(yair.$e.mainPanel);
+					var narrowed = yair._get.searchObj || yair.model.listFiltersActive();
+					$('<div class="yair-empty-state">').text(narrowed ? 'No conversations match. Try widening the filters.' : 'Nothing here.').appendTo(yair.$e.mainPanel);
 				}
 				yair.view.addConversationsToInbox(filteredConversations);
 			});
@@ -256,7 +262,7 @@
 			});
 			var text;
 			var msgText = fmt(messages) + (messages === 1 ? ' message' : ' messages');
-			if (yair._get.searchObj) {
+			if (yair._get.searchObj || yair.model.listFiltersActive()) {
 				text = fmt(shown.length) + ' of ' + fmt(all.length) + ' conversations match, with ' + msgText;
 			}
 			else {
@@ -268,6 +274,9 @@
 			var $summary = $('<div class="yair-summary">').append($('<span>').text(text));
 			if (yair._get.searchObj) {
 				$('<button class="yair-summary-clear" type="button">').text('Clear search').on('click', yair.controller.clearSearch).appendTo($summary);
+			}
+			if (yair.model.listFiltersActive()) {
+				$('<button class="yair-summary-clear" type="button">').text('Clear filters').on('click', yair.controller.clearListFilters).appendTo($summary);
 			}
 			$summary.appendTo(yair.$e.mainPanel);
 		}
@@ -478,6 +487,8 @@
 				yair.$e.search.trigger('focus');
 			});
 			yair.view.bindKeyboard();
+			yair.model.listOptions.sort = yair.cfg.data.listSort || 'newest';
+			yair.view.initListToolbar();
 			// If the URL includes a search, place the search in the search bar
 			if (yair._get.search) {
 				yair.$e.search.val(decodeURIComponent(yair._get.search));
@@ -487,6 +498,84 @@
 				$(".yair-modmail").css("display","none");
 			}
 		}
+		// Sort and filter bar above the list. Built once; the year list is
+		// refreshed from whichever folder is showing.
+		, initListToolbar: function () {
+			var $bar = $('.yair-list-toolbar');
+			var opts = yair.model.listOptions;
+			$bar.find('#YAIRSort').val(opts.sort).on('change', function () {
+				opts.sort = this.value;
+				yair.cfg.set('listSort', opts.sort);
+				yair.view.rerenderList();
+			});
+			var numberInput = function (selector, key) {
+				$bar.find(selector).on('input', function () {
+					var n = parseInt(this.value, 10);
+					opts[key] = n > 0 ? n : null;
+					yair.view.rerenderListSoon();
+				});
+			};
+			numberInput('#YAIRMinMessages', 'min');
+			numberInput('#YAIRMaxMessages', 'max');
+			$bar.find('#YAIRYear').on('change', function () {
+				opts.year = this.value ? parseInt(this.value, 10) : null;
+				yair.view.rerenderList();
+			});
+			$bar.find('#YAIRLastFrom').on('change', function () {
+				opts.lastFrom = this.value || null;
+				yair.view.rerenderList();
+			});
+			$bar.find('.yair-length-preset').on('click', function () {
+				var $b = $(this);
+				opts.min = $b.data('min') || null;
+				opts.max = $b.data('max') || null;
+				yair.view.syncListToolbar();
+				yair.view.rerenderList();
+			});
+			yair.view.syncListToolbar();
+		}
+		, syncListToolbar: function () {
+			var $bar = $('.yair-list-toolbar');
+			var opts = yair.model.listOptions;
+			$bar.find('#YAIRSort').val(opts.sort);
+			$bar.find('#YAIRMinMessages').val(opts.min || '');
+			$bar.find('#YAIRMaxMessages').val(opts.max || '');
+			$bar.find('#YAIRYear').val(opts.year ? String(opts.year) : '');
+			$bar.find('#YAIRLastFrom').val(opts.lastFrom || '');
+			$bar.find('.yair-length-preset').each(function () {
+				var $b = $(this);
+				var on = (($b.data('min') || null) === opts.min) && (($b.data('max') || null) === opts.max);
+				$b.toggleClass('yair-active', on).attr('aria-pressed', on ? 'true' : 'false');
+			});
+			$bar.toggleClass('yair-filters-active', yair.model.listFiltersActive());
+		}
+		, updateListToolbar: function (folderConversations) {
+			var years = {};
+			folderConversations.forEach(function (c) {
+				if (c.last_update) years[new Date(c.last_update * 1000).getFullYear()] = true;
+			});
+			var $year = $('#YAIRYear');
+			var current = $year.val();
+			$year.find('option:not([value=""])').remove();
+			Object.keys(years).sort().reverse().forEach(function (y) {
+				$('<option>').attr('value', y).text(y).appendTo($year);
+			});
+			// Keep a chosen year even if this folder has none, so the filter stays visible
+			if (current && !years[current]) $('<option>').attr('value', current).text(current).appendTo($year);
+			$year.val(current);
+		}
+		, rerenderList: function () {
+			yair.view.syncListToolbar();
+			if (yair.show === 'conversation' || !yair.model.cache.conversations) return;
+			yair.view.showInbox(yair.model.cache.conversations, false);
+		}
+		, rerenderListSoon: (function () {
+			var timer = null;
+			return function () {
+				clearTimeout(timer);
+				timer = setTimeout(yair.view.rerenderList, 250);
+			};
+		})()
 		// nightMode: false (light), true (dark), or 'auto' (follow the system setting)
 		, applyTheme: function () {
 			var mode = yair.cfg.data.nightMode;
@@ -710,13 +799,16 @@
 			var conversationsAdded = 0;
 			for (var i = 0; i < copy.length; i++) {
 				var conversation = copy[i];
-				// Year divider whenever the year changes (conversations are newest first)
-				var year = conversation.last_update ? new Date(conversation.last_update * 1000).getFullYear() : null;
-				if (year && year !== yair.model.cache.lastYear) {
-					if (yair.model.cache.lastYear !== null || year !== new Date().getFullYear()) {
-						$('<div class="yair-year-divider">').text(year).appendTo(yair.$e.mainPanel);
+				// Group heading whenever the group changes: the year when sorted by
+				// date, the thread length when sorted by size, the initial for A-Z
+				var group = yair.model.groupFor(conversation);
+				if (group && group.key !== yair.model.cache.lastGroup) {
+					// Skip "this year" as the very first heading of a date-sorted list
+					var skip = yair.model.cache.lastGroup === null && group.isCurrentYear;
+					if (!skip) {
+						$('<div class="yair-year-divider">').toggleClass('yair-group-text', !group.numeric).text(group.label).appendTo(yair.$e.mainPanel);
 					}
-					yair.model.cache.lastYear = year;
+					yair.model.cache.lastGroup = group.key;
 				}
 				// Add message to inbox
 				yair.view.addMessageInInbox(conversation);
@@ -890,6 +982,11 @@
 			if (url === location.pathname + location.search) return;
 			history[live ? 'replaceState' : 'pushState']({}, yair.cfg.data.pageTitle, url);
 			yair.view.update();
+		}
+		, clearListFilters: function () {
+			var opts = yair.model.listOptions;
+			opts.min = opts.max = opts.year = opts.lastFrom = null;
+			yair.view.rerenderList();
 		}
 		, clearSearch: function () {
 			yair.$e.search.val('');
@@ -1162,10 +1259,91 @@
 			}
 		}
 	};
+	var LENGTH_GROUPS = [
+		[25, Infinity, '25 or more messages']
+		, [10, 24, '10 to 24 messages']
+		, [5, 9, '5 to 9 messages']
+		, [2, 4, '2 to 4 messages']
+		, [1, 1, 'Single messages']
+	];
 	yair.model = {
+		// Sort and filter state for the list; sort is remembered between visits
+		listOptions: {
+			sort: 'newest'
+			, min: null
+			, max: null
+			, year: null
+			, lastFrom: null
+		}
+		, listFiltersActive: function () {
+			var o = yair.model.listOptions;
+			return !!(o.min || o.max || o.year || o.lastFrom);
+		}
+		, listFilter: function (conversations) {
+			var o = yair.model.listOptions;
+			var me = getUsername();
+			for (var i = 0; i < conversations.length; i++) {
+				var c = conversations[i];
+				var n = c.messages.length;
+				var year = c.last_update ? new Date(c.last_update * 1000).getFullYear() : null;
+				var lastByMe = c.last_author === me;
+				if ((o.min && n < o.min) ||
+					(o.max && n > o.max) ||
+					(o.year && year !== o.year) ||
+					(o.lastFrom === 'me' && !lastByMe) ||
+					(o.lastFrom === 'them' && lastByMe)) {
+					conversations.splice(i--, 1);
+				}
+			}
+		}
+		, sortConversations: function (conversations) {
+			var by = yair.model.listOptions.sort;
+			var newestFirst = function (a, b) { return (b.last_update || 0) - (a.last_update || 0); };
+			var name = function (c) { return String(c.correspondent || '').replace(/^#/, '').toLowerCase(); };
+			var compare = {
+				newest: newestFirst
+				, oldest: function (a, b) { return (a.last_update || 0) - (b.last_update || 0); }
+				, most: function (a, b) { return (b.messages.length - a.messages.length) || newestFirst(a, b); }
+				, fewest: function (a, b) { return (a.messages.length - b.messages.length) || newestFirst(a, b); }
+				, az: function (a, b) { return name(a).localeCompare(name(b)) || newestFirst(a, b); }
+				, started: function (a, b) {
+					var first = function (c) {
+						return c.messages.reduce(function (m, x) { return Math.min(m, x.created_utc || Infinity); }, Infinity);
+					};
+					return first(b) - first(a);
+				}
+			}[by] || newestFirst;
+			conversations.sort(compare);
+		}
+		, groupFor: function (c) {
+			var by = yair.model.listOptions.sort;
+			if (by === 'most' || by === 'fewest') {
+				var n = c.messages.length;
+				for (var i = 0; i < LENGTH_GROUPS.length; i++) {
+					if (n >= LENGTH_GROUPS[i][0] && n <= LENGTH_GROUPS[i][1]) {
+						return { key: 'len' + i, label: LENGTH_GROUPS[i][2], numeric: false };
+					}
+				}
+				return null;
+			}
+			if (by === 'az') {
+				var ch = String(c.correspondent || '?').charAt(0);
+				if (ch === '#') return { key: '#', label: 'Subreddits', numeric: false };
+				ch = ch.toUpperCase();
+				if (!/[A-Z]/.test(ch)) ch = '0\u20139';
+				return { key: ch, label: ch, numeric: true };
+			}
+			var ts = c.last_update;
+			if (by === 'started') {
+				ts = c.messages.reduce(function (m, x) { return Math.min(m, x.created_utc || Infinity); }, Infinity);
+			}
+			if (!ts || ts === Infinity) return null;
+			var year = new Date(ts * 1000).getFullYear();
+			return { key: 'y' + year, label: String(year), numeric: true, isCurrentYear: year === new Date().getFullYear() };
+		}
 		// Tell Reddit the received messages in this conversation have been read,
 		// in batches rather than one request per message, then refresh the badge.
-		markReadOnReddit: function (conversation) {
+		, markReadOnReddit: function (conversation) {
 			var me = getUsername();
 			var names = conversation.messages.filter(function (m) {
 				return m.author !== me && /^t4_/.test(m.name || '');

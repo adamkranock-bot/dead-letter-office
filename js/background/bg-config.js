@@ -19,6 +19,7 @@ var yair_default_cfg = {
 	, ajaxRetryDelay: 5
 	, max403Retries: 15
 	, inboxRefreshInterval: 60000
+	, listSort: 'newest'
 };
 
 function yairAllUserCfgs() {

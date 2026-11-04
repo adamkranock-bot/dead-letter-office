@@ -45,6 +45,7 @@ Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manif
 * Search updates as you type (in the current folder, not just the inbox), highlights matches, and has a clear button; Esc clears it.
 * Message count badge on conversations with more than one message, and the full date on hover.
 * The reply box now sits behind a notice that Reddit keeps these messages as a read-only archive, with a link to Reddit Chat and a "Reply here anyway" button. It opens straight away if you have a saved draft.
+* Sort and filter bar above the list. Sort by latest activity, oldest activity, recently started, most messages, fewest messages, or name A to Z (remembered between visits). Filter by number of messages in the thread (quick presets 1, 2+, 5+, 10+, 25+, or an exact min/max range), by year, and by who sent the last message. Headings follow the sort: years for date sorts, size bands ("10 to 24 messages") for length sorts, initials for A to Z. Filters stack with search and folders, and "Clear filters" resets them.
 * Theme setting: Light, Dark, or Match system (follows the OS light/dark setting live).
 * Keyboard shortcuts: j/k to move, Enter or o to open, x to select, / to search, Esc or u to go back. Listed under Settings > About.
 

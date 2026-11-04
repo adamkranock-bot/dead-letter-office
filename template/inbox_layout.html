@@ -89,6 +89,49 @@
 				<label for="select-all">Select All</label>
 			</div>
 		</div>
+		<div class="yair-list-toolbar" role="toolbar" aria-label="Sort and filter conversations">
+			<label class="yair-tool">
+				<span class="yair-tool-label">Sort</span>
+				<select id="YAIRSort">
+					<option value="newest">Latest activity</option>
+					<option value="oldest">Oldest activity</option>
+					<option value="started">Recently started</option>
+					<option value="most">Most messages</option>
+					<option value="fewest">Fewest messages</option>
+					<option value="az">Name, A to Z</option>
+				</select>
+			</label>
+			<div class="yair-tool yair-length-tool" role="group" aria-label="Messages in the conversation">
+				<span class="yair-tool-label">Messages</span>
+				<span class="yair-length-presets">
+					<button type="button" class="yair-length-preset">Any</button>
+					<button type="button" class="yair-length-preset" data-min="1" data-max="1">1</button>
+					<button type="button" class="yair-length-preset" data-min="2">2+</button>
+					<button type="button" class="yair-length-preset" data-min="5">5+</button>
+					<button type="button" class="yair-length-preset" data-min="10">10+</button>
+					<button type="button" class="yair-length-preset" data-min="25">25+</button>
+				</span>
+				<span class="yair-length-range">
+					<input id="YAIRMinMessages" type="number" min="1" inputmode="numeric" placeholder="min" aria-label="At least this many messages">
+					<span aria-hidden="true">to</span>
+					<input id="YAIRMaxMessages" type="number" min="1" inputmode="numeric" placeholder="max" aria-label="At most this many messages">
+				</span>
+			</div>
+			<label class="yair-tool">
+				<span class="yair-tool-label">Year</span>
+				<select id="YAIRYear">
+					<option value="">All</option>
+				</select>
+			</label>
+			<label class="yair-tool">
+				<span class="yair-tool-label">Last message</span>
+				<select id="YAIRLastFrom">
+					<option value="">From anyone</option>
+					<option value="them">From them</option>
+					<option value="me">From me</option>
+				</select>
+			</label>
+		</div>
 		<div class="yair-inbox-panel">
 			<!-- Checkbox, Correspondent, Title, Text, Date/Time -->
 		</div>
