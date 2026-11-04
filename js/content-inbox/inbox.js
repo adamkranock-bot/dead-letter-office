@@ -164,31 +164,33 @@
 					if (!text || !text.trim()) { return; }
 					$submit.attr('disabled', 'disabled');
 					yair.view.showLoading("Message is being sent");
-					var postXhr = $.post(redditApiUrl('/api/comment'), {
-						thing_id: responseId
-						, uh: yair.model.uh
-						, text: text
-						, api_type: 'json'
-					});
-					postXhr.done(function (response) {
+					yair.request('redditPost', {
+						endpoint: 'comment'
+						, form: {
+							thing_id: responseId
+							, uh: yair.model.uh
+							, text: text
+						}
+					}, function (result) {
+						var response = result && result.json;
 						var errors = (response && response.json && response.json.errors) || [];
-						if (response && response.json && !errors.length) {
+						if (result && result.ok && response && response.json && !errors.length) {
 							yair.proxy(['drafts', 'delete'], [conversation.id]);
 							yair.model.updateDb(yair.view.update, yair.view.showNotification);
 						}
-						else {
+						else if (result && result.ok && errors.length) {
 							// Reddit errors look like [code, message, field]. Your draft is kept.
 							var details = errors.map(function (err) {
 								return (err instanceof Array) ? (err[1] || err[0]) : String(err);
 							}).join('\n');
-							yair.alerts.error('Reddit did not send your reply', details || 'Reddit returned an unexpected response. Your draft has been kept.');
+							yair.alerts.error('Reddit did not send your reply', details);
 							$submit.removeAttr('disabled');
 						}
-					});
-					postXhr.fail(function (xhr) {
-						var status = xhr && xhr.status ? ' (HTTP ' + xhr.status + ')' : '';
-						yair.alerts.error('Reddit did not send your reply', 'The request failed' + status + '. Reddit has been moving private messages to Chat, so some conversations may no longer accept replies. Your draft has been kept.');
-						$submit.removeAttr('disabled');
+						else {
+							var status = result && result.status ? ' (HTTP ' + result.status + ')' : (result && result.__yairError ? ' (' + result.__yairError + ')' : '');
+							yair.alerts.error('Reddit did not send your reply', 'The request failed' + status + '. Reddit has moved direct messages to Chat, so some conversations no longer accept replies. Your draft has been kept.');
+							$submit.removeAttr('disabled');
+						}
 					});
 				});
 			}
@@ -1418,17 +1420,20 @@
 			}).map(function (m) {
 				return m.name;
 			});
-			var requests = [];
+			if (!names.length) return;
+			var pending = 0;
 			for (var i = 0; i < names.length; i += 25) {
-				requests.push($.post(redditApiUrl('/api/read_message'), {
-					id: names.slice(i, i + 25).join(',')
-					, uh: yair.model.uh
-				}));
+				pending++;
+				yair.request('redditPost', {
+					endpoint: 'read_message'
+					, form: {
+						id: names.slice(i, i + 25).join(',')
+						, uh: yair.model.uh
+					}
+				}, function () {
+					if (--pending === 0) yair.request('updateNotifications');
+				});
 			}
-			if (!requests.length) return;
-			$.when.apply($, requests).always(function () {
-				yair.request('updateNotifications');
-			});
 		}
 		, setConversationStatus: function (conversation, read) {
 			var updated = [];

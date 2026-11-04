@@ -23,12 +23,26 @@ Everything stays on your computer. The extension only talks to reddit.com, using
 
 ## Install
 
-1. Download the latest `dead_letter_office-<version>.zip` (or build it, below) and unzip it.
-2. **Chrome, Edge, or Brave:** open `chrome://extensions`, turn on *Developer mode*, click *Load unpacked*, and choose the unzipped folder (the one with `manifest.json` in it).
-3. **Firefox (121+):** open `about:debugging#/runtime/this-firefox`, click *Load Temporary Add-on…*, and choose `manifest.json`. Allow access to reddit.com when asked.
-4. Log in to Reddit and open <https://old.reddit.com/message/dlo_inbox>, or click the toolbar button and choose **Open inbox**. The first visit reads your whole archive, which can take a few minutes for a large one.
+Each release has a package per browser: `dead-letter-office-<version>-<browser>.zip`. You can also build them yourself with `npm run build`. Unzip the one for your browser, then:
 
-To update, replace the files in the same folder and click reload on the extension's card. Keeping the same folder keeps your stored messages, flags, and settings.
+**Chrome, Brave, Opera, or Vivaldi** (`…-chrome.zip`): open `chrome://extensions`, turn on *Developer mode*, click *Load unpacked*, and choose the unzipped folder.
+
+**Microsoft Edge** (`…-edge.zip`): open `edge://extensions`, turn on *Developer mode*, click *Load unpacked*, and choose the unzipped folder. The same zip is what you upload to the Edge Add-ons store.
+
+**Firefox 140 or later** (`…-firefox.zip`): for a quick try, open `about:debugging#/runtime/this-firefox`, click *Load Temporary Add-on…*, and choose `manifest.json` (it's removed when Firefox restarts). For a permanent install, submit the zip to [addons.mozilla.org](https://addons.mozilla.org/developers/) for signing, either listed or "on your own" (unlisted), then install the signed `.xpi`. Allow access to reddit.com when Firefox asks.
+
+**Safari (macOS, and iOS/iPadOS)** (`…-safari.zip`): Safari extensions ship inside an app, which Apple's tools build on a Mac with Xcode:
+
+```sh
+npm run build:safari
+sh scripts/safari.sh            # runs xcrun safari-web-extension-converter
+```
+
+Open the Xcode project it creates in `dist/safari-xcode/`, pick your Team under *Signing & Capabilities*, and press Run. Then turn the extension on in Safari's Settings → Extensions and allow it on reddit.com. Unsigned local builds also need *Develop → Allow Unsigned Extensions*. Publishing to the App Store needs an Apple Developer account.
+
+Then log in to Reddit and open <https://old.reddit.com/message/dlo_inbox>, or click the toolbar button and choose **Open inbox**. The first visit reads your whole archive, which can take a few minutes for a large one.
+
+To update, replace the files in the same folder and reload the extension. Keeping the same folder keeps your stored messages, flags, and settings.
 
 ![Dark mode, sorted by thread length](images/promotional/inbox-dark.png)
 
@@ -39,18 +53,20 @@ npm install
 npm run lint            # ESLint (undefined names, MV3 service-worker misuse)
 npm run lint:firefox    # Mozilla's add-on linter
 npm run test:e2e        # drives the extension in Chromium against a mock Reddit (needs openssl)
-npm run build           # zips the extension into dist/
+npm run build           # packages for chrome, edge, firefox, and safari in dist/
+npm run build:firefox   # or one browser at a time
 ```
 
 There is no bundler: the files listed in `manifest.json` are loaded as they are.
 
-* `js/background/` runs as a service worker in Chrome (`service-worker.js` imports the other files) and as an event page in Firefox (the `background.scripts` list); keep the two lists in sync. It owns persistent state (`chrome.storage.local` and one IndexedDB database per Reddit user) and fetches from Reddit.
+* `manifest.json` in the repository works as-is for development in Chrome and Firefox. `scripts/build.mjs` derives each browser's manifest from it: a service worker for Chrome and Edge; an event page, add-on ID, and data-collection declaration for Firefox; an event page for Safari.
+* `js/background/` runs as a service worker in Chrome and Edge (`service-worker.js` imports the other files) and as an event page in Firefox and Safari (the `background.scripts` list); keep the two lists in sync. It owns persistent state (`chrome.storage.local` and one IndexedDB database per Reddit user) and fetches from Reddit.
 * `js/content-inbox/` renders the archive on `old.reddit.com/message/dlo_*` pages. `dbhelper.js` reads Reddit's archive (`www.reddit.com/message/messages/`, its `pm-archive` list pages, each conversation's page, and its `pm-archive-message-replies` chunks).
 * Content scripts call the background through `yair.proxy([...path], params, callback)`; only paths in `PROXY_WHITELIST` (`bg-proxy.js`) are allowed.
 * `css/yair.css` is the whole theme (colour tokens at the top, light and dark). Icons are inline SVG. Fonts (Public Sans and Literata, SIL OFL) live in `fonts/`.
 * Internal names still use the `yair` prefix from the project this grew out of; old `/message/yair_*` addresses redirect to `/message/dlo_*`.
 
-Publishing to addons.mozilla.org needs an add-on ID under `browser_specific_settings.gecko.id` in `manifest.json`.
+The Firefox add-on ID (`dead-letter-office@adamkranock-bot`, set in `scripts/build.mjs`) is permanent once published to addons.mozilla.org.
 
 ## Credits
 

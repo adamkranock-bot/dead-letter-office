@@ -186,6 +186,49 @@ var actions = {
 	, updateNotifications: function () {
 		return yairNotifications.update();
 	}
+	// Reply to a conversation or mark messages read, on behalf of the inbox
+	// page. Done here rather than from the page so it works the same in every
+	// browser (Firefox and Safari restrict cross-origin requests from content
+	// scripts). Only these two endpoints, with validated ids, are allowed.
+	, redditPost: function (request) {
+		var form = request.form || {};
+		var body = new URLSearchParams();
+		if (request.endpoint === 'comment') {
+			if (!FULLNAME_RE.test(String(form.thing_id || '')) || typeof form.text !== 'string') {
+				return Promise.reject(new Error('Invalid reply'));
+			}
+			body.set('thing_id', form.thing_id);
+			body.set('text', form.text);
+			body.set('api_type', 'json');
+		}
+		else if (request.endpoint === 'read_message') {
+			var ids = String(form.id || '').split(',');
+			if (!ids.length || ids.length > 100 || !ids.every(function (id) { return FULLNAME_RE.test(id); })) {
+				return Promise.reject(new Error('Invalid message ids'));
+			}
+			body.set('id', ids.join(','));
+		}
+		else {
+			return Promise.reject(new Error('Unknown endpoint'));
+		}
+		body.set('uh', String(form.uh || ''));
+		return fetch(REDDIT_ORIGIN + '/api/' + request.endpoint, {
+			method: 'POST'
+			, credentials: 'include'
+			, cache: 'no-store'
+			, body: body
+		}).then(function (response) {
+			return response.text().then(function (text) {
+				var json = null;
+				try { json = JSON.parse(text); } catch (e) {}
+				return {
+					ok: response.ok
+					, status: response.status
+					, json: json
+				};
+			});
+		});
+	}
 	, markAsRead: function (request) {
 		var name = String(request.name || '');
 		if (!FULLNAME_RE.test(name)) {

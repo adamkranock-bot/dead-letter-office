@@ -16,16 +16,17 @@ jobs:
       - run: npm ci
       - name: Lint
         run: npm run lint
-      - name: Validate for Firefox (web-ext lint)
-        # Warnings about Chrome-only keys (service_worker, offscreen) are expected
-        run: npm run lint:firefox || true
+      - name: Build every browser package
+        run: npm run build
+      - name: Validate the Firefox package (web-ext lint)
+        run: npx web-ext lint --source-dir dist/firefox
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: End-to-end test against a mock Reddit
+      - name: End-to-end test (built Chrome package) against a mock Reddit
         run: npm run test:e2e
-      - name: Build zip
-        run: npm run build
+        env:
+          DLO_EXT: dist/chrome
       - uses: actions/upload-artifact@v4
         with:
-          name: yair-extension
+          name: dead-letter-office-packages
           path: dist/*.zip

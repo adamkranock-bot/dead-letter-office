@@ -1,13 +1,17 @@
 {
   "name": "dead-letter-office",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Dead Letter Office: a searchable, exportable archive of your Reddit private messages (browser extension, forked from YAIR)",
   "license": "MIT",
   "scripts": {
     "lint": "eslint .",
-    "lint:firefox": "web-ext lint --source-dir . --ignore-files node_modules dist package.json package-lock.json eslint.config.js \"scss/**\" \"images/promotional/**\" \"*.md\" \".github/**\" \"test/**\"",
-    "build": "web-ext build --source-dir . --artifacts-dir dist --overwrite-dest --ignore-files node_modules dist package.json package-lock.json eslint.config.js \"scss/**\" \"images/promotional/**\" \"*.md\" \".github/**\" \"test/**\"",
+    "build": "node scripts/build.mjs",
+    "build:chrome": "node scripts/build.mjs chrome",
+    "build:edge": "node scripts/build.mjs edge",
+    "build:firefox": "node scripts/build.mjs firefox",
+    "build:safari": "node scripts/build.mjs safari",
+    "lint:firefox": "node scripts/build.mjs firefox && web-ext lint --source-dir dist/firefox",
     "test:e2e": "node test/e2e/run.js"
   },
   "devDependencies": {
