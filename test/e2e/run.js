@@ -329,6 +329,14 @@ async function launch(profile = PROFILE) {
   await page.click('.yair-message-row:has-text("Filler thread 3")');
   await page.waitForSelector('.yair-conversation', { timeout: 15000 }).catch(() => {});
   check('works after the service worker is stopped and restarted', await page.locator('.yair-private-message').count() === 1, swTargets.length);
+  // Stop it again with a call in flight: the page should retry quietly, not show an error
+  const swNow = await cdp.send('Target.getTargets').then(r => r.targetInfos.filter(t => t.type === 'service_worker'));
+  await page.evaluate(() => { document.querySelector('.yair-save-toggle').click(); });
+  for (const t of swNow) await cdp.send('Target.closeTarget', { targetId: t.targetId }).catch(() => {});
+  await page.click('.yair-sidebar-nav.inbox .yair-saved');
+  await page.waitForTimeout(2500);
+  const noticeText = await page.locator('.yair-overlay .notification-message').innerText().catch(() => '');
+  check('a stopped background worker is retried without an error message', !/went wrong|couldn't finish/i.test(noticeText) && await page.locator('.yair-message-row').count() >= 1, noticeText);
 
   const real = errors.filter(e => !/redditstatic\.com|favicon\.ico/.test(e));
   check('no script errors (ignoring blocked reddit CDN assets)', real.length === 0, real);
