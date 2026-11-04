@@ -226,6 +226,24 @@
 			if (!q || !$el || !$el.length) return;
 			yair.search.mark($el[0], yair.search.terms(q, part));
 		}
+		// Indexing couldn't finish: still show what's stored, with the problem above it
+		, indexingFailed: function (message) {
+			yair.view.hideOverlay();
+			yair.model.cache.indexBanner = message;
+			yair.view.update();
+		}
+		, showIndexBanner: function () {
+			$('.dlo-banner').remove();
+			var message = yair.model.cache.indexBanner;
+			if (!message) return;
+			var $banner = $('<div class="dlo-banner" role="alert">');
+			$('<span class="dlo-banner-text">').text(message).appendTo($banner);
+			$('<button type="button" class="dlo-banner-close" aria-label="Dismiss">').text('\u00d7').on('click', function () {
+				yair.model.cache.indexBanner = null;
+				$banner.remove();
+			}).appendTo($banner);
+			$banner.insertBefore('.yair-list-toolbar');
+		}
 		, setFavicon: function () {
 			var icon = '16.png';
 			$('head link[rel="shortcut icon"]').remove();
@@ -238,6 +256,7 @@
 		, update: function () {
 			// Init search from URL
 			yair.view.hideOverlay();
+			yair.view.showIndexBanner();
 			yair.controller.parseUrl();
 			yair.view.updateBodyClass();
 			if (yair.show === "conversation") {
@@ -624,6 +643,17 @@
 			$config.find('.yair-export-all').on('click', function () {
 				yair.controller.exportAll($(this).data('format'));
 			});
+			var $restoreFile = $config.find('#DLORestoreFile');
+			$config.find('#DLORestoreButton').on('click', function () {
+				$restoreFile.val('').trigger('click');
+			});
+			$restoreFile.on('change', function () {
+				var file = this.files && this.files[0];
+				if (!file) return;
+				yair.$e.body.removeClass('yair-modal-open');
+				yair.controller.restoreBackup(file);
+			});
+			$config.find('#DLODiagnosticsButton').on('click', yair.controller.downloadDiagnostics);
 			$config.find('#YAIRCancelResetInbox').on('click', function () {
 				$config.find('#YAIRConfirmReset').addClass('yair-hide');
 			});
@@ -848,7 +878,9 @@
 						};
 					});
 					downloadText(base + '.json', JSON.stringify({
-						exported_utc: Math.floor(getTime() / 1000)
+						format: 'dead-letter-office-backup'
+						, version: 1
+						, exported_utc: Math.floor(getTime() / 1000)
 						, username: getUsername()
 						, conversations: payload
 					}, null, 2), 'application/json');
@@ -859,6 +891,81 @@
 				yair.view.showNotification('Exported ' + conversations.length + ' conversations');
 			});
 		}
+		// Restore a JSON backup: add its messages and flags, never remove anything
+		, restoreBackup: function (file) {
+			var fail = function (title, message) {
+				yair.view.hideOverlay();
+				setTimeout(function () { yair.alerts.error(title, message); }, 700);
+			};
+			var reader = new FileReader();
+			reader.onerror = function () {
+				fail("Couldn't read that file", 'The file could not be opened. Try saving it again and choosing it once more.');
+			};
+			reader.onload = function () {
+				var data;
+				try {
+					data = JSON.parse(reader.result);
+				}
+				catch (e) {
+					return fail("That isn't a backup file", "It isn't valid JSON. Choose a file made with Back up (JSON).");
+				}
+				var plan = yair.helper.planRestore(data, getUsername());
+				if (plan.error) return fail("That backup can't be restored here", plan.error);
+				yair.view.showLoading('Restoring ' + plan.messages.length + ' messages');
+				var added = 0, i = 0, CHUNK = 500;
+				var next = function () {
+					if (i >= plan.messages.length) return finish();
+					yair.view.showStatus('Restoring messages ' + (i + 1) + ' to ' + Math.min(i + CHUNK, plan.messages.length));
+					yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, plan.messages.slice(i, i + CHUNK)], function (n) {
+						added += n || 0;
+						i += CHUNK;
+						next();
+					});
+				};
+				var finish = function () {
+					plan.saved.forEach(function (id) { yair.cfg.saved.add(id); });
+					plan.archived.forEach(function (id) { yair.cfg.deleted.add(id); });
+					if (!yair.cfg.data.pmInboxInitialized && added) yair.cfg.set('pmInboxInitialized', true);
+					yair.model.invalidateConversations();
+					yair.view.update();
+					var skipped = plan.messages.length - added;
+					setTimeout(function () {
+						yair.alerts.alert('Backup restored', 'Added ' + added + ' messages from ' + plan.conversations + ' conversations' + (skipped ? ' (' + skipped + ' were already here)' : '') + '. Saved and archived flags were restored too.');
+					}, 400);
+				};
+				next();
+			};
+			reader.readAsText(file);
+		}
+		, downloadDiagnostics: function () {
+			yair.model.getConversations(function (conversations) {
+				var messages = conversations.reduce(function (n, c) { return n + c.messages.length; }, 0);
+				var cfg = yair.cfg.data;
+				var report = {
+					note: 'Dead Letter Office diagnostics. Contains no message text, subjects, or usernames.'
+					, generated_utc: Math.floor(getTime() / 1000)
+					, extension: yair.manifest.version
+					, browser: navigator.userAgent
+					, stored: {
+						conversations: conversations.length
+						, messages: messages
+						, saved: (cfg.saved || []).length
+						, archived: (cfg.deleted || []).length
+						, conversationsReadInFull: Object.keys(cfg.archiveThreads || {}).filter(function (k) { return k !== '__v'; }).length
+					}
+					, settings: {
+						indexed: !!cfg.pmInboxInitialized
+						, sort: cfg.listSort
+						, unreadCheckMs: cfg.inboxRefreshInterval
+						, theme: cfg.nightMode
+						, compact: !!cfg.compactMode
+					}
+					, lastIndexRun: cfg.indexStats || null
+					, lastArchivePage: yair.model.cache.lastArchiveDiagnostics || null
+				};
+				downloadText('dead-letter-office-diagnostics_' + sysDateStr() + '.json', JSON.stringify(report, null, 2), 'application/json');
+			});
+		}
 		, reindexMessages: function () {
 			yair.view.showLoading('Reindexing inbox');
 			yair.model.reindexPrivateMessages(function (added) {
@@ -866,8 +973,8 @@
 				yair.view.setFavicon();
 				yair.view.showNotification('Reindex complete: ' + (added || 0) + ' new messages found', 2500);
 			}, function (errorMessage) {
-				yair.view.showNotification(errorMessage, -1);
 				console.error("DB has NOT been updated", arguments);
+				yair.view.indexingFailed(errorMessage);
 			});
 		}
 		, showMessageClick: function () {
@@ -886,8 +993,8 @@
 				yair.view.update();
 				yair.view.setFavicon();
 			}, function (errorMessage) {
-				yair.view.showNotification(errorMessage, -1);
 				console.error("DB has NOT been updated", arguments);
+				yair.view.indexingFailed(errorMessage);
 			});
 		}
 		// Searches within the current folder. Live (as-you-type) searches replace

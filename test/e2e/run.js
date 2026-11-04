@@ -266,6 +266,8 @@ async function launch(profile = PROFILE) {
   await page.click('.yair-config-tab[data-tab="admin"]');
   [dl] = await Promise.all([page.waitForEvent('download'), page.click('.yair-export-all[data-format="json"]')]);
   const exp = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
+  const BACKUP = path.join(DIR, 'backup.json');
+  fs.writeFileSync(BACKUP, JSON.stringify(exp));
   const hello = exp.conversations.find(c => c.subject === 'Hello there');
   check('export-all JSON has every conversation with flags', exp.conversations.length === 13 && hello.archived === true && hello.messages.length === 2, { n: exp.conversations.length, archived: hello && hello.archived });
   await page.keyboard.press('Escape');
@@ -453,6 +455,72 @@ async function launch(profile = PROFILE) {
     await a.ctx.close();
   })();
 
+  // 16. Restore a backup into a fresh profile; detect a changed archive layout
+  await (async () => {
+    const r = await launch(path.join(DIR, 'profile-restore'));
+    const p = await r.ctx.newPage();
+    const errs = [];
+    p.on('pageerror', e => errs.push(e.message));
+    await p.goto('https://old.reddit.com/__source?s=none');
+    await p.goto('https://old.reddit.com/message/dlo_inbox');
+    await p.waitForSelector('.yair-empty-state', { timeout: 20000 });
+    check('restore: fresh profile with nothing on Reddit starts empty', await p.locator('.yair-message-row').count() === 0);
+    const restoreFrom = async (file) => {
+      await p.click('#YAIRShowConfig');
+      await p.click('.yair-config-tab[data-tab="admin"]');
+      await p.setInputFiles('#DLORestoreFile', file);
+      await p.waitForSelector('.yair-alert', { timeout: 20000 });
+      const text = await p.locator('.yair-alert').innerText();
+      await p.click('.yair-alert button.yair-alert-close');
+      await p.waitForTimeout(700);
+      return text;
+    };
+    const wrong = path.join(DIR, 'backup-other.json');
+    fs.writeFileSync(wrong, JSON.stringify(Object.assign({}, exp, { username: 'someoneelse' })));
+    const wrongText = await restoreFrom(wrong);
+    check("restore: another account's backup is refused", /belongs to u\/someoneelse/.test(wrongText) && await p.locator('.yair-message-row').count() === 0, wrongText);
+    const okText = await restoreFrom(BACKUP);
+    check('restore: backup restored with a summary', /Added \d+ messages from 13 conversations/.test(okText), okText);
+    await p.waitForSelector('.yair-message-row');
+    check('restore: conversations back in the inbox (archived one excluded)', await p.locator('.yair-message-row').count() === 12);
+    await p.click('.yair-sidebar-nav.inbox .yair-archived');
+    await p.waitForTimeout(500);
+    check('restore: archived flag restored', await p.locator('.yair-message-row:has-text("Hello there")').count() === 1);
+    await p.click('.yair-sidebar-nav.inbox .yair-inbox');
+    await p.waitForTimeout(400);
+    const again = await restoreFrom(BACKUP);
+    check('restore: restoring twice adds nothing', /Added 0 messages/.test(again) && /were already here/.test(again), again);
+
+    // Reddit changes its markup: say so instead of quietly finding nothing
+    await p.goto('https://old.reddit.com/__source?s=changed');
+    await p.goto('https://old.reddit.com/message/dlo_inbox');
+    await p.waitForSelector('.yair-message-row');
+    await p.click('#YAIRShowConfig');
+    await p.click('.yair-config-tab[data-tab="admin"]');
+    await p.click('#YAIRReindexMessages');
+    await p.waitForSelector('.dlo-banner', { timeout: 20000 });
+    const notice = await p.locator('.dlo-banner').innerText();
+    check('layout change: reindex reports that Reddit changed its page', /has changed/.test(notice) && /stored messages are safe/.test(notice), notice);
+    await p.goto('https://old.reddit.com/message/dlo_inbox');
+    await p.waitForSelector('.dlo-banner', { timeout: 20000 });
+    await p.waitForSelector('.yair-message-row');
+    await p.waitForTimeout(300);
+    check('layout change: on page load the stored inbox still shows, under the warning', await p.locator('.yair-message-row').count() === 12 && await p.locator('.yair-overlay.show').count() === 0);
+    await p.click('.dlo-banner-close');
+    check('layout change: the warning can be dismissed', await p.locator('.dlo-banner').count() === 0);
+    await p.click('#YAIRShowConfig');
+    await p.click('.yair-config-tab[data-tab="admin"]');
+    const [diag] = await Promise.all([p.waitForEvent('download'), p.click('#DLODiagnosticsButton')]);
+    const diagText = fs.readFileSync(await diag.path(), 'utf8');
+    const report = JSON.parse(diagText);
+    check('diagnostics: records the failed run and the page structure', /^failed/.test(report.lastIndexRun.outcome) && report.stored.conversations === 13 && report.lastIndexRun.warnings.length >= 1, report.lastIndexRun);
+    check('diagnostics: contain no message text, subjects, or usernames', !/magicword|Hello there|alice|filler|testuser/i.test(diagText), diagText.slice(0, 300));
+    check('restore/diagnostics: no script errors', errs.length === 0, errs);
+    await p.goto('https://old.reddit.com/__source?s=json');
+    await r.ctx.close();
+  })();
+
+  server.close();
   const failed = results.filter(r => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
   process.exit(failed.length ? 1 : 0);

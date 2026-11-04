@@ -122,8 +122,10 @@ return https.createServer({ key, cert }, async (req, res) => {
   if (url.pathname === '/__source') { source = url.searchParams.get('s'); return json(res, { source }); }
   if (req.headers.host.startsWith('www.') && url.pathname === '/message/messages/') {
     res.writeHead(200, { 'content-type': 'text/html' });
-    return res.end(source === 'archive'
-      ? `<!DOCTYPE html><html><head><title>Reddit - The heart of the internet</title><script>window.__xss=1</script></head><body><faceplate-partial name="ReportFlow" src="/svc/shreddit/report-flow/:thing_id" loading="programmatic"></faceplate-partial><shreddit-app><main class="main w-full">${archiveChunk(0)}</main></shreddit-app></body></html>`
+    const page = `<!DOCTYPE html><html><head><title>Reddit - The heart of the internet</title><script>window.__xss=1</script></head><body><faceplate-partial name="ReportFlow" src="/svc/shreddit/report-flow/:thing_id" loading="programmatic"></faceplate-partial><shreddit-app><main class="main w-full">${archiveChunk(0)}</main></shreddit-app></body></html>`;
+    // 'changed' simulates Reddit renaming its message blocks
+    return res.end(source === 'archive' ? page
+      : source === 'changed' ? page.replace(/pm-archive-message-template/g, 'pm-archive-letter-v2')
       : '<!DOCTYPE html><html><body><main></main></body></html>');
   }
   const threadPage = url.pathname.match(/^\/message\/messages\/([a-z0-9]+)\/?$/);
@@ -152,7 +154,7 @@ return https.createServer({ key, cert }, async (req, res) => {
     return res.end(page('messages: inbox'));
   }
   if (url.pathname === '/message/messages.json') {
-    if (source === 'archive') return json(res, { kind: 'Listing', data: { after: null, before: null, children: [], modhash: 'modhash123' } });
+    if (source !== 'json') return json(res, { kind: 'Listing', data: { after: null, before: null, children: [], modhash: 'modhash123' } });
     const all = listing();
     let start = 0;
     const after = url.searchParams.get('after');

@@ -81,10 +81,23 @@
 					</p>
 				</div>
 				<div id="exportAll">
-					<button class="yair-export-all" data-format="txt">Export All (Text)</button>
-					<button class="yair-export-all" data-format="json">Export All (JSON)</button>
+					<button class="yair-export-all" data-format="json">Back up (JSON)</button>
+					<button class="yair-export-all" data-format="txt">Export as text</button>
 					<p class="yair-config-info">
-						Download every conversation stored for this account. Reddit now keeps private messages as a read-only archive, so this is a good way to keep your own copy. The JSON export includes saved and archived flags.
+						Your copy here is the only one outside Reddit, and it doesn't follow you to a new browser or computer. The JSON backup holds every conversation with its saved and archived flags, and can be restored below. The text export is for reading.
+					</p>
+				</div>
+				<div id="restoreBackup">
+					<button id="DLORestoreButton" type="button">Restore from backup&hellip;</button>
+					<input id="DLORestoreFile" type="file" accept=".json,application/json" hidden>
+					<p class="yair-config-info">
+						Adds the conversations from a JSON backup (from Dead Letter Office or YAIR) to this account, along with their saved and archived flags. Nothing already here is changed or removed.
+					</p>
+				</div>
+				<div id="diagnostics">
+					<button id="DLODiagnosticsButton" type="button">Download diagnostics</button>
+					<p class="yair-config-info">
+						If indexing goes wrong, this file helps work out why: counts, the last indexing run, and the structure of Reddit's archive page. It contains no message text, subjects, or usernames.
 					</p>
 				</div>
 			</div>
