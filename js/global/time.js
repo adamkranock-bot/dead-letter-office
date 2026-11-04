@@ -1,5 +1,5 @@
 // Small date helpers that replace the moment.js dependency.
-var yairTime = (function () {
+var dloTime = (function () {
 	var UNITS = [
 		['year', 60 * 60 * 24 * 365]
 		, ['month', 60 * 60 * 24 * 30]
@@ -29,7 +29,7 @@ var yairTime = (function () {
 		}
 		// "5 minutes ago", "yesterday", ... for a unix timestamp (seconds)
 		, fromNow: function (unixSeconds) {
-			var diff = unixSeconds - yairTime.now();
+			var diff = unixSeconds - dloTime.now();
 			var abs = Math.abs(diff);
 			for (var i = 0; i < UNITS.length; i++) {
 				var unit = UNITS[i];

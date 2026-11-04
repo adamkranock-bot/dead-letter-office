@@ -6,8 +6,8 @@
 	display: none !important;
 }
 
-.yair-mail,
-.yair-privatemessages {
+.dlo-mail,
+.dlo-privatemessages {
 	background-repeat: no-repeat;
 	width: 16px;
 	height: 10px;
@@ -20,7 +20,7 @@
 	top: 2px
 }
 
-.yair-privatemessages-newredit, .yair-privatemessages-newredit-newmail {
+.dlo-privatemessages-newredit, .dlo-privatemessages-newredit-newmail {
 	width: 16px;
 	height: 16px;
 	overflow: hidden;
@@ -31,7 +31,7 @@
 	margin-left: 8px;
 }
 
-.yair-privatemessages-newredit-newmail {
+.dlo-privatemessages-newredit-newmail {
 	fill: #45ADA4; 
 }
 
@@ -55,17 +55,17 @@
     padding: 0px 3px;
 }
 
-.yair-mail {
+.dlo-mail {
 	background-image: url("https://www.redditstatic.com/sprite-reddit.reNnXuo8_bA.png");
 	background-position: -99px -863px;
 	top: 2px;
 }
 
-.yair-mail.yair-havemail {
+.dlo-mail.dlo-havemail {
 	background-position-x: -78px;
 }
 
-.yair-privatemessages {
+.dlo-privatemessages {
 	/* Dead Letter Office envelope; greyed out until there's unread mail */
 	background: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E %3Cdefs%3E  %3Cpattern id=%22airmail%22 width=%224.2%22 height=%224.2%22 patternUnits=%22userSpaceOnUse%22 patternTransform=%22rotate%2845%29%22%3E   %3Crect width=%224.2%22 height=%224.2%22 fill=%22%23FFFFFF%22/%3E   %3Crect width=%221.6%22 height=%224.2%22 fill=%22%23C9353D%22/%3E   %3Crect x=%222.1%22 width=%221.6%22 height=%224.2%22 fill=%22%232F55A4%22/%3E  %3C/pattern%3E %3C/defs%3E %3Crect x=%220.5%22 y=%222.5%22 width=%2215%22 height=%2211%22 rx=%221.6%22 fill=%22url%28%23airmail%29%22 stroke=%22%2322283A%22 stroke-width=%221%22/%3E %3Crect x=%222.5%22 y=%224.5%22 width=%2211%22 height=%227%22 rx=%22.6%22 fill=%22%23FFFFFF%22/%3E %3Cpath d=%22M2.8 5l5.2 3.6L13.2 5%22 fill=%22none%22 stroke=%22%2322283A%22 stroke-width=%221.5%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E") center / 16px 12px no-repeat;
 	width: 16px;
@@ -75,28 +75,28 @@
 	opacity: .55;
 }
 
-.yair-privatemessages.yair-havemail {
+.dlo-privatemessages.dlo-havemail {
 	filter: none;
 	opacity: 1;
 }
 
-#header .yair-mail+.message-count,
-#header .yair-privatemessages+.message-count {
+#header .dlo-mail+.message-count,
+#header .dlo-privatemessages+.message-count {
 	display: inline-block;
 }
 
-#header .yair-mail+.message-count:empty,
-#header .yair-privatemessages+.message-count:empty {
+#header .dlo-mail+.message-count:empty,
+#header .dlo-privatemessages+.message-count:empty {
 	display: none;
 }
 
-#NREFloat .yair-privatemessages {
+#NREFloat .dlo-privatemessages {
 	float: left;
 	top: 3px;
 	margin-right: 4px;
 }
 
-#NREFloat .yair-mail {
+#NREFloat .dlo-mail {
 	float: left;
 	top: 3px;
 }
@@ -107,11 +107,11 @@
 	margin-top: -15px;
 }
 
-#tb-toolbarcounters .yair-privatemessages {
+#tb-toolbarcounters .dlo-privatemessages {
 	top: 2px;
 }
 
-#tb-toolbarcounters .yair-mail {
+#tb-toolbarcounters .dlo-mail {
 	top: 1px;
 	margin-left: 5px;
 }
@@ -136,12 +136,12 @@
 	content: '[0';
 }
 
-.res-floater-list .yair-privatemessages {
+.res-floater-list .dlo-privatemessages {
 	height: 6px;
 	top: 0;
 }
 
-.res-floater-list .yair-privatemessages.yair-havemail {
+.res-floater-list .dlo-privatemessages.dlo-havemail {
 	height: 9px;
 	top: 1px;
 }

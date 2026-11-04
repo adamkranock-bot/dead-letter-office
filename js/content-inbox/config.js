@@ -1,40 +1,40 @@
 (function () {
-	yair.cfg.deleted = {
+	dlo.cfg.deleted = {
 		add: function (id) {
-			if (yair.cfg.data.deleted.indexOf(id) >= 0) return;
-			yair.cfg.data.deleted.push(id);
-			yair.proxy(['yair_cfg_deleted', 'add'], [id]);
+			if (dlo.cfg.data.deleted.indexOf(id) >= 0) return;
+			dlo.cfg.data.deleted.push(id);
+			dlo.proxy(['dlo_cfg_deleted', 'add'], [id]);
 		}
 		, remove: function (id) {
-			yair.proxy(['yair_cfg_deleted', 'remove'], [id]);
+			dlo.proxy(['dlo_cfg_deleted', 'remove'], [id]);
 			var index;
-			while ((index = yair.cfg.data.deleted.indexOf(id)) >= 0) {
-				yair.cfg.data.deleted.splice(index, 1);
+			while ((index = dlo.cfg.data.deleted.indexOf(id)) >= 0) {
+				dlo.cfg.data.deleted.splice(index, 1);
 			}
 		}
 		, contains: function (id) {
-			return (yair.cfg.data.deleted.indexOf(id) >= 0);
+			return (dlo.cfg.data.deleted.indexOf(id) >= 0);
 		}
 	};
-	yair.cfg.saved = {
+	dlo.cfg.saved = {
 		add: function (id) {
-			if (yair.cfg.data.saved.indexOf(id) >= 0) return;
-			yair.cfg.data.saved.push(id);
-			yair.proxy(['yair_cfg_saved', 'add'], [id]);
+			if (dlo.cfg.data.saved.indexOf(id) >= 0) return;
+			dlo.cfg.data.saved.push(id);
+			dlo.proxy(['dlo_cfg_saved', 'add'], [id]);
 		}
 		, remove: function (id) {
-			yair.proxy(['yair_cfg_saved', 'remove'], [id]);
+			dlo.proxy(['dlo_cfg_saved', 'remove'], [id]);
 			var index;
-			while ((index = yair.cfg.data.saved.indexOf(id)) >= 0) {
-				yair.cfg.data.saved.splice(index, 1);
+			while ((index = dlo.cfg.data.saved.indexOf(id)) >= 0) {
+				dlo.cfg.data.saved.splice(index, 1);
 			}
 		}
 		, contains: function (id) {
-			return (yair.cfg.data.saved.indexOf(id) >= 0);
+			return (dlo.cfg.data.saved.indexOf(id) >= 0);
 		}
 	};
-	yair.cfg.set = function (prop, value) {
-		yair.cfg.data[prop] = value;
-		yair.proxy(['yair', 'cfg_set'], [prop, value]);
+	dlo.cfg.set = function (prop, value) {
+		dlo.cfg.data[prop] = value;
+		dlo.proxy(['dlo', 'cfg_set'], [prop, value]);
 	};
 })();

@@ -1,4 +1,4 @@
-var yair = {
+var dlo = {
 	model: {}
 	, view: {}
 	, controller: {}

@@ -1,50 +1,50 @@
-yair.templates.add({
+dlo.templates.add({
 	alert_alert: chrome.runtime.getURL('template/alert_alert.html')
 	, alert_html: chrome.runtime.getURL('template/alert_html.html')
 	, alert_confirm: chrome.runtime.getURL('template/alert_confirm.html')
 });
-yair.alerts = {
+dlo.alerts = {
 	html: function (title, html, buttons, clickToDismiss) {
-		var $alert = $(yair.templates.alert_html);
-		$alert.find('.yair-alert-title-text').text(title);
-		$alert.find('.yair-alert-message').html(html);
-		$alert.find('button.yair-alert-close').on('click', yair.view.hideOverlay);
-		var $buttons = $alert.find('.yair-alert-buttons');
+		var $alert = $(dlo.templates.alert_html);
+		$alert.find('.dlo-alert-title-text').text(title);
+		$alert.find('.dlo-alert-message').html(html);
+		$alert.find('button.dlo-alert-close').on('click', dlo.view.hideOverlay);
+		var $buttons = $alert.find('.dlo-alert-buttons');
 		if (typeof buttons === "object") {
 			var buttonTexts = Object.keys(buttons);
 			for (var i = 0; i < buttonTexts.length; i++) {
 				var text = buttonTexts[i];
 				var callback = buttons[text];
-				$('<button>').text(text).on('click', callback).on('click', yair.view.hideOverlay).appendTo($buttons);
+				$('<button>').text(text).on('click', callback).on('click', dlo.view.hideOverlay).appendTo($buttons);
 				$buttons.append(' ');
 			}
 		}
 		if (typeof clickToDismiss !== "boolean") clickToDismiss = true;
-		yair.$e.overlay.empty().append($alert);
-		yair.view.showOverlay(clickToDismiss);
+		dlo.$e.overlay.empty().append($alert);
+		dlo.view.showOverlay(clickToDismiss);
 		return $alert;
 	}
 	, error: function (title, message) {
-		yair.alerts.alert(title, message, false).addClass('yair-alert-error');
+		dlo.alerts.alert(title, message, false).addClass('dlo-alert-error');
 	}
 	, alert: function (title, message, clickToDismiss) {
-		var $alert = $(yair.templates.alert_alert);
-		$alert.find('.yair-alert-title-text').text(title);
-		$alert.find('.yair-alert-message').text(message);
-		$alert.find('button').on('click', yair.view.hideOverlay);
+		var $alert = $(dlo.templates.alert_alert);
+		$alert.find('.dlo-alert-title-text').text(title);
+		$alert.find('.dlo-alert-message').text(message);
+		$alert.find('button').on('click', dlo.view.hideOverlay);
 		if (typeof clickToDismiss !== "boolean") clickToDismiss = true;
-		yair.$e.overlay.empty().append($alert);
-		yair.view.showOverlay(clickToDismiss);
+		dlo.$e.overlay.empty().append($alert);
+		dlo.view.showOverlay(clickToDismiss);
 		return $alert;
 	}
 	, confirm: function (title, message, callback) {
-		var $alert = $(yair.templates.alert_confirm);
-		$alert.find('.yair-alert-title-text').text(title);
-		$alert.find('.yair-alert-message').text(message);
-		$alert.find('button').on('click', yair.view.hideOverlay);
-		$alert.find('.yair-confirm-yes').on('click', callback);
-		yair.$e.overlay.empty().append($alert);
-		yair.view.showOverlay(false);
+		var $alert = $(dlo.templates.alert_confirm);
+		$alert.find('.dlo-alert-title-text').text(title);
+		$alert.find('.dlo-alert-message').text(message);
+		$alert.find('button').on('click', dlo.view.hideOverlay);
+		$alert.find('.dlo-confirm-yes').on('click', callback);
+		dlo.$e.overlay.empty().append($alert);
+		dlo.view.showOverlay(false);
 		return $alert;
 	}
 }

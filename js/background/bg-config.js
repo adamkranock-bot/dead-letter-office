@@ -1,7 +1,7 @@
-// Per-user configuration, persisted in chrome.storage.local under YAIR_USER_CONFIG.
-// Functions on `yair.*` / `yair_cfg_*` are called through the proxy with
+// Per-user configuration, persisted in chrome.storage.local under DLO_USER_CONFIG.
+// Functions on `dlo.*` / `dlo_cfg_*` are called through the proxy with
 // `this` = {username, callback}.
-var yair_default_cfg = {
+var dlo_default_cfg = {
 	version: '0'
 	, pmInboxInitialized: false
 	, replyInboxInitialized: false
@@ -25,41 +25,41 @@ var yair_default_cfg = {
 	, indexStats: null
 };
 
-function yairAllUserCfgs() {
-	var all = yairStorage.get('YAIR_USER_CONFIG');
+function dloAllUserCfgs() {
+	var all = dloStorage.get(USER_CONFIG_KEY);
 	if (!all || typeof all !== 'object') {
 		all = {};
-		yairStorage.set('YAIR_USER_CONFIG', all);
+		dloStorage.set(USER_CONFIG_KEY, all);
 	}
 	return all;
 }
 
 // Returns the config object for a user, creating it (from a fresh copy of the
 // defaults, so users never share arrays) and filling in any missing keys.
-function yairUserCfg(username) {
-	var all = yairAllUserCfgs();
+function dloUserCfg(username) {
+	var all = dloAllUserCfgs();
 	if (typeof all[username] !== 'object' || all[username] === null) {
 		all[username] = {};
 	}
 	var cfg = all[username];
-	for (var attr in yair_default_cfg) {
+	for (var attr in dlo_default_cfg) {
 		if (typeof cfg[attr] === 'undefined') {
-			cfg[attr] = JSON.parse(JSON.stringify(yair_default_cfg[attr]));
+			cfg[attr] = JSON.parse(JSON.stringify(dlo_default_cfg[attr]));
 		}
 	}
 	return cfg;
 }
 
-function yairHasUserCfg(username) {
-	var all = yairStorage.get('YAIR_USER_CONFIG');
+function dloHasUserCfg(username) {
+	var all = dloStorage.get(USER_CONFIG_KEY);
 	return !!(all && all[username]);
 }
 
-function yair_cfg_save() {
-	return yairStorage.save('YAIR_USER_CONFIG');
+function dlo_cfg_save() {
+	return dloStorage.save(USER_CONFIG_KEY);
 }
 
-yair.cfg_import = function (cfg) {
+dlo.cfg_import = function (cfg) {
 	if (!cfg || typeof cfg !== 'object') return;
 	if (cfg.pmInboxInitialized instanceof Array) {
 		cfg.pmInboxInitialized = (cfg.pmInboxInitialized.indexOf(this.username) >= 0);
@@ -67,49 +67,49 @@ yair.cfg_import = function (cfg) {
 	if (cfg.replyInboxInitialized instanceof Array) {
 		cfg.replyInboxInitialized = (cfg.replyInboxInitialized.indexOf(this.username) >= 0);
 	}
-	yairAllUserCfgs()[this.username] = cfg;
-	yairUserCfg(this.username);
-	yair_cfg_save();
+	dloAllUserCfgs()[this.username] = cfg;
+	dloUserCfg(this.username);
+	dlo_cfg_save();
 };
-yair.cfg_set = function (prop, val) {
-	if (!Object.prototype.hasOwnProperty.call(yair_default_cfg, prop)) {
+dlo.cfg_set = function (prop, val) {
+	if (!Object.prototype.hasOwnProperty.call(dlo_default_cfg, prop)) {
 		throw new Error('Unknown config property: ' + prop);
 	}
-	yairUserCfg(this.username)[prop] = val;
-	yair_cfg_save();
+	dloUserCfg(this.username)[prop] = val;
+	dlo_cfg_save();
 	if (prop === 'inboxRefreshInterval') {
-		yairNotifications.setRefreshInterval(val);
+		dloNotifications.setRefreshInterval(val);
 	}
 	this.callback();
 };
-yair.cfg_user_get = function (prop, username) {
-	var cfg = yairUserCfg(username);
+dlo.cfg_user_get = function (prop, username) {
+	var cfg = dloUserCfg(username);
 	if (typeof prop === 'undefined') {
 		return cfg;
 	}
 	return cfg[prop];
 };
-yair.cfg_get = function (prop) {
-	return yair.cfg_user_get(prop, this.username);
+dlo.cfg_get = function (prop) {
+	return dlo.cfg_user_get(prop, this.username);
 };
 
-function yairCfgList(listName) {
+function dloCfgList(listName) {
 	return {
 		add: function (id) {
-			var list = yairUserCfg(this.username)[listName];
+			var list = dloUserCfg(this.username)[listName];
 			if (list.indexOf(id) >= 0) return;
 			list.push(id);
-			yair_cfg_save();
+			dlo_cfg_save();
 		}
 		, remove: function (id) {
-			var list = yairUserCfg(this.username)[listName];
+			var list = dloUserCfg(this.username)[listName];
 			var index;
 			while ((index = list.indexOf(id)) >= 0) {
 				list.splice(index, 1);
 			}
-			yair_cfg_save();
+			dlo_cfg_save();
 		}
 	};
 }
-var yair_cfg_deleted = yairCfgList('deleted');
-var yair_cfg_saved = yairCfgList('saved');
+var dlo_cfg_deleted = dloCfgList('deleted');
+var dlo_cfg_saved = dloCfgList('saved');

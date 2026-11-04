@@ -54,7 +54,7 @@ body {
 	--header-h: 60px;
 }
 
-body.yair-nightmode,
+body.dlo-nightmode,
 body.res-nightmode {
 	--paper: #131720;
 	--sheet: #1A1F2B;
@@ -79,18 +79,18 @@ body.res-nightmode {
 
 #classy-error, .footer-parent, .pagename, .debuginfo, #hsts_pixel, .res-floater-list { display: none; }
 
-body.yair-show-inbox, body.yair-show-saved, body.yair-show-archived,
-body.yair-show-modmail, body.yair-show-modsaved, body.yair-show-modarchived,
-body.yair-show-conversation { background: var(--paper); }
+body.dlo-show-inbox, body.dlo-show-saved, body.dlo-show-archived,
+body.dlo-show-modmail, body.dlo-show-modsaved, body.dlo-show-modarchived,
+body.dlo-show-conversation { background: var(--paper); }
 
 .content { margin: 0 !important; min-height: calc(100vh - 65px); background: var(--paper); }
 
-.yair-nightmode #header { background: #1A1F2B !important; border-color: var(--rule) !important; }
-.yair-nightmode #header #sr-header-area, .yair-nightmode #header #header-bottom-left { background: #131720 !important; }
-.yair-nightmode #header #header-bottom-right { background: #1A1F2B !important; }
-.yair-nightmode #header a, .yair-nightmode #header #sr-header-area .sr-bar a { color: var(--ink-soft) !important; }
-.yair-nightmode #header #sr-header-area .drop-choices a { color: var(--ink-soft) !important; background: #1A1F2B !important; }
-.yair-nightmode #header #sr-more-link { background: #131720 !important; color: var(--ink-soft) !important; }
+.dlo-nightmode #header { background: #1A1F2B !important; border-color: var(--rule) !important; }
+.dlo-nightmode #header #sr-header-area, .dlo-nightmode #header #header-bottom-left { background: #131720 !important; }
+.dlo-nightmode #header #header-bottom-right { background: #1A1F2B !important; }
+.dlo-nightmode #header a, .dlo-nightmode #header #sr-header-area .sr-bar a { color: var(--ink-soft) !important; }
+.dlo-nightmode #header #sr-header-area .drop-choices a { color: var(--ink-soft) !important; background: #1A1F2B !important; }
+.dlo-nightmode #header #sr-more-link { background: #131720 !important; color: var(--ink-soft) !important; }
 
 .author-tooltip__head { padding: 8px !important; background-color: unset !important; border: unset !important; }
 .author-tooltip__profile-link, .author-tooltip__link-list, .author-tooltip__avatar, .author-tooltip__title { display: none !important; }
@@ -99,7 +99,7 @@ body.yair-show-conversation { background: var(--paper); }
 /* Base                                                                */
 /* ------------------------------------------------------------------ */
 
-.yair-content {
+.dlo-content {
 	font-family: var(--ui);
 	font-size: 14px;
 	line-height: 1.45;
@@ -107,16 +107,16 @@ body.yair-show-conversation { background: var(--paper); }
 	background: var(--paper);
 	-webkit-font-smoothing: antialiased;
 }
-.yair-content *, .yair-overlay * { box-sizing: border-box; }
-.yair-content a { color: inherit; text-decoration: none; }
-.yair-content button { font-family: inherit; }
-.yair-content h1, .yair-content h2, .yair-content h3, .yair-content h4 { font-weight: 600; }
-.yair-hide { display: none !important; }
+.dlo-content *, .dlo-overlay * { box-sizing: border-box; }
+.dlo-content a { color: inherit; text-decoration: none; }
+.dlo-content button { font-family: inherit; }
+.dlo-content h1, .dlo-content h2, .dlo-content h3, .dlo-content h4 { font-weight: 600; }
+.dlo-hide { display: none !important; }
 
-.yair-content, .yair-body, .yair-sidebar-panel, .yair-main-panel { min-height: inherit; }
-.yair-body { display: flex; align-items: stretch; }
+.dlo-content, .dlo-body, .dlo-sidebar-panel, .dlo-main-panel { min-height: inherit; }
+.dlo-body { display: flex; align-items: stretch; }
 
-:is(.yair-content, .yair-overlay) :focus-visible {
+:is(.dlo-content, .dlo-overlay) :focus-visible {
 	outline: 2px solid var(--air-blue);
 	outline-offset: 2px;
 	border-radius: 4px;
@@ -143,8 +143,8 @@ body.yair-show-conversation { background: var(--paper); }
 }
 button.icon { appearance: none; }
 .icon-inbox { --i: var(--i-inbox); }
-.icon-saved, .yair-save-toggle { --i: var(--i-saved); }
-.yair-save-toggle.yair-saved { --i: var(--i-saved-on); color: #D9A21B !important; }
+.icon-saved, .dlo-save-toggle { --i: var(--i-saved); }
+.dlo-save-toggle.dlo-saved { --i: var(--i-saved-on); color: #D9A21B !important; }
 .icon-archive { --i: var(--i-archive); }
 .icon-restore { --i: var(--i-restore); }
 .icon-markRead { --i: var(--i-markRead); }
@@ -152,12 +152,12 @@ button.icon { appearance: none; }
 .icon-config { --i: var(--i-config); }
 .icon-modmail { --i: var(--i-modmail); }
 .icon-export { --i: var(--i-export); }
-.yair-last-author { --i: var(--i-received); cursor: default; }
-.yair-last-author.yair-last-sent { --i: var(--i-sent); }
-.yair-expand-collapse-btn { --i: var(--i-collapse); }
-.yair-collapsed .yair-expand-collapse-btn { --i: var(--i-expand); }
-.yair-expand-all-btn { --i: var(--i-expandAll); }
-.yair-expand-all-btn.yair-all-expanded { --i: var(--i-collapse); }
+.dlo-last-author { --i: var(--i-received); cursor: default; }
+.dlo-last-author.dlo-last-sent { --i: var(--i-sent); }
+.dlo-expand-collapse-btn { --i: var(--i-collapse); }
+.dlo-collapsed .dlo-expand-collapse-btn { --i: var(--i-expand); }
+.dlo-expand-all-btn { --i: var(--i-expandAll); }
+.dlo-expand-all-btn.dlo-all-expanded { --i: var(--i-collapse); }
 
 /* ------------------------------------------------------------------ */
 /* Checkboxes                                                          */
@@ -204,28 +204,28 @@ button.icon { appearance: none; }
 /* Sidebar                                                             */
 /* ------------------------------------------------------------------ */
 
-.yair-sidebar-panel {
+.dlo-sidebar-panel {
 	flex: none;
 	width: var(--sidebar);
 	min-width: 0;
 	border-right: 1px solid var(--rule);
 	background: var(--paper);
 }
-.yair-sidebar-panel .yair-sidebar-menu {
+.dlo-sidebar-panel .dlo-sidebar-menu {
 	position: sticky;
 	top: 0;
 	padding: 18px 14px 80px;
 	max-height: 100vh;
 	overflow-y: auto;
 }
-.yair-sidebar-title {
+.dlo-sidebar-title {
 	display: flex;
 	align-items: flex-start;
 	justify-content: space-between;
 	padding: 2px 8px 18px;
 	margin-bottom: 6px;
 }
-.yair-sidebar-title .title-message a.dlo-wordmark {
+.dlo-sidebar-title .title-message a.dlo-wordmark {
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -245,7 +245,7 @@ button.icon { appearance: none; }
 .dlo-name { display: block; }
 .dlo-full { display: block; max-width: 7.2em; }
 .dlo-short { display: none; }
-.yair-sidebar-title .title-message .yair-tagline {
+.dlo-sidebar-title .title-message .dlo-tagline {
 	display: block;
 	margin-top: 8px;
 	font-family: var(--ui);
@@ -253,8 +253,8 @@ button.icon { appearance: none; }
 	color: var(--postmark);
 }
 
-.yair-sidebar-nav { margin: 0 0 14px; padding: 0; border: 0; }
-.yair-sidebar-nav .nav-item {
+.dlo-sidebar-nav { margin: 0 0 14px; padding: 0; border: 0; }
+.dlo-sidebar-nav .nav-item {
 	display: flex;
 	align-items: center;
 	gap: 12px;
@@ -265,23 +265,23 @@ button.icon { appearance: none; }
 	cursor: pointer;
 	font-weight: 500;
 }
-.yair-sidebar-nav .nav-item .title { margin: 0; }
-.yair-sidebar-nav .nav-item:hover { background: var(--hover); color: var(--ink); }
-.yair-sidebar-nav .nav-item .icon { color: currentColor; }
+.dlo-sidebar-nav .nav-item .title { margin: 0; }
+.dlo-sidebar-nav .nav-item:hover { background: var(--hover); color: var(--ink); }
+.dlo-sidebar-nav .nav-item .icon { color: currentColor; }
 
-.yair-show-inbox .inbox .yair-inbox,
-.yair-show-saved .inbox .yair-saved,
-.yair-show-archived .inbox .yair-archived,
-.yair-show-modmail .modmail-inbox,
-.yair-show-modsaved .modmail.yair-saved,
-.yair-show-modarchived .modmail.yair-archived {
+.dlo-show-inbox .inbox .dlo-inbox,
+.dlo-show-saved .inbox .dlo-saved,
+.dlo-show-archived .inbox .dlo-archived,
+.dlo-show-modmail .modmail-inbox,
+.dlo-show-modsaved .modmail.dlo-saved,
+.dlo-show-modarchived .modmail.dlo-archived {
 	background: var(--sheet);
 	color: var(--ink);
 	font-weight: 600;
 	box-shadow: 0 0 0 1px var(--rule);
 }
 
-.yair-sidebar-label {
+.dlo-sidebar-label {
 	margin: 18px 10px 6px;
 	font-size: 12px;
 	font-weight: 600;
@@ -289,15 +289,15 @@ button.icon { appearance: none; }
 	cursor: default;
 }
 
-.yair-sidebar-options {
+.dlo-sidebar-options {
 	margin: 4px 0 0;
 	padding: 6px;
 	border: 1px solid var(--rule);
 	border-radius: 10px;
 	background: var(--sheet);
 }
-.yair-sidebar-options .yair-sidebar-label { margin: 4px 6px 6px; }
-.yair-sidebar-options .options-item {
+.dlo-sidebar-options .dlo-sidebar-label { margin: 4px 6px 6px; }
+.dlo-sidebar-options .options-item {
 	display: flex;
 	align-items: center;
 	gap: 10px;
@@ -306,10 +306,10 @@ button.icon { appearance: none; }
 	color: var(--ink-soft);
 	cursor: pointer;
 }
-.yair-sidebar-options .options-item .icon { color: currentColor; }
-.yair-sidebar-options .options-item:hover { background: var(--hover); color: var(--ink); }
+.dlo-sidebar-options .options-item .icon { color: currentColor; }
+.dlo-sidebar-options .options-item:hover { background: var(--hover); color: var(--ink); }
 
-.yair-sidebar-footer {
+.dlo-sidebar-footer {
 	position: fixed;
 	bottom: 0;
 	width: var(--sidebar);
@@ -317,7 +317,7 @@ button.icon { appearance: none; }
 	border-top: 1px solid var(--rule);
 	background: var(--paper);
 }
-.yair-sidebar-footer #YAIRShowConfig {
+.dlo-sidebar-footer #DLOShowConfig {
 	display: flex;
 	align-items: center;
 	gap: 12px;
@@ -327,14 +327,14 @@ button.icon { appearance: none; }
 	font-weight: 500;
 	cursor: pointer;
 }
-.yair-sidebar-footer #YAIRShowConfig:hover { background: var(--hover); color: var(--ink); }
-.yair-sidebar-footer .icon { color: currentColor; }
+.dlo-sidebar-footer #DLOShowConfig:hover { background: var(--hover); color: var(--ink); }
+.dlo-sidebar-footer .icon { color: currentColor; }
 
 /* ------------------------------------------------------------------ */
 /* Main panel and search                                               */
 /* ------------------------------------------------------------------ */
 
-.yair-main-panel {
+.dlo-main-panel {
 	flex: 1;
 	min-width: 0;
 	width: auto;
@@ -342,7 +342,7 @@ button.icon { appearance: none; }
 	padding-bottom: 48px;
 }
 
-.yair-header-panel {
+.dlo-header-panel {
 	position: sticky;
 	top: 0;
 	z-index: 20;
@@ -356,8 +356,8 @@ button.icon { appearance: none; }
 	backdrop-filter: blur(8px);
 	border-bottom: 1px solid var(--rule);
 }
-.yair-search-panel { flex: 1; display: flex; max-width: 720px; }
-.yair-search-container {
+.dlo-search-panel { flex: 1; display: flex; max-width: 720px; }
+.dlo-search-container {
 	position: relative;
 	flex: 1;
 	display: flex;
@@ -369,8 +369,8 @@ button.icon { appearance: none; }
 	background: var(--sheet);
 	transition: border-color .15s, box-shadow .15s;
 }
-.yair-search-container:focus-within { border-color: var(--air-blue); box-shadow: 0 0 0 3px var(--focus); }
-#YAIRSearchInput {
+.dlo-search-container:focus-within { border-color: var(--air-blue); box-shadow: 0 0 0 3px var(--focus); }
+#DLOSearchInput {
 	flex: 1;
 	min-width: 0;
 	height: 100%;
@@ -382,9 +382,9 @@ button.icon { appearance: none; }
 	font: 14px var(--ui);
 	outline: none !important;
 }
-#YAIRSearchInput::placeholder { color: var(--postmark); }
-#YAIRSearchButton { display: none; }
-.yair-search-clear {
+#DLOSearchInput::placeholder { color: var(--postmark); }
+#DLOSearchButton { display: none; }
+.dlo-search-clear {
 	position: absolute;
 	right: 8px;
 	top: 50%;
@@ -400,9 +400,9 @@ button.icon { appearance: none; }
 	line-height: 22px;
 	cursor: pointer;
 }
-.yair-search-clear:hover { background: var(--hover); color: var(--ink); }
+.dlo-search-clear:hover { background: var(--hover); color: var(--ink); }
 
-.yair-select-all-toggle { margin: 0; min-width: 0; font-size: 13px; white-space: nowrap; }
+.dlo-select-all-toggle { margin: 0; min-width: 0; font-size: 13px; white-space: nowrap; }
 
 /* Indexing problem, shown above the list without hiding it */
 .dlo-banner {
@@ -434,13 +434,13 @@ button.icon { appearance: none; }
 	cursor: pointer;
 }
 .dlo-banner-close:hover { background: var(--hover); color: var(--ink); }
-.yair-show-conversation .dlo-banner { display: none; }
+.dlo-show-conversation .dlo-banner { display: none; }
 
 /* ------------------------------------------------------------------ */
 /* Sort and filter bar                                                 */
 /* ------------------------------------------------------------------ */
 
-.yair-list-toolbar {
+.dlo-list-toolbar {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -450,11 +450,11 @@ button.icon { appearance: none; }
 	font-size: 13px;
 	color: var(--ink-soft);
 }
-.yair-show-conversation .yair-list-toolbar { display: none; }
-.yair-tool { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
-.yair-tool-label { color: var(--postmark); font-weight: 500; white-space: nowrap; }
-.yair-list-toolbar select,
-.yair-list-toolbar input[type="number"] {
+.dlo-show-conversation .dlo-list-toolbar { display: none; }
+.dlo-tool { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.dlo-tool-label { color: var(--postmark); font-weight: 500; white-space: nowrap; }
+.dlo-list-toolbar select,
+.dlo-list-toolbar input[type="number"] {
 	height: 30px;
 	margin: 0;
 	padding: 0 8px;
@@ -464,19 +464,19 @@ button.icon { appearance: none; }
 	color: var(--ink);
 	font: 500 13px var(--ui);
 }
-.yair-list-toolbar select { padding-right: 4px; cursor: pointer; }
-.yair-list-toolbar input[type="number"] { width: 58px; -moz-appearance: textfield; }
-.yair-list-toolbar input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
-.yair-list-toolbar select:focus, .yair-list-toolbar input:focus { outline: none; border-color: var(--air-blue); box-shadow: 0 0 0 3px var(--focus); }
-.yair-length-tool { gap: 10px; }
-.yair-length-presets {
+.dlo-list-toolbar select { padding-right: 4px; cursor: pointer; }
+.dlo-list-toolbar input[type="number"] { width: 58px; -moz-appearance: textfield; }
+.dlo-list-toolbar input[type="number"]::-webkit-inner-spin-button { opacity: .5; }
+.dlo-list-toolbar select:focus, .dlo-list-toolbar input:focus { outline: none; border-color: var(--air-blue); box-shadow: 0 0 0 3px var(--focus); }
+.dlo-length-tool { gap: 10px; }
+.dlo-length-presets {
 	display: inline-flex;
 	padding: 2px;
 	border: 1px solid var(--rule-strong);
 	border-radius: 8px;
 	background: var(--sheet);
 }
-.yair-length-preset {
+.dlo-length-preset {
 	height: 24px;
 	min-width: 34px;
 	padding: 0 8px;
@@ -488,18 +488,18 @@ button.icon { appearance: none; }
 	font-variant-numeric: tabular-nums;
 	cursor: pointer;
 }
-.yair-length-preset:hover { background: var(--hover); color: var(--ink); }
-.yair-length-preset.yair-active { background: var(--air-blue); color: var(--air-blue-ink); }
-.yair-length-range { display: inline-flex; align-items: center; gap: 6px; color: var(--postmark); }
-#YAIRYear option, #YAIRLastFrom option, #YAIRSort option { color: initial; }
+.dlo-length-preset:hover { background: var(--hover); color: var(--ink); }
+.dlo-length-preset.dlo-active { background: var(--air-blue); color: var(--air-blue-ink); }
+.dlo-length-range { display: inline-flex; align-items: center; gap: 6px; color: var(--postmark); }
+#DLOYear option, #DLOLastFrom option, #DLOSort option { color: initial; }
 
 /* ------------------------------------------------------------------ */
 /* Conversation list                                                   */
 /* ------------------------------------------------------------------ */
 
-.yair-inbox-panel { padding: 0 24px; }
+.dlo-inbox-panel { padding: 0 24px; }
 
-.yair-summary {
+.dlo-summary {
 	display: flex;
 	align-items: baseline;
 	flex-wrap: wrap;
@@ -508,7 +508,7 @@ button.icon { appearance: none; }
 	font-size: 13px;
 	color: var(--postmark);
 }
-.yair-summary-clear {
+.dlo-summary-clear {
 	padding: 0;
 	border: 0;
 	background: none;
@@ -516,10 +516,10 @@ button.icon { appearance: none; }
 	font: 600 13px var(--ui);
 	cursor: pointer;
 }
-.yair-summary-clear:hover { text-decoration: underline; }
+.dlo-summary-clear:hover { text-decoration: underline; }
 
 /* The archive's spine: big year numerals that stay pinned while you scroll */
-.yair-year-divider {
+.dlo-year-divider {
 	position: sticky;
 	top: var(--header-h);
 	z-index: 5;
@@ -535,19 +535,19 @@ button.icon { appearance: none; }
 	color: var(--ink-soft);
 	border-bottom: 1px solid var(--rule);
 }
-.yair-summary + .yair-year-divider { margin-top: 10px; }
+.dlo-summary + .dlo-year-divider { margin-top: 10px; }
 /* Headings that are words (thread length, subreddits) rather than years or letters */
-.yair-year-divider.yair-group-text { font-size: 24px; padding-top: 14px; }
+.dlo-year-divider.dlo-group-text { font-size: 24px; padding-top: 14px; }
 
-.yair-empty-state, .yair-load-more {
+.dlo-empty-state, .dlo-load-more {
 	margin: 56px 0;
 	text-align: center;
 	color: var(--postmark);
 	font-size: 14px;
 }
-.yair-load-more { margin: 18px 0; padding: 10px; background: none; border: 0; font-style: normal; }
+.dlo-load-more { margin: 18px 0; padding: 10px; background: none; border: 0; font-style: normal; }
 
-.yair-message-row {
+.dlo-message-row {
 	position: relative;
 	display: flex;
 	align-items: stretch;
@@ -559,21 +559,21 @@ button.icon { appearance: none; }
 	cursor: pointer;
 	transition: background-color .1s;
 }
-.yair-year-divider + .yair-message-row,
-.yair-summary + .yair-message-row,
-.yair-message-row:first-child { margin-top: 12px; border-top-width: 1px; border-radius: 10px 10px 0 0; }
-.yair-message-row:has(+ .yair-year-divider),
-.yair-message-row:has(+ .yair-load-more),
-.yair-message-row:last-child { border-radius: 0 0 10px 10px; }
-.yair-year-divider + .yair-message-row:has(+ .yair-year-divider),
-.yair-year-divider + .yair-message-row:last-child { border-radius: 10px; }
-.yair-message-row:hover { background: var(--hover); }
-.yair-message-row.yair-modmail { background: linear-gradient(var(--mod-tint), var(--mod-tint)), var(--sheet); }
-.yair-message-row.yair-modmail:hover { background: linear-gradient(var(--mod-tint), var(--mod-tint)), var(--hover); }
-.yair-message-row.yair-row-checked { background: color-mix(in srgb, var(--air-blue) 9%, var(--sheet)); }
+.dlo-year-divider + .dlo-message-row,
+.dlo-summary + .dlo-message-row,
+.dlo-message-row:first-child { margin-top: 12px; border-top-width: 1px; border-radius: 10px 10px 0 0; }
+.dlo-message-row:has(+ .dlo-year-divider),
+.dlo-message-row:has(+ .dlo-load-more),
+.dlo-message-row:last-child { border-radius: 0 0 10px 10px; }
+.dlo-year-divider + .dlo-message-row:has(+ .dlo-year-divider),
+.dlo-year-divider + .dlo-message-row:last-child { border-radius: 10px; }
+.dlo-message-row:hover { background: var(--hover); }
+.dlo-message-row.dlo-modmail { background: linear-gradient(var(--mod-tint), var(--mod-tint)), var(--sheet); }
+.dlo-message-row.dlo-modmail:hover { background: linear-gradient(var(--mod-tint), var(--mod-tint)), var(--hover); }
+.dlo-message-row.dlo-row-checked { background: color-mix(in srgb, var(--air-blue) 9%, var(--sheet)); }
 
 /* Unread: an airmail-red edge, and the sender in full weight */
-.yair-message-row.yair-unread::before {
+.dlo-message-row.dlo-unread::before {
 	content: '';
 	position: absolute;
 	left: -1px;
@@ -582,10 +582,10 @@ button.icon { appearance: none; }
 	width: 3px;
 	background: var(--air-red);
 }
-.yair-message-row.yair-unread .yair-correspondent a,
-.yair-message-row.yair-unread .yair-subject { font-weight: 700; color: var(--ink); }
+.dlo-message-row.dlo-unread .dlo-correspondent a,
+.dlo-message-row.dlo-unread .dlo-subject { font-weight: 700; color: var(--ink); }
 
-.yair-message-row-control {
+.dlo-message-row-control {
 	flex: none;
 	display: flex;
 	flex-direction: column;
@@ -597,22 +597,22 @@ button.icon { appearance: none; }
 	background: none;
 	cursor: default;
 }
-.yair-message-row-control .yair-checkbox,
-.yair-message-row-control .yair-save-toggle { visibility: hidden; }
-.yair-message-row:hover .yair-message-row-control .yair-checkbox,
-.yair-message-row:hover .yair-message-row-control .yair-save-toggle,
-.yair-message-row.yair-row-focused .yair-message-row-control .yair-checkbox,
-.yair-message-row-control .yair-save-toggle.yair-saved,
-.yair-message-row-control .styled-checkbox:checked + label,
-.yair-message-row.yair-row-checked .yair-message-row-control .yair-checkbox { visibility: visible; }
-.yair-message-row-control .styled-checkbox + label { gap: 0; }
-.yair-message-row-control .yair-last-author { display: none; }
-.yair-message-row-control .icon { width: 16px; height: 16px; -webkit-mask-size: 16px; mask-size: 16px; }
-.yair-message-row-control .yair-save-toggle:hover { color: #D9A21B; }
+.dlo-message-row-control .dlo-checkbox,
+.dlo-message-row-control .dlo-save-toggle { visibility: hidden; }
+.dlo-message-row:hover .dlo-message-row-control .dlo-checkbox,
+.dlo-message-row:hover .dlo-message-row-control .dlo-save-toggle,
+.dlo-message-row.dlo-row-focused .dlo-message-row-control .dlo-checkbox,
+.dlo-message-row-control .dlo-save-toggle.dlo-saved,
+.dlo-message-row-control .styled-checkbox:checked + label,
+.dlo-message-row.dlo-row-checked .dlo-message-row-control .dlo-checkbox { visibility: visible; }
+.dlo-message-row-control .styled-checkbox + label { gap: 0; }
+.dlo-message-row-control .dlo-last-author { display: none; }
+.dlo-message-row-control .icon { width: 16px; height: 16px; -webkit-mask-size: 16px; mask-size: 16px; }
+.dlo-message-row-control .dlo-save-toggle:hover { color: #D9A21B; }
 
 /* Mail-client grid: sender | subject over snippet | date */
-.yair-mrc-wrapper { flex: 1; min-width: 0; height: auto; padding: 0; }
-.yair-message-row-content {
+.dlo-mrc-wrapper { flex: 1; min-width: 0; height: auto; padding: 0; }
+.dlo-message-row-content {
 	display: grid;
 	grid-template-columns: minmax(120px, 190px) minmax(0, 1fr) auto;
 	grid-template-areas: "who subject when" "who text when";
@@ -620,8 +620,8 @@ button.icon { appearance: none; }
 	row-gap: 2px;
 	padding: 12px 18px 12px 4px;
 }
-.yair-subject-line, .yair-subject-left, .yair-subject-right, .yair-subject-text { display: contents; }
-.yair-correspondent {
+.dlo-subject-line, .dlo-subject-left, .dlo-subject-right, .dlo-subject-text { display: contents; }
+.dlo-correspondent {
 	grid-area: who;
 	align-self: start;
 	min-width: 0;
@@ -630,10 +630,10 @@ button.icon { appearance: none; }
 	text-overflow: ellipsis;
 	padding-top: 1px;
 }
-.yair-correspondent a.author { font-weight: 600; color: var(--ink); margin: 0; }
-.yair-correspondent a.author:hover { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
-.yair-seperator { display: none; }
-.yair-subject {
+.dlo-correspondent a.author { font-weight: 600; color: var(--ink); margin: 0; }
+.dlo-correspondent a.author:hover { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
+.dlo-seperator { display: none; }
+.dlo-subject {
 	grid-area: subject;
 	min-width: 0;
 	overflow: hidden;
@@ -642,7 +642,7 @@ button.icon { appearance: none; }
 	font-weight: 500;
 	color: var(--ink);
 }
-.yair-text {
+.dlo-text {
 	grid-area: text;
 	min-width: 0;
 	overflow: hidden;
@@ -652,7 +652,7 @@ button.icon { appearance: none; }
 	color: var(--postmark);
 	font-size: 13px;
 }
-.yair-datetime {
+.dlo-datetime {
 	grid-area: when;
 	align-self: start;
 	padding-top: 1px;
@@ -662,8 +662,8 @@ button.icon { appearance: none; }
 	white-space: nowrap;
 	text-align: right;
 }
-.yair-unread .yair-datetime { color: var(--ink); font-weight: 600; }
-.yair-message-buttons {
+.dlo-unread .dlo-datetime { color: var(--ink); font-weight: 600; }
+.dlo-message-buttons {
 	grid-area: when;
 	align-self: start;
 	display: none;
@@ -671,11 +671,11 @@ button.icon { appearance: none; }
 	justify-self: end;
 	margin-top: -4px;
 }
-.yair-message-row:hover .yair-datetime,
-.yair-message-row.yair-row-focused .yair-datetime { visibility: hidden; }
-.yair-message-row:hover .yair-message-buttons,
-.yair-message-row.yair-row-focused .yair-message-buttons { display: flex; }
-.yair-message-buttons .icon,
+.dlo-message-row:hover .dlo-datetime,
+.dlo-message-row.dlo-row-focused .dlo-datetime { visibility: hidden; }
+.dlo-message-row:hover .dlo-message-buttons,
+.dlo-message-row.dlo-row-focused .dlo-message-buttons { display: flex; }
+.dlo-message-buttons .icon,
 .conversation-header-right .icon {
 	width: 30px;
 	height: 30px;
@@ -684,12 +684,12 @@ button.icon { appearance: none; }
 	-webkit-mask-size: 18px;
 	mask-size: 18px;
 }
-.yair-message-buttons .icon:hover,
+.dlo-message-buttons .icon:hover,
 .conversation-header-right .icon:hover { color: var(--air-blue); }
-.yair-message-row.yair-unread .icon-markUnread,
-.yair-message-row.yair-read .icon-markRead { display: none; }
+.dlo-message-row.dlo-unread .icon-markUnread,
+.dlo-message-row.dlo-read .icon-markRead { display: none; }
 
-.yair-message-count {
+.dlo-message-count {
 	display: inline-block;
 	margin-left: 6px;
 	padding: 0 6px;
@@ -701,10 +701,10 @@ button.icon { appearance: none; }
 	line-height: 18px;
 	vertical-align: 1px;
 }
-.yair-message-row:hover .yair-message-count { background: var(--sheet); }
+.dlo-message-row:hover .dlo-message-count { background: var(--sheet); }
 
-.yair-inbox-panel mark,
-.yair-conversation mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+.dlo-inbox-panel mark,
+.dlo-conversation mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
 
 /* Search results: excerpt of the matching message, and how many matched */
 .dlo-snippet-author { font-weight: 600; color: var(--ink-soft); }
@@ -748,11 +748,11 @@ button.icon { appearance: none; }
 }
 .dlo-findbar-clear { font-size: 12.5px; padding: 0 10px; color: var(--air-blue); }
 .dlo-findbar-btn:hover, .dlo-findbar-clear:hover { background: var(--hover); color: var(--ink); }
-.yair-conversation mark.dlo-current { background: var(--air-red); color: #fff; box-shadow: 0 0 0 2px var(--air-red); }
+.dlo-conversation mark.dlo-current { background: var(--air-red); color: #fff; box-shadow: 0 0 0 2px var(--air-red); }
 .dlo-search-hit.dlo-current { box-shadow: inset 3px 0 0 var(--air-red); }
 
 /* Cheat-sheet under the empty search box */
-.yair-search-help {
+.dlo-search-help {
 	display: none;
 	position: absolute;
 	top: calc(100% + 6px);
@@ -767,17 +767,17 @@ button.icon { appearance: none; }
 	font-size: 12.5px;
 	color: var(--ink-soft);
 }
-.yair-search-container:focus-within #YAIRSearchInput:placeholder-shown ~ .yair-search-help { display: block; }
+.dlo-search-container:focus-within #DLOSearchInput:placeholder-shown ~ .dlo-search-help { display: block; }
 .dlo-help-title { margin-bottom: 6px; font-weight: 600; color: var(--ink); }
-.yair-search-help dl {
+.dlo-search-help dl {
 	display: grid;
 	grid-template-columns: auto 1fr;
 	gap: 5px 16px;
 	margin: 0;
 }
-.yair-search-help dt { margin: 0; white-space: nowrap; }
-.yair-search-help dd { margin: 0; color: var(--postmark); }
-.yair-search-help code {
+.dlo-search-help dt { margin: 0; white-space: nowrap; }
+.dlo-search-help dd { margin: 0; color: var(--postmark); }
+.dlo-search-help code {
 	padding: 1px 5px;
 	border-radius: 4px;
 	background: var(--hover);
@@ -785,26 +785,26 @@ button.icon { appearance: none; }
 	color: var(--ink);
 }
 
-.yair-message-row.yair-row-focused { box-shadow: inset 0 0 0 2px var(--air-blue); z-index: 1; }
-.yair-message-row:focus { outline: none; }
+.dlo-message-row.dlo-row-focused { box-shadow: inset 0 0 0 2px var(--air-blue); z-index: 1; }
+.dlo-message-row:focus { outline: none; }
 
 /* Folder-specific actions */
-.yair-show-inbox #YAIRBulkRestore, .yair-show-inbox .icon-restore,
-.yair-show-saved #YAIRBulkRestore, .yair-show-saved .icon-restore,
-.yair-show-modmail #YAIRBulkRestore, .yair-show-modmail .icon-restore,
-.yair-show-modsaved #YAIRBulkRestore, .yair-show-modsaved .icon-restore { display: none; }
-.yair-show-archived #YAIRBulkDelete, .yair-show-archived .yair-message-row .icon-archive,
-.yair-show-modarchived #YAIRBulkDelete, .yair-show-modarchived .yair-message-row .icon-archive { display: none; }
-.yair-sidebar-nav .nav-item .icon-archive, .yair-sidebar-nav .nav-item .icon-restore { display: inline-block !important; }
-.yair-show-conversation .yair-header-panel { display: none; }
+.dlo-show-inbox #DLOBulkRestore, .dlo-show-inbox .icon-restore,
+.dlo-show-saved #DLOBulkRestore, .dlo-show-saved .icon-restore,
+.dlo-show-modmail #DLOBulkRestore, .dlo-show-modmail .icon-restore,
+.dlo-show-modsaved #DLOBulkRestore, .dlo-show-modsaved .icon-restore { display: none; }
+.dlo-show-archived #DLOBulkDelete, .dlo-show-archived .dlo-message-row .icon-archive,
+.dlo-show-modarchived #DLOBulkDelete, .dlo-show-modarchived .dlo-message-row .icon-archive { display: none; }
+.dlo-sidebar-nav .nav-item .icon-archive, .dlo-sidebar-nav .nav-item .icon-restore { display: inline-block !important; }
+.dlo-show-conversation .dlo-header-panel { display: none; }
 
 /* ------------------------------------------------------------------ */
 /* Conversation: a letter sheet with an airmail edge                   */
 /* ------------------------------------------------------------------ */
 
-.yair-conversation { max-width: 780px; margin: 0 auto; padding: 0 24px 40px; }
+.dlo-conversation { max-width: 780px; margin: 0 auto; padding: 0 24px 40px; }
 
-.yair-conversation-header {
+.dlo-conversation-header {
 	position: sticky;
 	top: 0;
 	z-index: 20;
@@ -820,10 +820,10 @@ button.icon { appearance: none; }
 	backdrop-filter: blur(8px);
 	border-bottom: 1px solid var(--rule);
 }
-.yair-title-container { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
-.yair-conversation-header { flex-wrap: wrap; }
-.yair-title-container .yair-save-toggle { width: 22px; height: 22px; -webkit-mask-size: 20px; mask-size: 20px; }
-.yair-conversation-title {
+.dlo-title-container { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.dlo-conversation-header { flex-wrap: wrap; }
+.dlo-title-container .dlo-save-toggle { width: 22px; height: 22px; -webkit-mask-size: 20px; mask-size: 20px; }
+.dlo-conversation-title {
 	min-width: 0;
 	margin: 0;
 	padding: 0;
@@ -838,9 +838,9 @@ button.icon { appearance: none; }
 }
 .conversation-header-right { display: flex; align-items: center; gap: 2px; float: none; margin: 0; min-width: 0 !important; }
 .conversation-header-right .icon { background: currentColor; }
-.conversation-header-right .yair-expand-all-btn { background-position: 0 0 !important; }
+.conversation-header-right .dlo-expand-all-btn { background-position: 0 0 !important; }
 
-.yair-privatemessage-container {
+.dlo-privatemessage-container {
 	position: relative;
 	margin: 22px 0 0;
 	padding-top: 6px;
@@ -851,7 +851,7 @@ button.icon { appearance: none; }
 	overflow: hidden;
 }
 /* The one flourish: an airmail envelope edge across the top of the letter */
-.yair-privatemessage-container::before {
+.dlo-privatemessage-container::before {
 	content: '';
 	position: absolute;
 	top: 0;
@@ -863,9 +863,9 @@ button.icon { appearance: none; }
 		var(--air-blue) 15px 24px, transparent 24px 30px);
 }
 
-.yair-private-message { border-bottom: 1px solid var(--rule); }
-.yair-private-message:last-child { border-bottom: 0; }
-.yair-pm-header {
+.dlo-private-message { border-bottom: 1px solid var(--rule); }
+.dlo-private-message:last-child { border-bottom: 0; }
+.dlo-pm-header {
 	height: auto;
 	margin: 0;
 	padding: 18px 26px 4px;
@@ -873,8 +873,8 @@ button.icon { appearance: none; }
 	background: none;
 	cursor: pointer;
 }
-.yair-title-text { display: flex; align-items: baseline; gap: 12px; padding: 0; }
-.yair-title-text h4 {
+.dlo-title-text { display: flex; align-items: baseline; gap: 12px; padding: 0; }
+.dlo-title-text h4 {
 	flex: none;
 	margin: 0;
 	font-size: 14.5px;
@@ -882,9 +882,9 @@ button.icon { appearance: none; }
 	color: var(--ink);
 	cursor: pointer;
 }
-.yair-title-text h4:hover { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
-.yair-from-me .yair-title-text h4 { color: var(--air-blue); }
-.yair-pm-body-short {
+.dlo-title-text h4:hover { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
+.dlo-from-me .dlo-title-text h4 { color: var(--air-blue); }
+.dlo-pm-body-short {
 	display: none;
 	flex: 1;
 	min-width: 0;
@@ -895,7 +895,7 @@ button.icon { appearance: none; }
 	color: var(--postmark);
 	font-size: 13.5px;
 }
-.yair-pm-header-right {
+.dlo-pm-header-right {
 	flex: 1;
 	display: flex;
 	align-items: center;
@@ -906,29 +906,29 @@ button.icon { appearance: none; }
 	font-size: 12.5px;
 	font-variant-numeric: tabular-nums;
 }
-.yair-expand-collapse-btn { width: 24px; height: 24px; border-radius: 6px; float: none; margin: 0; }
-.yair-expand-collapse-btn:hover { color: var(--ink); }
+.dlo-expand-collapse-btn { width: 24px; height: 24px; border-radius: 6px; float: none; margin: 0; }
+.dlo-expand-collapse-btn:hover { color: var(--ink); }
 
-.yair-pm-body { padding: 6px 26px 22px; cursor: auto; }
-.yair-pm-body,
-.yair-pm-body .md {
+.dlo-pm-body { padding: 6px 26px 22px; cursor: auto; }
+.dlo-pm-body,
+.dlo-pm-body .md {
 	font-family: var(--letter);
 	font-size: 16.5px;
 	line-height: 1.68;
 	color: var(--ink);
 	max-width: 66ch !important;
 }
-.yair-pm-body .md { padding: 0; border: 0; background: none; }
-.yair-pm-body .md p { margin: 0 0 0.85em; font: inherit; }
-.yair-pm-body .md p:last-child { margin-bottom: 0; }
-.yair-pm-body .md a { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
-.yair-pm-body .md blockquote {
+.dlo-pm-body .md { padding: 0; border: 0; background: none; }
+.dlo-pm-body .md p { margin: 0 0 0.85em; font: inherit; }
+.dlo-pm-body .md p:last-child { margin-bottom: 0; }
+.dlo-pm-body .md a { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
+.dlo-pm-body .md blockquote {
 	margin: 0 0 0.85em;
 	padding: 2px 0 2px 14px;
 	border-left: 3px solid var(--rule-strong);
 	color: var(--ink-soft);
 }
-.yair-pm-body .md code, .yair-pm-body .md pre {
+.dlo-pm-body .md code, .dlo-pm-body .md pre {
 	font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 	font-size: 0.82em;
 	background: var(--hover);
@@ -937,17 +937,17 @@ button.icon { appearance: none; }
 	padding: 1px 4px;
 	color: var(--ink);
 }
-.yair-pm-body .md pre { padding: 10px 12px; overflow-x: auto; }
-.yair-pm-body .md ul, .yair-pm-body .md ol { margin: 0 0 0.85em 1.4em; padding: 0; }
-.yair-pm-body .md li { margin: 0.2em 0; font: inherit; }
+.dlo-pm-body .md pre { padding: 10px 12px; overflow-x: auto; }
+.dlo-pm-body .md ul, .dlo-pm-body .md ol { margin: 0 0 0.85em 1.4em; padding: 0; }
+.dlo-pm-body .md li { margin: 0.2em 0; font: inherit; }
 
-.yair-collapsed .yair-pm-header { padding: 14px 26px; }
-.yair-collapsed .yair-pm-body-short { display: block; }
-.yair-collapsed .yair-pm-body { display: none; }
-.yair-collapsed:hover { background: var(--hover); }
+.dlo-collapsed .dlo-pm-header { padding: 14px 26px; }
+.dlo-collapsed .dlo-pm-body-short { display: block; }
+.dlo-collapsed .dlo-pm-body { display: none; }
+.dlo-collapsed:hover { background: var(--hover); }
 
 /* Read-only notice */
-.yair-archive-notice {
+.dlo-archive-notice {
 	margin: 0;
 	padding: 18px 26px 22px;
 	border-top: 1px solid var(--rule);
@@ -958,12 +958,12 @@ button.icon { appearance: none; }
 	font-size: 13.5px;
 	line-height: 1.5;
 }
-.yair-archive-notice p { margin: 0 0 12px; max-width: 62ch; }
-.yair-archive-notice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.dlo-archive-notice p { margin: 0 0 12px; max-width: 62ch; }
+.dlo-archive-notice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
-.yair-button,
-.yair-config button,
-.yair-alert-buttons button {
+.dlo-button,
+.dlo-config button,
+.dlo-alert-buttons button {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
@@ -979,26 +979,26 @@ button.icon { appearance: none; }
 	cursor: pointer;
 	transition: filter .12s;
 }
-.yair-button:hover,
-.yair-config button:hover,
-.yair-alert-buttons button:hover { filter: brightness(1.08); }
-.yair-button.yair-button-plain,
-.yair-config #YAIRCancelResetInbox,
-.yair-config .yair-export-all,
-.yair-alert-buttons .yair-confirm-no {
+.dlo-button:hover,
+.dlo-config button:hover,
+.dlo-alert-buttons button:hover { filter: brightness(1.08); }
+.dlo-button.dlo-button-plain,
+.dlo-config #DLOCancelResetInbox,
+.dlo-config .dlo-export-all,
+.dlo-alert-buttons .dlo-confirm-no {
 	background: transparent;
 	color: var(--air-blue) !important;
 }
-.yair-config #YAIRResetInboxToggle,
-.yair-config #YAIRResetInbox { background: transparent; border-color: var(--air-red); color: var(--air-red) !important; }
-.yair-config #YAIRResetInbox { background: var(--air-red); color: #fff !important; }
+.dlo-config #DLOResetInboxToggle,
+.dlo-config #DLOResetInbox { background: transparent; border-color: var(--air-red); color: var(--air-red) !important; }
+.dlo-config #DLOResetInbox { background: var(--air-red); color: #fff !important; }
 
 
 /* ------------------------------------------------------------------ */
 /* Overlay, loading, notifications, alerts                             */
 /* ------------------------------------------------------------------ */
 
-.yair-overlay {
+.dlo-overlay {
 	position: fixed;
 	inset: 0;
 	z-index: 1000;
@@ -1010,12 +1010,12 @@ button.icon { appearance: none; }
 	font-family: var(--ui);
 	transition: opacity .18s ease;
 }
-.yair-overlay::before { content: ''; display: inline-block; height: 100%; vertical-align: middle; margin-right: -0.25em; }
-.yair-overlay.show { opacity: 1; }
-.yair-overlay > div { display: inline-block; vertical-align: middle; text-align: left; white-space: normal; font-size: 14px; }
+.dlo-overlay::before { content: ''; display: inline-block; height: 100%; vertical-align: middle; margin-right: -0.25em; }
+.dlo-overlay.show { opacity: 1; }
+.dlo-overlay > div { display: inline-block; vertical-align: middle; text-align: left; white-space: normal; font-size: 14px; }
 
-.yair-overlay .loading-message,
-.yair-overlay .notification-message {
+.dlo-overlay .loading-message,
+.dlo-overlay .notification-message {
 	display: inline-flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -1028,20 +1028,20 @@ button.icon { appearance: none; }
 	box-shadow: var(--shadow);
 	font-weight: 500;
 }
-.yair-overlay .notification-message { background: var(--ink); color: var(--paper); }
-.yair-loading-icon {
+.dlo-overlay .notification-message { background: var(--ink); color: var(--paper); }
+.dlo-loading-icon {
 	width: 18px;
 	height: 18px;
 	border: 2px solid var(--rule-strong);
 	border-top-color: var(--air-blue);
 	border-radius: 50%;
-	animation: yair-spin .8s linear infinite;
+	animation: dlo-spin .8s linear infinite;
 }
-.yair-loading-status { flex-basis: 100%; padding-left: 30px; color: var(--postmark); font-size: 13px; font-weight: 400; }
-.yair-loading-status:empty { display: none; }
-@keyframes yair-spin { to { transform: rotate(360deg); } }
+.dlo-loading-status { flex-basis: 100%; padding-left: 30px; color: var(--postmark); font-size: 13px; font-weight: 400; }
+.dlo-loading-status:empty { display: none; }
+@keyframes dlo-spin { to { transform: rotate(360deg); } }
 
-.yair-alert {
+.dlo-alert {
 	width: min(460px, 92vw);
 	min-width: 0;
 	padding: 0;
@@ -1051,7 +1051,7 @@ button.icon { appearance: none; }
 	box-shadow: var(--shadow);
 	overflow: hidden;
 }
-.yair-alert-title {
+.dlo-alert-title {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
@@ -1060,21 +1060,21 @@ button.icon { appearance: none; }
 	border-radius: 0;
 	line-height: 1.3;
 }
-.yair-alert-title h4.yair-alert-title-text { margin: 0; font-family: var(--letter); font-size: 19px; font-weight: 600; color: var(--ink); }
-.yair-alert-title button.yair-alert-close {
+.dlo-alert-title h4.dlo-alert-title-text { margin: 0; font-family: var(--letter); font-size: 19px; font-weight: 600; color: var(--ink); }
+.dlo-alert-title button.dlo-alert-close {
 	width: 28px; height: 28px; border: 0; border-radius: 7px; background: transparent;
 	color: var(--postmark); font-size: 20px; opacity: 1; cursor: pointer;
 }
-.yair-alert-title button.yair-alert-close:hover { background: var(--hover); color: var(--ink); }
-.yair-alert-message { margin: 0; padding: 4px 20px 0; color: var(--ink-soft); line-height: 1.5; white-space: pre-line; }
-.yair-alert-buttons { display: flex; justify-content: flex-end; gap: 8px; margin: 0; padding: 18px 20px 18px; }
-.yair-alert-error .yair-alert-title h4.yair-alert-title-text { color: var(--air-red); }
+.dlo-alert-title button.dlo-alert-close:hover { background: var(--hover); color: var(--ink); }
+.dlo-alert-message { margin: 0; padding: 4px 20px 0; color: var(--ink-soft); line-height: 1.5; white-space: pre-line; }
+.dlo-alert-buttons { display: flex; justify-content: flex-end; gap: 8px; margin: 0; padding: 18px 20px 18px; }
+.dlo-alert-error .dlo-alert-title h4.dlo-alert-title-text { color: var(--air-red); }
 
 /* ------------------------------------------------------------------ */
 /* Settings                                                            */
 /* ------------------------------------------------------------------ */
 
-.yair-config {
+.dlo-config {
 	position: relative;
 	width: min(680px, 94vw);
 	max-width: none;
@@ -1087,7 +1087,7 @@ button.icon { appearance: none; }
 	white-space: normal;
 	overflow: hidden;
 }
-.yair-config h2 {
+.dlo-config h2 {
 	margin: 0;
 	padding: 22px 26px 4px;
 	background: none;
@@ -1097,9 +1097,9 @@ button.icon { appearance: none; }
 	font-weight: 600;
 	color: var(--ink);
 }
-.yair-config h3 { margin: 18px 0 6px; font-size: 14px; color: var(--ink); }
-.yair-config-tabs { display: flex; gap: 22px; height: auto; padding: 0 26px; border-bottom: 1px solid var(--rule); text-align: left; }
-.yair-config-tab {
+.dlo-config h3 { margin: 18px 0 6px; font-size: 14px; color: var(--ink); }
+.dlo-config-tabs { display: flex; gap: 22px; height: auto; padding: 0 26px; border-bottom: 1px solid var(--rule); text-align: left; }
+.dlo-config-tab {
 	flex: none;
 	padding: 12px 0 10px;
 	border-bottom: 2px solid transparent;
@@ -1108,20 +1108,20 @@ button.icon { appearance: none; }
 	font-weight: 600;
 	cursor: pointer;
 }
-.yair-config-tab:hover { color: var(--ink); }
-.yair-config-tab.yair-active-tab { color: var(--ink); border-bottom-color: var(--air-blue); }
-.yair-config-content-panel { margin: 0; padding: 18px 26px; max-height: min(60vh, 520px); overflow-y: auto; }
-.yair-config-content { display: none; margin: 0; }
-.yair-config-content.yair-active-tab { display: block; }
-.yair-config-content > div { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--rule); }
-.yair-config-content > div:last-child { border-bottom: 0; }
-.yair-config-content p { color: var(--ink-soft); line-height: 1.55; margin: 0 0 6px; }
-.yair-config-content a { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
-.yair-config .yair-checkbox label { color: var(--ink); font-weight: 600; }
-.yair-config-info { margin: 6px 0 0 !important; padding-left: 24px; font-size: 13px; color: var(--postmark) !important; }
-#NightMode-config .yair-config-info, #RefreshInterval-config .yair-config-info,
-#ResetInbox .yair-config-info, #reindexMessages .yair-config-info, #exportAll .yair-config-info { padding-left: 0; }
-.yair-config select {
+.dlo-config-tab:hover { color: var(--ink); }
+.dlo-config-tab.dlo-active-tab { color: var(--ink); border-bottom-color: var(--air-blue); }
+.dlo-config-content-panel { margin: 0; padding: 18px 26px; max-height: min(60vh, 520px); overflow-y: auto; }
+.dlo-config-content { display: none; margin: 0; }
+.dlo-config-content.dlo-active-tab { display: block; }
+.dlo-config-content > div { margin: 0; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+.dlo-config-content > div:last-child { border-bottom: 0; }
+.dlo-config-content p { color: var(--ink-soft); line-height: 1.55; margin: 0 0 6px; }
+.dlo-config-content a { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
+.dlo-config .dlo-checkbox label { color: var(--ink); font-weight: 600; }
+.dlo-config-info { margin: 6px 0 0 !important; padding-left: 24px; font-size: 13px; color: var(--postmark) !important; }
+#NightMode-config .dlo-config-info, #RefreshInterval-config .dlo-config-info,
+#ResetInbox .dlo-config-info, #reindexMessages .dlo-config-info, #exportAll .dlo-config-info { padding-left: 0; }
+.dlo-config select {
 	height: 34px;
 	margin: 0 10px 0 0;
 	padding: 0 10px;
@@ -1131,13 +1131,13 @@ button.icon { appearance: none; }
 	color: var(--ink);
 	font: 13.5px var(--ui);
 }
-.yair-config select + label { font-weight: 600; }
-.yair-config #exportAll, .yair-config #ResetInbox, .yair-config #reindexMessages { display: block; }
-.yair-config #exportAll button + button { margin-left: 8px; }
-.yair-config #YAIRConfirmReset { width: auto; margin: 12px 0 0; padding: 14px; border-radius: 10px; background: color-mix(in srgb, var(--air-red) 8%, transparent); }
-.yair-config #YAIRConfirmReset p { color: var(--ink); margin-bottom: 10px; }
-.yair-config #YAIRConfirmReset button + button { margin-left: 8px; }
-.yair-config kbd {
+.dlo-config select + label { font-weight: 600; }
+.dlo-config #exportAll, .dlo-config #ResetInbox, .dlo-config #reindexMessages { display: block; }
+.dlo-config #exportAll button + button { margin-left: 8px; }
+.dlo-config #DLOConfirmReset { width: auto; margin: 12px 0 0; padding: 14px; border-radius: 10px; background: color-mix(in srgb, var(--air-red) 8%, transparent); }
+.dlo-config #DLOConfirmReset p { color: var(--ink); margin-bottom: 10px; }
+.dlo-config #DLOConfirmReset button + button { margin-left: 8px; }
+.dlo-config kbd {
 	display: inline-block;
 	min-width: 20px;
 	padding: 0 5px;
@@ -1149,7 +1149,7 @@ button.icon { appearance: none; }
 	text-align: center;
 	color: var(--ink);
 }
-.yair-config-footer {
+.dlo-config-footer {
 	position: absolute;
 	left: 0;
 	right: 0;
@@ -1166,43 +1166,43 @@ button.icon { appearance: none; }
 /* Compact mode                                                        */
 /* ------------------------------------------------------------------ */
 
-.yair-compact-mode { --sidebar: 196px; }
-.yair-compact-mode .yair-message-row-content {
+.dlo-compact-mode { --sidebar: 196px; }
+.dlo-compact-mode .dlo-message-row-content {
 	grid-template-columns: minmax(100px, 160px) minmax(0, max-content) minmax(0, 1fr) auto;
 	grid-template-areas: "who subject text when";
 	padding: 7px 14px 7px 2px;
 	column-gap: 12px;
 }
-.yair-compact-mode .yair-message-row-control { flex-direction: row; width: 52px; padding: 0 0 0 4px; }
-.yair-compact-mode .yair-year-divider { font-size: 26px; }
-.yair-compact-mode .yair-pm-header { padding-top: 12px; }
-.yair-compact-mode .yair-collapsed .yair-pm-header { padding: 9px 26px; }
+.dlo-compact-mode .dlo-message-row-control { flex-direction: row; width: 52px; padding: 0 0 0 4px; }
+.dlo-compact-mode .dlo-year-divider { font-size: 26px; }
+.dlo-compact-mode .dlo-pm-header { padding-top: 12px; }
+.dlo-compact-mode .dlo-collapsed .dlo-pm-header { padding: 9px 26px; }
 
 /* ------------------------------------------------------------------ */
 /* Narrow windows                                                      */
 /* ------------------------------------------------------------------ */
 
 @media (max-width: 860px) {
-	.yair-content { --sidebar: 64px; }
-	.yair-sidebar-title .title-message .yair-tagline,
-	.yair-sidebar-nav .nav-item .title,
-	.yair-sidebar-label,
-	.yair-sidebar-footer #YAIRShowConfig { font-size: 0; }
-	.yair-sidebar-title { flex-direction: column; gap: 10px; padding: 0 0 12px; }
-	.yair-sidebar-title .title-message a.dlo-wordmark { flex-direction: column; gap: 4px; font-size: 15px; }
+	.dlo-content { --sidebar: 64px; }
+	.dlo-sidebar-title .title-message .dlo-tagline,
+	.dlo-sidebar-nav .nav-item .title,
+	.dlo-sidebar-label,
+	.dlo-sidebar-footer #DLOShowConfig { font-size: 0; }
+	.dlo-sidebar-title { flex-direction: column; gap: 10px; padding: 0 0 12px; }
+	.dlo-sidebar-title .title-message a.dlo-wordmark { flex-direction: column; gap: 4px; font-size: 15px; }
 	.dlo-full { display: none; }
 	.dlo-short { display: block; }
 	.dlo-mark { width: 30px; height: 30px; }
-	.yair-sidebar-nav .nav-item, .yair-sidebar-footer #YAIRShowConfig { justify-content: center; padding: 10px 0; }
-	.yair-sidebar-panel .yair-sidebar-menu { padding: 14px 8px 80px; }
-	.yair-sidebar-options .options-item { font-size: 0; justify-content: center; }
-	.yair-message-row-content { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who when" "subject subject" "text text"; }
-	.yair-header-panel, .yair-inbox-panel, .yair-list-toolbar { padding-left: 14px; padding-right: 14px; }
-	.yair-length-range { display: none; }
-	.yair-year-divider { margin-left: -14px; margin-right: -14px; padding-left: 14px; }
+	.dlo-sidebar-nav .nav-item, .dlo-sidebar-footer #DLOShowConfig { justify-content: center; padding: 10px 0; }
+	.dlo-sidebar-panel .dlo-sidebar-menu { padding: 14px 8px 80px; }
+	.dlo-sidebar-options .options-item { font-size: 0; justify-content: center; }
+	.dlo-message-row-content { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who when" "subject subject" "text text"; }
+	.dlo-header-panel, .dlo-inbox-panel, .dlo-list-toolbar { padding-left: 14px; padding-right: 14px; }
+	.dlo-length-range { display: none; }
+	.dlo-year-divider { margin-left: -14px; margin-right: -14px; padding-left: 14px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.yair-loading-icon { animation-duration: 2.4s; }
-	.yair-overlay, .yair-message-row, .styled-checkbox + label::before { transition: none; }
+	.dlo-loading-icon { animation-duration: 2.4s; }
+	.dlo-overlay, .dlo-message-row, .styled-checkbox + label::before { transition: none; }
 }

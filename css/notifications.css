@@ -1,4 +1,4 @@
-/* Dead Letter Office toolbar popup, in the same "Airmail" style as the inbox (css/yair.css) */
+/* Dead Letter Office toolbar popup, in the same "Airmail" style as the inbox (css/dlo.css) */
 
 @font-face { font-family: 'DLO Public Sans'; src: url('../fonts/public-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'DLO Public Sans'; src: url('../fonts/public-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }

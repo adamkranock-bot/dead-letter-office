@@ -7,7 +7,7 @@
 		, [2, 4, '2 to 4 messages']
 		, [1, 1, 'Single messages']
 	];
-	Object.assign(yair.model, {
+	Object.assign(dlo.model, {
 		// Sort and filter state for the list; sort is remembered between visits
 		listOptions: {
 			sort: 'newest'
@@ -17,11 +17,11 @@
 			, lastFrom: null
 		}
 		, listFiltersActive: function () {
-			var o = yair.model.listOptions;
+			var o = dlo.model.listOptions;
 			return !!(o.min || o.max || o.year || o.lastFrom);
 		}
 		, listFilter: function (conversations) {
-			var o = yair.model.listOptions;
+			var o = dlo.model.listOptions;
 			var me = getUsername();
 			for (var i = 0; i < conversations.length; i++) {
 				var c = conversations[i];
@@ -38,7 +38,7 @@
 			}
 		}
 		, sortConversations: function (conversations) {
-			var by = yair.model.listOptions.sort;
+			var by = dlo.model.listOptions.sort;
 			var newestFirst = function (a, b) { return (b.last_update || 0) - (a.last_update || 0); };
 			var name = function (c) { return String(c.correspondent || '').replace(/^#/, '').toLowerCase(); };
 			var compare = {
@@ -57,7 +57,7 @@
 			conversations.sort(compare);
 		}
 		, groupFor: function (c) {
-			var by = yair.model.listOptions.sort;
+			var by = dlo.model.listOptions.sort;
 			if (by === 'most' || by === 'fewest') {
 				var n = c.messages.length;
 				for (var i = 0; i < LENGTH_GROUPS.length; i++) {
@@ -95,14 +95,14 @@
 			var pending = 0;
 			for (var i = 0; i < names.length; i += 25) {
 				pending++;
-				yair.request('redditPost', {
+				dlo.request('redditPost', {
 					endpoint: 'read_message'
 					, form: {
 						id: names.slice(i, i + 25).join(',')
-						, uh: yair.model.uh
+						, uh: dlo.model.uh
 					}
 				}, function () {
-					if (--pending === 0) yair.request('updateNotifications');
+					if (--pending === 0) dlo.request('updateNotifications');
 				});
 			}
 		}
@@ -115,16 +115,16 @@
 				}
 			}
 			if (updated.length > 0) {
-				yair.proxy(['yair', 'db', 'updateAll'], [db_tables.privateMessages.name, updated]);
+				dlo.proxy(['dlo', 'db', 'updateAll'], [db_tables.privateMessages.name, updated]);
 			}
 		}
 		, showModmailInInbox: function (filteredConversations) {
-			if (yair.cfg.data.showModmail) {
-				$(".yair-modmail").removeClass("yair-hide");
-				if(['modmail', 'modsaved', 'modarchived'].indexOf(yair.show) >= 0) {
-					yair.model.modmailFilter(filteredConversations, true);
-				} else { yair.model.modmailFilter(filteredConversations, false); }
-			} else { $(".yair-modmail").addClass("yair-hide"); }
+			if (dlo.cfg.data.showModmail) {
+				$(".dlo-modmail").removeClass("dlo-hide");
+				if(['modmail', 'modsaved', 'modarchived'].indexOf(dlo.show) >= 0) {
+					dlo.model.modmailFilter(filteredConversations, true);
+				} else { dlo.model.modmailFilter(filteredConversations, false); }
+			} else { $(".dlo-modmail").addClass("dlo-hide"); }
 		}
 		, modmailFilter: function (conversations, modDirectory) {
 			for (var i = 0; i < conversations.length; i++) {
@@ -135,12 +135,12 @@
 		}
 		, directoryFilter: function (conversations, directory) {
 			if (typeof directory === "undefined") {
-				directory = yair.show;
+				directory = dlo.show;
 			}
 			for (var i = 0; i < conversations.length; i++) {
 				var conversation = conversations[i];
-				var saved = yair.cfg.saved.contains(conversation.id);
-				var archived = yair.cfg.deleted.contains(conversation.id);
+				var saved = dlo.cfg.saved.contains(conversation.id);
+				var archived = dlo.cfg.deleted.contains(conversation.id);
 				if (directory !== "archived" && directory !== "modarchived"  && archived  ||
 					directory === "saved"       && !saved    ||
 					directory === "archived"    && !archived ||
@@ -150,20 +150,20 @@
 			}
 		}
 		, searchFilter: function (conversations) {
-			var q = yair._get.searchObj;
-			yair.model.cache.searchResults = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+			var q = dlo._get.searchObj;
+			dlo.model.cache.searchResults = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
 			if (!q) return;
 			var flags = {
-				saved: function (id) { return yair.cfg.saved.contains(id); }
-				, archived: function (id) { return yair.cfg.deleted.contains(id); }
+				saved: function (id) { return dlo.cfg.saved.contains(id); }
+				, archived: function (id) { return dlo.cfg.deleted.contains(id); }
 			};
 			for (var i = 0; i < conversations.length; i++) {
-				var result = yair.search.match(conversations[i], q, flags);
+				var result = dlo.search.match(conversations[i], q, flags);
 				if (!result.ok) {
 					conversations.splice(i--, 1);
 				}
-				else if (yair.model.cache.searchResults) {
-					yair.model.cache.searchResults.set(conversations[i], result);
+				else if (dlo.model.cache.searchResults) {
+					dlo.model.cache.searchResults.set(conversations[i], result);
 				}
 			}
 		}
