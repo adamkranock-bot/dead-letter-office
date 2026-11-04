@@ -357,7 +357,7 @@ async function launch(profile = PROFILE) {
     const rowsA = await p.locator('.yair-message-row').count();
     check('archive: all 13 conversations indexed from the archive page', rowsA === 13, rowsA);
     let alog = (await mockLog(p)).slice(before);
-    const archiveCalls = alog.filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/')));
+    const archiveCalls = alog.filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/pm-archive/')));
     check('archive: followed the infinite-scroll pages', archiveCalls.length === 4, archiveCalls.map(e => e.path + e.query));
     await p.click('.yair-message-row:has-text("Filler thread 3")');
     await p.waitForSelector('.yair-private-message');
@@ -365,6 +365,8 @@ async function launch(profile = PROFILE) {
     check('archive: long threads are read in full from their own page, not the 3-message preview', longCount === 11, longCount);
     const threadCalls = (await mockLog(p)).slice(before).filter(e => e.host.startsWith('www.') && /^\/message\/messages\/[a-z0-9]+\/$/.test(e.path));
     check('archive: each conversation page fetched once on the first index', threadCalls.length === 13, threadCalls.length);
+    const chunkCalls = (await mockLog(p)).slice(before).filter(e => e.path.startsWith('/svc/shreddit/pm-archive-message-replies/'));
+    check('archive: older messages of long threads loaded through their "load more" chunks', chunkCalls.length >= 2, chunkCalls.length);
     await p.click('.yair-sidebar-nav.inbox .yair-inbox');
     await p.waitForTimeout(400);
     check('archive: subreddit sender shown as #modsub', (await p.locator('.yair-correspondent a', { hasText: '#modsub' }).getAttribute('href')) === 'https://www.reddit.com/r/modsub');
@@ -394,7 +396,7 @@ async function launch(profile = PROFILE) {
     await p.goto('https://old.reddit.com/message/yair_inbox');
     await p.waitForSelector('.yair-message-row');
     await p.waitForTimeout(800);
-    alog = (await mockLog(p)).slice(b2).filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/')));
+    alog = (await mockLog(p)).slice(b2).filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/pm-archive/')));
     check('archive: reload with nothing new reads one archive page and no conversation pages', alog.length === 1, alog.map(e => e.path + e.query));
     const rethreads = (await mockLog(p)).slice(b2).filter(e => e.host.startsWith('www.') && /^\/message\/messages\/[a-z0-9]+\/$/.test(e.path));
     check('archive: unchanged conversations are not re-read', rethreads.length === 0, rethreads.map(e => e.path));

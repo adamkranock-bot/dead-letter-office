@@ -115,6 +115,10 @@
 	// interrupted run carries on where it left off.
 	function crawlThreads(listSeen, forceAll, done) {
 		var known = Object.assign({}, yair.cfg.data.archiveThreads || {});
+		// Version 2 follows a conversation's "load more" chunks. Records from
+		// earlier builds only saw the first chunk, so start those over.
+		var THREADS_FORMAT = 2;
+		if (known.__v !== THREADS_FORMAT) known = { __v: THREADS_FORMAT };
 		var added = 0;
 		yair.model.getConversations(function (stored) {
 			var todo = [];
@@ -158,16 +162,56 @@
 						console.warn("YAIR: couldn't read conversation " + id + ":", reason);
 						return step();
 					}
-					var page = yair.helper.parseArchiveHtml(response.html);
+					var page = yair.helper.parseArchiveHtml(response.html, {
+						rootName: id
+					});
 					var newest = listSeen[id] || 0;
-					page.messages.forEach(function (m) {
-						if (m.created_utc > newest) newest = m.created_utc;
-					});
-					yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
-						added += numAdded || 0;
-						known[id] = newest;
-						step();
-					});
+					var subject = page.messages.length ? page.messages[0].subject : '';
+					var store = function (msgs, then) {
+						msgs.forEach(function (m) {
+							if (m.created_utc > newest) newest = m.created_utc;
+						});
+						if (!msgs.length) return then();
+						yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, msgs], function (numAdded) {
+							added += numAdded || 0;
+							then();
+						});
+					};
+					// Then follow the conversation's "load more" chunks until there are none left
+					var seenChunks = {};
+					var chunkQueue = page.replyPages.slice();
+					var chunks = 0;
+					var nextChunk = function () {
+						var path = chunkQueue.shift();
+						while (path && seenChunks[path]) path = chunkQueue.shift();
+						if (!path || chunks >= 1000) {
+							known[id] = newest;
+							return step();
+						}
+						seenChunks[path] = true;
+						chunks++;
+						yair.view.showStatus("Reading full conversations, " + i + " of " + todo.length + " (older messages, part " + chunks + ")");
+						setTimeout(function () {
+							yair.request('getArchivePage', {
+								path: path
+							}, function (chunk) {
+								if (!chunk || chunk.__yairError || typeof chunk.html !== "string") {
+									// Leave this conversation unmarked so it's tried again next time
+									console.warn("YAIR: couldn't read part of conversation " + id + ":", chunk && chunk.__yairError);
+									return step();
+								}
+								var part = yair.helper.parseArchiveHtml(chunk.html, {
+									rootName: id
+									, subject: subject
+								});
+								part.replyPages.forEach(function (p) {
+									if (!seenChunks[p]) chunkQueue.push(p);
+								});
+								store(part.messages, nextChunk);
+							});
+						}, 250);
+					};
+					store(page.messages, nextChunk);
 				});
 			};
 			next();
@@ -268,38 +312,62 @@
 		return pages;
 	}
 
-	yair.helper.parseArchiveHtml = function (html) {
+	// Older messages of a long conversation load from
+	// /svc/shreddit/pm-archive-message-replies/<conversation>/<cursor>
+	var REPLY_PAGE_RE = /\/svc\/shreddit\/pm-archive-message-replies\/[^"'\s<>]+/g;
+
+	function findReplyPages(doc, html) {
+		var found = [];
+		doc.querySelectorAll('[src*="/pm-archive-message-replies/"], [href*="/pm-archive-message-replies/"]').forEach(function (el) {
+			found.push(el.getAttribute('src') || el.getAttribute('href'));
+		});
+		(html.match(REPLY_PAGE_RE) || []).forEach(function (u) {
+			found.push(u.replace(/&amp;/g, '&'));
+		});
+		var pages = [];
+		found.forEach(function (u) {
+			try {
+				var url = new URL(u, 'https://www.reddit.com');
+				var path = url.pathname + url.search;
+				if (url.origin === 'https://www.reddit.com' && pages.indexOf(path) < 0) pages.push(path);
+			}
+			catch (e) {}
+		});
+		return pages;
+	}
+
+	function parseMessageTemplate(m, subject) {
+		var idEl = m.querySelector('[id^="pm-archive-overflow-menu-"]');
+		var name = idEl ? idEl.id.replace('pm-archive-overflow-menu-', '') : '';
+		if (!/^t4_[a-z0-9]+$/i.test(name)) return null;
+		var share = m.querySelector('[permalink]');
+		var permalinkId = share ? (share.getAttribute('permalink').match(/\/message\/messages\/([a-z0-9]+)/i) || [])[1] : null;
+		var meta = m.querySelector('.text-neutral-content-weak') || m;
+		var people = meta.querySelectorAll('a');
+		var bodyEl = m.querySelector('[id$="post-rtjson-content"]') || m.querySelector('.text-14');
+		return {
+			id: name.substring(3)
+			, name: name
+			, author: (people[0] && nameFromLink(people[0])) || '[unknown]'
+			, dest: people[1] ? nameFromLink(people[1]) : null
+			, subject: subject
+			, body: bodyEl ? htmlToText(bodyEl) : ''
+			, body_html: bodyEl ? sanitizeHtml(bodyEl) : ''
+			, created_utc: timestampOf(m)
+			, 'new': false
+			, distinguished: null
+			, _root: permalinkId ? 't4_' + permalinkId.toLowerCase() : null
+		};
+	}
+
+	// Parses an archive list page, a conversation page, or a chunk of a
+	// conversation. Chunks carry bare messages with no conversation wrapper,
+	// so `context` ({rootName, subject}) says which conversation they belong to.
+	yair.helper.parseArchiveHtml = function (html, context) {
 		var doc = new DOMParser().parseFromString(html, 'text/html');
 		var messages = [];
 		var conversations = [];
-		doc.querySelectorAll('[data-test-id="pm-archive-conversation"]').forEach(function (conv) {
-			var subjectLink = conv.querySelector('a');
-			var subject = subjectLink ? subjectLink.textContent.trim() : '';
-			var convMessages = [];
-			var rootName = null;
-			conv.querySelectorAll('[data-test-id="pm-archive-message-template"]').forEach(function (m) {
-				var idEl = m.querySelector('[id^="pm-archive-overflow-menu-"]');
-				var name = idEl ? idEl.id.replace('pm-archive-overflow-menu-', '') : '';
-				if (!/^t4_[a-z0-9]+$/i.test(name)) return;
-				var share = m.querySelector('[permalink]');
-				var permalinkId = share ? (share.getAttribute('permalink').match(/\/message\/messages\/([a-z0-9]+)/i) || [])[1] : null;
-				if (permalinkId && !rootName) rootName = 't4_' + permalinkId.toLowerCase();
-				var meta = m.querySelector('.text-neutral-content-weak') || m;
-				var people = meta.querySelectorAll('a');
-				var bodyEl = m.querySelector('[id$="post-rtjson-content"]') || m.querySelector('.text-14');
-				convMessages.push({
-					id: name.substring(3)
-					, name: name
-					, author: people[0] ? nameFromLink(people[0]) : '[unknown]'
-					, dest: people[1] ? nameFromLink(people[1]) : null
-					, subject: subject
-					, body: bodyEl ? htmlToText(bodyEl) : ''
-					, body_html: bodyEl ? sanitizeHtml(bodyEl) : ''
-					, created_utc: timestampOf(m)
-					, 'new': false
-					, distinguished: null
-				});
-			});
+		var addConversation = function (convMessages, rootName) {
 			if (!convMessages.length) return;
 			if (!rootName) {
 				// Fall back to the oldest message in the conversation
@@ -313,14 +381,37 @@
 			});
 			convMessages.forEach(function (msg) {
 				msg.first_message_name = rootName;
-				if (!msg.author) msg.author = '[unknown]';
+				delete msg._root;
 				messages.push(msg);
 			});
+		};
+		doc.querySelectorAll('[data-test-id="pm-archive-conversation"]').forEach(function (conv) {
+			var subjectLink = conv.querySelector('a');
+			var subject = subjectLink ? subjectLink.textContent.trim() : '';
+			var convMessages = [];
+			var rootName = null;
+			conv.querySelectorAll('[data-test-id="pm-archive-message-template"]').forEach(function (el) {
+				var msg = parseMessageTemplate(el, subject);
+				if (!msg) return;
+				if (msg._root && !rootName) rootName = msg._root;
+				convMessages.push(msg);
+			});
+			addConversation(convMessages, rootName || (context && context.rootName));
 		});
+		if (context) {
+			var loose = [];
+			doc.querySelectorAll('[data-test-id="pm-archive-message-template"]').forEach(function (el) {
+				if (el.closest('[data-test-id="pm-archive-conversation"]')) return;
+				var msg = parseMessageTemplate(el, context.subject || '');
+				if (msg) loose.push(msg);
+			});
+			addConversation(loose, context.rootName);
+		}
 		return {
 			messages: messages
 			, conversations: conversations
 			, nextCandidates: findNextPage(doc, html)
+			, replyPages: findReplyPages(doc, html)
 		};
 	};
 
