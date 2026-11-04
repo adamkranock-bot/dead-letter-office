@@ -40,15 +40,26 @@ function toPrivateMessageRecord(data) {
 
 var yairNotifications = (function () {
 	var ALARM = 'yair-refresh-notifications';
-	var DEFAULT_INTERVAL = 60000;
+	// Reddit moved DMs to Chat, so unread PMs are rare now: check every 15
+	// minutes by default, and not at all when set to 0 ("Off").
+	var DEFAULT_INTERVAL = 900000;
+
+	function intervalMs() {
+		var stored = yairStorage.get('inboxRefreshInterval');
+		return (stored === undefined || stored === null || isNaN(+stored)) ? DEFAULT_INTERVAL : +stored;
+	}
 
 	function intervalMinutes() {
-		var ms = +yairStorage.get('inboxRefreshInterval') || DEFAULT_INTERVAL;
 		// Chrome won't fire alarms more often than every 30 seconds
-		return Math.max(0.5, ms / 60000);
+		return Math.max(0.5, intervalMs() / 60000);
 	}
 
 	function schedule() {
+		if (intervalMs() <= 0) {
+			chrome.alarms.clear(ALARM);
+			setBadge(0);
+			return;
+		}
 		var minutes = intervalMinutes();
 		chrome.alarms.get(ALARM, function (alarm) {
 			if (alarm && alarm.periodInMinutes === minutes) return;
@@ -107,10 +118,11 @@ var yairNotifications = (function () {
 	return {
 		update: update
 		, schedule: schedule
+		, intervalMs: intervalMs
 		, setBadge: setBadge
 		, setRefreshInterval: function (ms) {
 			ms = parseInt(ms, 10);
-			if (!(ms > 0)) return;
+			if (isNaN(ms) || ms < 0) return;
 			yairStorage.set('inboxRefreshInterval', ms);
 			schedule();
 		}
@@ -247,9 +259,24 @@ var actions = {
 	}
 };
 
+// YAIR checked every minute by default. That was never a choice anyone made,
+// so move installs still on it to the new default once.
+function yairMigratePollingDefault() {
+	if (yairStorage.get('pollingDefaultV2')) return;
+	if (+yairStorage.get('inboxRefreshInterval') === 60000) yairStorage.set('inboxRefreshInterval', 900000);
+	var cfgs = yairStorage.get('YAIR_USER_CONFIG') || {};
+	Object.keys(cfgs).forEach(function (user) {
+		if (cfgs[user] && +cfgs[user].inboxRefreshInterval === 60000) cfgs[user].inboxRefreshInterval = 900000;
+	});
+	yairStorage.save('YAIR_USER_CONFIG');
+	yairStorage.set('pollingDefaultV2', true);
+}
+
 function yairStartNotifier() {
 	yairStorage.ready.then(function () {
+		yairMigratePollingDefault();
 		yairNotifications.schedule();
+		if (yairNotifications.intervalMs() <= 0) return;
 		return yairNotifications.update();
 	}).catch(function (e) {
 		console.warn('DLO: initial notification refresh failed', e.message);
@@ -257,5 +284,8 @@ function yairStartNotifier() {
 }
 chrome.runtime.onStartup.addListener(yairStartNotifier);
 chrome.runtime.onInstalled.addListener(yairStartNotifier);
-// Make sure the alarm exists whenever the background context starts
-yairStorage.ready.then(yairNotifications.schedule);
+// Make sure the alarm matches the setting whenever the background context starts
+yairStorage.ready.then(function () {
+	yairMigratePollingDefault();
+	yairNotifications.schedule();
+});

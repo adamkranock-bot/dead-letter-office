@@ -17,7 +17,7 @@ var yair_default_cfg = {
 	, maxAjaxRetries: 5
 	, ajaxRetryDelay: 5
 	, max403Retries: 15
-	, inboxRefreshInterval: 60000
+	, inboxRefreshInterval: 900000
 	, listSort: 'newest'
 	// Conversation id -> newest message time when its full page was last read
 	, archiveThreads: {}

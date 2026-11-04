@@ -48,16 +48,14 @@
 				</div>
 				<div id="RefreshInterval-config">
 					<select id="YAIRRefreshInterval">
-						<option value="30000">30 seconds</option>
-						<option value="60000">1 minute</option>
-						<option value="300000">5 minutes</option>
-						<option value="600000">10 minutes</option>
-						<option value="900000">15 minutes</option>
-						<option value="1800000">30 minutes</option>
+						<option value="0">Off</option>
+						<option value="300000">Every 5 minutes</option>
+						<option value="900000">Every 15 minutes</option>
+						<option value="1800000">Every 30 minutes</option>
+						<option value="3600000">Every hour</option>
 					</select>
-					<label for="YAIRRefreshInterval">Refresh Interval</label>
-					<p class="yair-config-info"> By default, new messages are polled for every minute to update the notification badge on the toolbar icon. This setting allows for changing that default.</p>
-					<p class="yair-config-info">If you switch usernames, this value will not be updated until you view your inbox.</p>
+					<label for="YAIRRefreshInterval">Check for unread messages</label>
+					<p class="yair-config-info">Updates the unread badge on the toolbar button. Reddit now delivers new messages to Chat, so unread private messages are rare; turn this off to stop the background checks entirely. The popup's refresh button still works either way.</p>
 				</div>
 			</div>
 			<div class="yair-config-content" data-tab-content="admin">
