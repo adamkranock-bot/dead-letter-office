@@ -7,6 +7,10 @@ var yair = {
 	, cfg: {
 		data: {}
 	}
+	// Filled in by the view-*, controller*, model, and dbhelper modules
+	, view: {}
+	, controller: {}
+	, model: {}
 	, proxy: function (path, params, callback) {
 		if (typeof callback === "undefined") callback = function () {};
 		if (typeof params === "undefined") params = [];
