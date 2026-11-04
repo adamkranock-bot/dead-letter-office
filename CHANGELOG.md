@@ -36,7 +36,7 @@ Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manif
 
 **Reddit's PM archive**
 * Reddit stopped serving private message history through `message/messages.json` (it now returns an empty list) and redirects old Reddit's message pages to a read-only archive on new Reddit. YAIR now reads that archive page (`www.reddit.com/message/messages/`), follows its infinite-scroll pages (`/svc/shreddit/pm-archive/<cursor>`, paced and retried if Reddit rate limits), and stores the messages in the same local database, so search, folders, and export work as before. The JSON listing is still read too, in case Reddit delivers anything there.
-* The archive list only previews the latest few messages of each conversation, so YAIR also reads each conversation's own page (`/message/messages/<id>/`) to get every message. The first index reads them all; after that only conversations with newer activity are re-read, and an interrupted run carries on next time.
+* The archive list only previews the latest few messages of each conversation, so YAIR also reads each conversation's own page (`/message/messages/<id>/`) to get every message, following its "load more" chunks (`/svc/shreddit/pm-archive-message-replies/…`) until the whole thread is in. The first index reads them all; after that only conversations with newer activity are re-read, and an interrupted run carries on next time.
 * Message bodies from the archive are Reddit's rendered HTML, so they're sanitized (no scripts, event handlers, or `javascript:` links) before display, and plain text is derived for search and export. Original Markdown isn't available from the archive. The archive list stops at about 1,000 messages, but each conversation's own page holds its full history.
 
 **Interface**

@@ -70,15 +70,34 @@ const who = n => n && n.charAt(0) === '#' ? `/r/${n.slice(1)}/` : `/user/${n}/`;
 // Like Reddit, the archive list previews only the latest few messages of a
 // conversation; the conversation's own page has all of them.
 const PREVIEW = 3;
-function archiveConversation(t, full) {
-  const permalink = '/message/messages/' + t.root.id;
+// A conversation page shows its latest THREAD_CHUNK messages and loads older
+// ones in chunks from /svc/shreddit/pm-archive-message-replies/<root>/<cursor>.
+const THREAD_CHUNK = 4;
+function replyLoader(t, oldestShownIndex) {
+  if (oldestShownIndex <= 0) return '';
   const all = [t.root, ...t.replies];
-  const msgs = (full ? all : all.slice(-PREVIEW)).map(m => {
+  const cursor = Buffer.from(all[oldestShownIndex].name).toString('base64');
+  return `<infinite-loader><faceplate-partial loading="lazy" src="/svc/shreddit/pm-archive-message-replies/${t.root.name}/${cursor}"></faceplate-partial></infinite-loader>`;
+}
+function threadChunk(t, beforeName) {
+  const all = [t.root, ...t.replies];
+  const end = all.findIndex(m => m.name === beforeName);
+  const start = Math.max(0, end - THREAD_CHUNK);
+  return renderMessages(t, all.slice(start, end)) + replyLoader(t, start);
+}
+function archiveConversation(t, full) {
+  const all = [t.root, ...t.replies];
+  const shown = full ? all.slice(-THREAD_CHUNK) : all.slice(-PREVIEW);
+  const header = `<div class="py-xs px-md flex flex-col"><a class="text-16 font-bold" href="/message/messages/${t.root.id}">${esc(t.root.subject)}</a><span class="font-semibold"><a href="${who(t.root.author === ME ? t.root.dest : (t.root.author || '#' + t.root.subreddit))}">x</a></span></div><div class="h-px"></div>`;
+  return `<div actioned=""><div data-test-id="pm-archive-conversation" class="flex flex-col">${header}${renderMessages(t, shown)}</div></div>` + (full ? replyLoader(t, all.length - shown.length) : '');
+}
+function renderMessages(t, list) {
+  const permalink = '/message/messages/' + t.root.id;
+  return list.map(m => {
     const author = m.author || '#' + m.subreddit;
     const iso = new Date(m.created_utc * 1000).toISOString();
     return `<div class="px-md py-xs " data-test-id="pm-archive-message-template"><div class="text-12 flex items-center justify-between"><div class="text-neutral-content-weak"><span class="font-semibold"><a href="${who(author)}" class="text-12 font-semibold w-fit text-primary-plain">${author.charAt(0) === '#' ? 'r/' + author.slice(1) : 'u/' + author}</a> to <a href="${who(m.dest)}" class="text-12 font-semibold">u/${m.dest}</a></span><span> · </span><faceplate-timeago ts="${iso.replace('Z', '000+0000')}" short=""><time datetime="${iso}" title="x">1y</time></faceplate-timeago></div><faceplate-dropdown-menu><button id="pm-archive-overflow-menu-${m.name}" aria-haspopup="true"><svg viewBox="0 0 20 20"></svg></button><faceplate-menu slot="menu" hidden=""><shreddit-share-list-item permalink="${permalink}"><li>Share</li></shreddit-share-list-item></faceplate-menu></faceplate-dropdown-menu></div><span class="text-14"><div id="-post-rtjson-content" class="[--emote-size:20px]" dir="auto">${m.body.split('\n').map(l => `<p onclick="window.__xss=1">${esc(l)}</p>`).join('')}<p><a href="javascript:window.__xss=1">bad link</a> <a href="https://example.com/x" rel="noopener nofollow ugc" target="_blank">good link</a></p></div></span></div>`;
   }).join('');
-  return `<div actioned=""><div data-test-id="pm-archive-conversation" class="flex flex-col"><div class="py-xs px-md flex flex-col"><a class="text-16 font-bold" href="${permalink}">${esc(t.root.subject)}</a><span class="font-semibold"><a href="${who(t.root.author === ME ? t.root.dest : (t.root.author || '#' + t.root.subreddit))}">x</a></span></div><div class="h-px"></div>${msgs}</div></div>`;
 }
 function archiveChunk(start) {
   const all = listing();
@@ -113,6 +132,13 @@ return https.createServer({ key, cert }, async (req, res) => {
     if (!t) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('not found'); }
     res.writeHead(200, { 'content-type': 'text/html' });
     return res.end(`<!DOCTYPE html><html><body><shreddit-app><main>${archiveConversation(t, true)}<infinite-loader></infinite-loader></main></shreddit-app></body></html>`);
+  }
+  const replyChunk = url.pathname.match(/^\/svc\/shreddit\/pm-archive-message-replies\/(t4_[a-z0-9]+)\/([^/]+)$/);
+  if (req.headers.host.startsWith('www.') && replyChunk) {
+    const t = threads.find(t => t.root.name === replyChunk[1]);
+    const before = Buffer.from(decodeURIComponent(replyChunk[2]), 'base64').toString();
+    res.writeHead(t ? 200 : 404, { 'content-type': 'text/html' });
+    return res.end(t ? threadChunk(t, before) : 'not found');
   }
   if (req.headers.host.startsWith('www.') && url.pathname.startsWith('/svc/shreddit/pm-archive/')) {
     const all = listing();
