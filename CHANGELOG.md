@@ -38,6 +38,8 @@ Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manif
 * Message bodies from the archive are Reddit's rendered HTML, so they're sanitized (no scripts, event handlers, or `javascript:` links) before display, and plain text is derived for search and export. Original Markdown isn't available from the archive. Reddit's archive holds your most recent 1,000 messages.
 
 **Interface**
+* New look, "Airmail": the inbox is styled as an archive of letters. Navy ink on cool paper, Public Sans for the interface and Literata for message bodies and year headings (both bundled, SIL Open Font License), large sticky year numerals down the list, a mail-client grid (sender, subject over snippet, date), and conversations shown as a letter sheet with an airmail-stripe edge. Airmail red marks unread messages and drafts; blue marks actions and focus. Dark mode, compact mode, and narrow windows are all covered.
+* Icons are now inline SVG, so they follow the theme colours and show up in Firefox (the old sprite sheet used Chrome-only URLs). The old `ui.css`, `alerts.css`, and `scss/` sources are replaced by a single `css/yair.css`.
 * Summary line above the list: number of conversations and messages and the date range, or "N of M conversations match" while searching.
 * Year dividers in the conversation list.
 * Search updates as you type (in the current folder, not just the inbox), highlights matches, and has a clear button; Esc clears it.

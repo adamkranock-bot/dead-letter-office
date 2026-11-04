@@ -50,7 +50,7 @@ There is no bundler: the files listed in `manifest.json` are loaded as-is.
 * `js/background/` runs as a service worker in Chrome (`service-worker.js` imports the other files) and as an event page in Firefox (the `background.scripts` list). Keep the two lists in sync. It owns all persistent state (`chrome.storage.local` plus one IndexedDB database per Reddit user) and all requests that the content scripts can't make themselves.
 * Content scripts call background functions through `yair.proxy([...path], params, callback)`. Only paths listed in `PROXY_WHITELIST` in `bg-proxy.js` can be called.
 * `js/content-inbox/` renders the inbox on `old.reddit.com/message/yair_*` pages; `js/notifications/fetch.js` is the toolbar popup.
-* `css/*.css` is compiled from `scss/`, so edit both if you change styles.
+* `css/yair.css` is the whole inbox theme (plain CSS, no build step): colour tokens at the top, light and dark variants, icons as inline SVG masks. Fonts (Public Sans and Literata, SIL OFL) live in `fonts/` and are registered from `js/content-inbox/global.js`.
 
 Publishing to addons.mozilla.org requires adding the existing listing's add-on ID under `browser_specific_settings.gecko.id` in `manifest.json` (Firefox requires an ID for Manifest V3 add-ons).
 

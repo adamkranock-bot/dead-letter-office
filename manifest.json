@@ -21,7 +21,8 @@
 		{
 			"resources": [
 				"template/*",
-				"images/*"
+				"images/*",
+				"fonts/*"
 			],
 			"matches": [
 				"https://*.reddit.com/*"
@@ -47,11 +48,9 @@
 				"https://*.reddit.com/message/yair_*"
 			],
 			"css": [
-				"css/ui.css",
 				"css/quill.core.css",
 				"css/quill.snow.css",
-				"css/alerts.css",
-				"css/yair-archive.css"
+				"css/yair.css"
 			],
 			"js": [
 				"js/content-inbox/jquery-3.7.1.min.js",

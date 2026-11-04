@@ -108,6 +108,7 @@
 							window.open('/user/' + encodeURIComponent(name), '_blank');
 						}
 					});
+					if (pm.author === getUsername()) $pm.addClass('yair-from-me');
 					$pm.appendTo($messageArea);
 					if (pm.author !== getUsername()) {
 						responseId = pm.name;
@@ -253,19 +254,18 @@
 					if (m.created_utc > newest) newest = m.created_utc;
 				});
 			});
-			var parts = [];
+			var text;
+			var msgText = fmt(messages) + (messages === 1 ? ' message' : ' messages');
 			if (yair._get.searchObj) {
-				parts.push(fmt(shown.length) + ' of ' + fmt(all.length) + ' conversations match');
+				text = fmt(shown.length) + ' of ' + fmt(all.length) + ' conversations match, with ' + msgText;
 			}
 			else {
-				parts.push(fmt(shown.length) + (shown.length === 1 ? ' conversation' : ' conversations'));
+				text = fmt(shown.length) + (shown.length === 1 ? ' conversation, ' : ' conversations, ') + msgText;
 			}
-			parts.push(fmt(messages) + (messages === 1 ? ' message' : ' messages'));
 			if (newest) {
-				var range = monthYear(oldest) === monthYear(newest) ? monthYear(newest) : monthYear(oldest) + ' \u2013 ' + monthYear(newest);
-				parts.push(range);
+				text += monthYear(oldest) === monthYear(newest) ? ' from ' + monthYear(newest) : ' from ' + monthYear(oldest) + ' to ' + monthYear(newest);
 			}
-			var $summary = $('<div class="yair-summary">').text(parts.join(' \u00b7 '));
+			var $summary = $('<div class="yair-summary">').append($('<span>').text(text));
 			if (yair._get.searchObj) {
 				$('<button class="yair-summary-clear" type="button">').text('Clear search').on('click', yair.controller.clearSearch).appendTo($summary);
 			}
