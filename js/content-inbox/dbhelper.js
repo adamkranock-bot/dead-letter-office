@@ -290,6 +290,13 @@
 	// lazy faceplate-partial), falling back to a scan of the raw HTML.
 	var ARCHIVE_PAGE_RE = /\/svc\/shreddit\/pm-archive\/[^"'\s<>]+/g;
 
+	// The one sanitiser for message HTML, whichever way it was indexed
+	yair.helper.sanitizeHtml = function (html) {
+		if (!html) return '';
+		var doc = new DOMParser().parseFromString('<div>' + String(html) + '</div>', 'text/html');
+		return sanitizeHtml(doc.body.firstChild);
+	};
+
 	function findNextPage(doc, html) {
 		var found = [];
 		doc.querySelectorAll('[src*="/svc/shreddit/pm-archive/"], [href*="/svc/shreddit/pm-archive/"]').forEach(function (el) {

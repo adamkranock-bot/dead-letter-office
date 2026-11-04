@@ -13,7 +13,6 @@ var yair_default_cfg = {
 	, conversationNewToOld: false
 	, compactMode: false
 	, nightMode: false
-	, deleteDraftAfterDays: 60
 	, doImport: true
 	, maxAjaxRetries: 5
 	, ajaxRetryDelay: 5

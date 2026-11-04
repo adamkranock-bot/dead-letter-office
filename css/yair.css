@@ -4,7 +4,7 @@
  * Private messages are now an archive of letters, so the inbox is styled as
  * one: navy ink on cool paper, Public Sans for the interface, Literata for
  * the letters themselves and the year headings, and a single airmail-stripe
- * edge on the conversation being read. Airmail red marks unread and drafts;
+ * edge on the conversation being read. Airmail red marks unread messages;
  * airmail blue marks actions and focus.
  *
  * Plain CSS, no build step. Fonts are registered from js/content-inbox/global.js
@@ -14,7 +14,6 @@
 
 :root {
 	--i-inbox: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 13.5l2.6-7.5h11.8l2.6 7.5v5H3.5z'/%3E%3Cpath d='M3.5 13.5h4.5l1.5 2.5h5l1.5-2.5h4.5'/%3E%3C/svg%3E");
-	--i-drafts: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h4.5L19.5 9 15 4.5 4 15.5z'/%3E%3Cpath d='M13 6.5l4.5 4.5'/%3E%3C/svg%3E");
 	--i-saved: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z'/%3E%3C/svg%3E");
 	--i-archive: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 4.5h17v4.5h-17z'/%3E%3Cpath d='M5 9v10.5h14V9'/%3E%3Cpath d='M10 13h4'/%3E%3C/svg%3E");
 	--i-restore: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4.5 12a7.5 7.5 0 1 0 2.2-5.3'/%3E%3Cpath d='M4.5 4v4.5H9'/%3E%3C/svg%3E");
@@ -23,7 +22,6 @@
 	--i-config: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h9M17 7h3M4 17h3M11 17h9'/%3E%3Ccircle cx='15' cy='7' r='2'/%3E%3Ccircle cx='9' cy='17' r='2'/%3E%3C/svg%3E");
 	--i-modmail: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l7.5 3v6c0 4.6-3.1 7.6-7.5 9-4.4-1.4-7.5-4.4-7.5-9V6z'/%3E%3C/svg%3E");
 	--i-export: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v11'/%3E%3Cpath d='M7 10.5l5 4.5 5-4.5'/%3E%3Cpath d='M5 20h14'/%3E%3C/svg%3E");
-	--i-compose: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20h8'/%3E%3Cpath d='M16.5 3.5l4 4L8 20H4v-4z'/%3E%3C/svg%3E");
 	--i-received: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 7L7 17'/%3E%3Cpath d='M7 9v8h8'/%3E%3C/svg%3E");
 	--i-sent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 17L17 7'/%3E%3Cpath d='M9 7h8v8'/%3E%3C/svg%3E");
 	--i-collapse: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 15l6-6 6 6'/%3E%3C/svg%3E");
@@ -81,8 +79,8 @@ body.res-nightmode {
 
 #classy-error, .footer-parent, .pagename, .debuginfo, #hsts_pixel, .res-floater-list { display: none; }
 
-body.yair-show-inbox, body.yair-show-drafts, body.yair-show-saved, body.yair-show-archived,
-body.yair-show-modmail, body.yair-show-moddrafts, body.yair-show-modsaved, body.yair-show-modarchived,
+body.yair-show-inbox, body.yair-show-saved, body.yair-show-archived,
+body.yair-show-modmail, body.yair-show-modsaved, body.yair-show-modarchived,
 body.yair-show-conversation { background: var(--paper); }
 
 .content { margin: 0 !important; min-height: calc(100vh - 65px); background: var(--paper); }
@@ -145,7 +143,6 @@ body.yair-show-conversation { background: var(--paper); }
 }
 button.icon { appearance: none; }
 .icon-inbox { --i: var(--i-inbox); }
-.icon-drafts { --i: var(--i-drafts); }
 .icon-saved, .yair-save-toggle { --i: var(--i-saved); }
 .yair-save-toggle.yair-saved { --i: var(--i-saved-on); color: #D9A21B !important; }
 .icon-archive { --i: var(--i-archive); }
@@ -155,12 +152,12 @@ button.icon { appearance: none; }
 .icon-config { --i: var(--i-config); }
 .icon-modmail { --i: var(--i-modmail); }
 .icon-export { --i: var(--i-export); }
-.msg-icon { --i: var(--i-compose); }
 .yair-last-author { --i: var(--i-received); cursor: default; }
 .yair-last-author.yair-last-sent { --i: var(--i-sent); }
 .yair-expand-collapse-btn { --i: var(--i-collapse); }
 .yair-collapsed .yair-expand-collapse-btn { --i: var(--i-expand); }
 .yair-expand-all-btn { --i: var(--i-expandAll); }
+.yair-expand-all-btn.yair-all-expanded { --i: var(--i-collapse); }
 
 /* ------------------------------------------------------------------ */
 /* Checkboxes                                                          */
@@ -255,8 +252,6 @@ button.icon { appearance: none; }
 	font-size: 12px;
 	color: var(--postmark);
 }
-.yair-sidebar-title .new-message .msg-icon { width: 30px; height: 30px; border-radius: 8px; }
-.yair-sidebar-title .new-message .msg-icon:hover { color: var(--air-blue); }
 
 .yair-sidebar-nav { margin: 0 0 14px; padding: 0; border: 0; }
 .yair-sidebar-nav .nav-item {
@@ -275,11 +270,9 @@ button.icon { appearance: none; }
 .yair-sidebar-nav .nav-item .icon { color: currentColor; }
 
 .yair-show-inbox .inbox .yair-inbox,
-.yair-show-drafts .inbox .yair-drafts,
 .yair-show-saved .inbox .yair-saved,
 .yair-show-archived .inbox .yair-archived,
 .yair-show-modmail .modmail-inbox,
-.yair-show-moddrafts .modmail.yair-drafts,
 .yair-show-modsaved .modmail.yair-saved,
 .yair-show-modarchived .modmail.yair-archived {
 	background: var(--sheet);
@@ -617,17 +610,6 @@ button.icon { appearance: none; }
 	font-weight: 500;
 	color: var(--ink);
 }
-.yair-has-draft .yair-subject::after {
-	content: 'Draft';
-	margin-left: 8px;
-	padding: 1px 6px;
-	border-radius: 4px;
-	background: color-mix(in srgb, var(--air-red) 12%, transparent);
-	color: var(--air-red);
-	font-size: 11px;
-	font-weight: 600;
-	vertical-align: 1px;
-}
 .yair-text {
 	grid-area: text;
 	min-width: 0;
@@ -897,9 +879,7 @@ button.icon { appearance: none; }
 
 .yair-pm-body { padding: 6px 26px 22px; cursor: auto; }
 .yair-pm-body,
-.yair-pm-body .md,
-.yair-conversation-preview,
-.yair-conversation-preview .md {
+.yair-pm-body .md {
 	font-family: var(--letter);
 	font-size: 16.5px;
 	line-height: 1.68;
@@ -907,9 +887,9 @@ button.icon { appearance: none; }
 	max-width: 66ch !important;
 }
 .yair-pm-body .md { padding: 0; border: 0; background: none; }
-.yair-pm-body .md p, .yair-conversation-preview p { margin: 0 0 0.85em; font: inherit; }
+.yair-pm-body .md p { margin: 0 0 0.85em; font: inherit; }
 .yair-pm-body .md p:last-child { margin-bottom: 0; }
-.yair-pm-body .md a, .yair-conversation-preview a { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
+.yair-pm-body .md a { color: var(--air-blue); text-decoration: underline; text-underline-offset: 2px; }
 .yair-pm-body .md blockquote {
 	margin: 0 0 0.85em;
 	padding: 2px 0 2px 14px;
@@ -934,7 +914,7 @@ button.icon { appearance: none; }
 .yair-collapsed .yair-pm-body { display: none; }
 .yair-collapsed:hover { background: var(--hover); }
 
-/* Read-only notice and reply box */
+/* Read-only notice */
 .yair-archive-notice {
 	margin: 0;
 	padding: 18px 26px 22px;
@@ -950,7 +930,6 @@ button.icon { appearance: none; }
 .yair-archive-notice-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
 .yair-button,
-.yair-response-footer button,
 .yair-config button,
 .yair-alert-buttons button {
 	display: inline-flex;
@@ -969,11 +948,9 @@ button.icon { appearance: none; }
 	transition: filter .12s;
 }
 .yair-button:hover,
-.yair-response-footer button:hover,
 .yair-config button:hover,
 .yair-alert-buttons button:hover { filter: brightness(1.08); }
 .yair-button.yair-button-plain,
-.yair-response-footer .yair-switch-editor,
 .yair-config #YAIRCancelResetInbox,
 .yair-config .yair-export-all,
 .yair-alert-buttons .yair-confirm-no {
@@ -983,63 +960,7 @@ button.icon { appearance: none; }
 .yair-config #YAIRResetInboxToggle,
 .yair-config #YAIRResetInbox { background: transparent; border-color: var(--air-red); color: var(--air-red) !important; }
 .yair-config #YAIRResetInbox { background: var(--air-red); color: #fff !important; }
-.yair-response-footer button:disabled { background: var(--rule-strong); border-color: var(--rule-strong); color: var(--postmark) !important; cursor: not-allowed; filter: none; }
 
-.yair-message-editor { border-top: 1px solid var(--rule); padding: 18px 26px 6px; background: var(--paper); }
-.yair-message-editor .editor-container { margin: 0; padding: 0; }
-.yair-message-editor .ql-toolbar.ql-snow {
-	height: auto;
-	padding: 6px 8px;
-	border: 1px solid var(--rule-strong);
-	border-radius: 10px 10px 0 0;
-	background: var(--sheet);
-}
-.yair-message-editor .ql-container.ql-snow {
-	border: 1px solid var(--rule-strong);
-	border-top: 0;
-	border-radius: 0 0 10px 10px;
-	background: var(--sheet);
-	font-family: var(--letter);
-	font-size: 16px;
-	color: var(--ink);
-}
-.yair-message-editor .ql-editor { min-height: 120px; line-height: 1.6; }
-.yair-message-editor .ql-editor.ql-blank::before { color: var(--postmark); font-style: normal; margin-top: 0; }
-.yair-message-editor .ql-snow .ql-stroke { stroke: var(--ink-soft); }
-.yair-message-editor .ql-snow .ql-fill { fill: var(--ink-soft); }
-.yair-message-editor .ql-snow button:hover .ql-stroke, .yair-message-editor .ql-snow .ql-active .ql-stroke { stroke: var(--air-blue); }
-.yair-message-editor pre { margin: 0; }
-.yair-conversation-input {
-	display: block;
-	width: 100%;
-	min-width: 0 !important;
-	max-width: none !important;
-	min-height: 140px;
-	margin: 0;
-	padding: 12px 14px;
-	border: 1px solid var(--rule-strong);
-	border-radius: 10px;
-	background: var(--sheet);
-	color: var(--ink);
-	font: 13.5px/1.55 ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-	resize: vertical;
-}
-.yair-conversation-input:focus { outline: none; border-color: var(--air-blue); box-shadow: 0 0 0 3px var(--focus); }
-.yair-response-footer { display: flex; justify-content: space-between; align-items: center; height: auto; margin: 12px 0; }
-.yair-conversation-preview {
-	margin: 0 26px 22px;
-	padding: 14px 16px;
-	border: 1px dashed var(--rule-strong);
-	border-radius: 10px;
-}
-.yair-conversation-preview::before {
-	content: 'Preview';
-	display: block;
-	margin-bottom: 6px;
-	font: 600 12px var(--ui);
-	color: var(--postmark);
-}
-.yair-conversation-preview:empty::after { content: 'Nothing to preview yet'; color: var(--postmark); font: 13px var(--ui); }
 
 /* ------------------------------------------------------------------ */
 /* Overlay, loading, notifications, alerts                             */
