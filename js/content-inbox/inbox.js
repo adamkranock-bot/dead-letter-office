@@ -109,6 +109,7 @@
 						}
 					});
 					if (pm.author === getUsername()) $pm.addClass('yair-from-me');
+					$pm.attr('data-name', pm.name);
 					$pm.appendTo($messageArea);
 					if (pm.author !== getUsername()) {
 						responseId = pm.name;
@@ -211,6 +212,63 @@
 			if (yair.cfg.data.showModmail) {
 				$(".yair-modmail").removeClass("yair-hide");
 			}
+			yair.view.applySearchToConversation($conversation, conversation);
+		}
+		// Opened from search results: open the matching messages, highlight the
+		// words, and add a find bar to step through them (n / N)
+		, applySearchToConversation: function ($conversation, conversation) {
+			var q = yair.model.cache.activeSearch;
+			if (!q) return;
+			var result = yair.search.match(conversation, q, {
+				saved: function () { return true; }
+				, archived: function () { return true; }
+				, draft: function () { return true; }
+			});
+			var matchedNames = {};
+			(result.matched || []).forEach(function (m) { matchedNames[m.name] = true; });
+			var words = yair.search.terms(q, 'message');
+			var people = yair.search.terms(q, 'people');
+			$conversation.find('.yair-private-message').each(function () {
+				var $pm = $(this);
+				if (!matchedNames[$pm.attr('data-name')]) return;
+				$pm.removeClass('yair-collapsed').addClass('dlo-search-hit');
+				yair.search.mark($pm.find('.yair-pm-body')[0], words);
+				yair.search.mark($pm.find('.yair-title-text h4')[0], people);
+			});
+			yair.search.mark($conversation.find('.yair-conversation-title')[0], yair.search.terms(q, 'subject'));
+			var $marks = $conversation.find('.yair-pm-body mark');
+			var $hits = $conversation.find('.dlo-search-hit');
+			var targets = $marks.length ? $marks : $hits;
+			if (!targets.length) return;
+			var unit = $marks.length ? 'match' : 'message';
+			var $bar = $('<div class="dlo-findbar" role="status">');
+			var $label = $('<span class="dlo-findbar-label">').appendTo($bar);
+			var $prev = $('<button type="button" class="dlo-findbar-btn" aria-label="Previous match" title="Previous (Shift+N)">').text('\u2039').appendTo($bar);
+			var $next = $('<button type="button" class="dlo-findbar-btn" aria-label="Next match" title="Next (N)">').text('\u203a').appendTo($bar);
+			$('<button type="button" class="dlo-findbar-clear">').text('Clear').on('click', yair.view.clearConversationSearch).appendTo($bar);
+			var index = -1;
+			var go = function (step) {
+				index = (index + step + targets.length) % targets.length;
+				targets.removeClass('dlo-current');
+				var el = targets.eq(index).addClass('dlo-current')[0];
+				var $pm = $(el).closest('.yair-private-message').removeClass('yair-collapsed');
+				el.scrollIntoView({ block: 'center' });
+				var noun = unit === 'match' ? (targets.length === 1 ? 'match' : 'matches') : (targets.length === 1 ? 'message' : 'messages');
+				$label.text((index + 1) + ' of ' + targets.length + ' ' + noun);
+			};
+			$prev.on('click', function () { go(-1); });
+			$next.on('click', function () { go(1); });
+			$conversation.find('.yair-conversation-header').append($bar);
+			yair.model.cache.findStep = go;
+			go(1);
+		}
+		, clearConversationSearch: function () {
+			yair.model.cache.activeSearch = null;
+			yair.model.cache.findStep = null;
+			var $c = $('.yair-conversation');
+			$c.find('.dlo-findbar').remove();
+			$c.find('mark').each(function () { $(this).replaceWith(this.textContent); });
+			$c.find('.dlo-search-hit').removeClass('dlo-search-hit');
 		}
 		, showInbox: function (conversations, hideOverlay) {
 			if (typeof hideOverlay !== "boolean") hideOverlay = true;
@@ -280,34 +338,11 @@
 			}
 			$summary.appendTo(yair.$e.mainPanel);
 		}
-		// Wrap occurrences of the current search terms in <mark>, using text nodes only
-		, highlight: function ($el, field) {
-			var searchObj = yair._get.searchObj;
-			if (!searchObj) return;
-			var terms = [];
-			if (field === 'subject' && searchObj.subject) terms = searchObj.subject;
-			if (field === 'text' && searchObj.message) terms = searchObj.message;
-			if (field === 'correspondent' && searchObj.from) terms = [searchObj.from];
-			terms = terms.filter(function (t) { return t && t.trim(); });
-			if (!terms.length) return;
-			var re = new RegExp('(' + terms.map(escapeRegExp).join('|') + ')', 'gi');
-			$el.contents().filter(function () { return this.nodeType === 3; }).each(function () {
-				var parts = this.textContent.split(re);
-				if (parts.length < 2) return;
-				var frag = document.createDocumentFragment();
-				parts.forEach(function (part, i) {
-					if (!part) return;
-					if (i % 2 === 1) {
-						var mark = document.createElement('mark');
-						mark.textContent = part;
-						frag.appendChild(mark);
-					}
-					else {
-						frag.appendChild(document.createTextNode(part));
-					}
-				});
-				this.parentNode.replaceChild(frag, this);
-			});
+		// Highlight the current search's words inside an element ('subject', 'people', or 'message')
+		, highlight: function ($el, part) {
+			var q = yair._get.searchObj;
+			if (!q || !$el || !$el.length) return;
+			yair.search.mark($el[0], yair.search.terms(q, part));
 		}
 		, setFavicon: function () {
 			var icon = '16.png';
@@ -373,13 +408,30 @@
 				'https://www.reddit.com/user/' + encodeURIComponent(correspondent || '');
 			var $author = $('<a class="author">').attr('href', correspondentHref).text(correspondent || '[unknown]');
 			$row.find('.yair-correspondent').empty().append($author);
-			yair.view.highlight($author, 'correspondent');
+			yair.view.highlight($author, 'people');
 			var count = conversation.messages.length;
 			if (count > 1) {
 				$('<span class="yair-message-count">').text(count).attr('title', count + ' messages in this conversation').appendTo($row.find('.yair-correspondent'));
 			}
 			yair.view.highlight($row.find('.yair-subject').text(subject), 'subject');
-			yair.view.highlight($row.find('.yair-text').text(message), 'text');
+			// While searching, show the newest message that matched rather than the latest one
+			var result = yair.model.cache.searchResults && yair.model.cache.searchResults.get(conversation);
+			var $text = $row.find('.yair-text');
+			if (result && result.matched && result.matched.length) {
+				var hit = result.matched[0];
+				var words = yair.search.terms(yair._get.searchObj, 'message');
+				$text.empty();
+				$('<span class="dlo-snippet-author">').text((hit.author === getUsername() ? 'You' : hit.author) + ': ').appendTo($text);
+				$('<span>').text(yair.search.excerpt(decodeBasicEntities(hit.body || ''), words)).appendTo($text);
+				yair.view.highlight($text, 'message');
+				if (result.matched.length > 1) {
+					$('<span class="dlo-match-count">').text(result.matched.length + ' matching messages').appendTo($row.find('.yair-subject'));
+				}
+			}
+			else {
+				$text.text(message);
+				yair.view.highlight($text, 'message');
+			}
 			$row.find('.yair-datetime').text(dateString(datetime)).attr('title', yairTime.full(datetime));
 			$row.attr('tabindex', '-1');
 			var $checkbox = $row.find('input');
@@ -599,6 +651,11 @@
 				if (target && (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName) || target.isContentEditable)) return;
 				if (yair.$e.overlay.hasClass('show')) return;
 				if (yair.show === 'conversation') {
+					if ((e.key === 'n' || e.key === 'N') && yair.model.cache.findStep) {
+						e.preventDefault();
+						yair.model.cache.findStep(e.key === 'N' ? -1 : 1);
+						return;
+					}
 					if (e.key === 'Escape' || e.key === 'u') {
 						e.preventDefault();
 						yair.controller.backToList();
@@ -959,6 +1016,7 @@
 		, showMessageClick: function () {
 			var conversation = $(this).data('conversation');
 			yair.model.cache.listUrl = location.pathname + location.search;
+			yair.model.cache.activeSearch = yair._get.searchObj || null;
 			history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_conversation/' + conversation.id);
 			yair.controller.parseUrl();
 			yair.view.showConversation(conversation);
@@ -996,6 +1054,8 @@
 		}
 		// Leave a conversation for the folder it was opened from
 		, backToList: function () {
+			yair.model.cache.activeSearch = null;
+			yair.model.cache.findStep = null;
 			if (yair.model.cache.listUrl) {
 				history.pushState({}, yair.cfg.data.pageTitle, yair.model.cache.listUrl);
 				yair.view.update();
@@ -1027,7 +1087,9 @@
 			else { window.scrollTo(0, 0); yair.show = "inbox"; }
 			yair._get = parseQueryString(location.search);
 			if (yair._get.search) {
-				yair._get.searchObj = parseSearchQuery(yair._get.search);
+				var raw = yair._get.search;
+				try { raw = decodeURIComponent(raw); } catch (e) {}
+				yair._get.searchObj = yair.search.parse(raw, getUsername());
 			}
 			else if (yair._get.searchObj) {
 				delete yair._get['searchObj'];
@@ -1416,51 +1478,24 @@
 			}
 		}
 		, searchFilter: function (conversations) {
-			if (!yair._get.searchObj) return;
+			var q = yair._get.searchObj;
+			yair.model.cache.searchResults = typeof WeakMap !== 'undefined' ? new WeakMap() : null;
+			if (!q) return;
+			var drafts = yair.model.cache.draftsKeys || [];
+			var flags = {
+				saved: function (id) { return yair.cfg.saved.contains(id); }
+				, archived: function (id) { return yair.cfg.deleted.contains(id); }
+				, draft: function (id) { return drafts.indexOf(id) >= 0; }
+			};
 			for (var i = 0; i < conversations.length; i++) {
-				var conversation = conversations[i];
-				if (!yair.model.searchMatchCheck(conversation)) {
+				var result = yair.search.match(conversations[i], q, flags);
+				if (!result.ok) {
 					conversations.splice(i--, 1);
 				}
-			}
-		}
-		, searchMatchCheck: function (conversation) {
-			var searchObj = yair._get.searchObj;
-			if (searchObj.from && conversation.correspondent && searchObj.from.toLowerCase() === conversation.correspondent.toLowerCase()) {
-				return true;
-			}
-			if (searchObj.subject) {
-				var subject = String(conversation.subject || '').toLowerCase();
-				var terms = yair._get.searchObj.subject;
-				var termsFound = 0;
-				for (var j = 0; j < terms.length; j++) {
-					var term = terms[j].toLowerCase();
-					if (subject.indexOf(term) >= 0) {
-						termsFound++;
-					}
-				}
-				if (termsFound >= terms.length) {
-					return true;
+				else if (yair.model.cache.searchResults) {
+					yair.model.cache.searchResults.set(conversations[i], result);
 				}
 			}
-			if (searchObj.message) {
-				var terms = searchObj.message;
-				var termsFound = 0;
-				for (var j = 0; j < terms.length; j++) {
-					for (var k = 0; k < conversation.messages.length; k++) {
-						var message = String(conversation.messages[k].body || '').toLowerCase();
-						var term = terms[j].toLowerCase();
-						if (message.indexOf(term) >= 0) {
-							termsFound++;
-							break;
-						}
-					}
-				}
-				if (termsFound >= terms.length) {
-					return true;
-				}
-			}
-			return false;
 		}
 		, cloneAndSortConversations: function (conversations, oldToNew) {
 			if (typeof oldToNew === "undefined") {

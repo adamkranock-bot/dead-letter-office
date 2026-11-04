@@ -689,7 +689,87 @@ button.icon { appearance: none; }
 }
 .yair-message-row:hover .yair-message-count { background: var(--sheet); }
 
-.yair-inbox-panel mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+.yair-inbox-panel mark,
+.yair-conversation mark { background: var(--mark); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* Search results: excerpt of the matching message, and how many matched */
+.dlo-snippet-author { font-weight: 600; color: var(--ink-soft); }
+.dlo-match-count {
+	margin-left: 8px;
+	padding: 1px 7px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--air-blue) 12%, transparent);
+	color: var(--air-blue);
+	font-size: 11.5px;
+	font-weight: 600;
+	vertical-align: 1px;
+	white-space: nowrap;
+}
+
+/* Find bar inside a conversation opened from search */
+.dlo-findbar {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex: none;
+	padding: 3px 4px 3px 12px;
+	border: 1px solid var(--rule-strong);
+	border-radius: 999px;
+	background: var(--sheet);
+	font-size: 12.5px;
+	font-variant-numeric: tabular-nums;
+	color: var(--ink-soft);
+}
+.dlo-findbar-label { margin-right: 4px; white-space: nowrap; }
+.dlo-findbar-btn, .dlo-findbar-clear {
+	height: 26px;
+	min-width: 26px;
+	padding: 0 6px;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	color: var(--ink-soft);
+	font: 600 16px/1 var(--ui);
+	cursor: pointer;
+}
+.dlo-findbar-clear { font-size: 12.5px; padding: 0 10px; color: var(--air-blue); }
+.dlo-findbar-btn:hover, .dlo-findbar-clear:hover { background: var(--hover); color: var(--ink); }
+.yair-conversation mark.dlo-current { background: var(--air-red); color: #fff; box-shadow: 0 0 0 2px var(--air-red); }
+.dlo-search-hit.dlo-current { box-shadow: inset 3px 0 0 var(--air-red); }
+
+/* Cheat-sheet under the empty search box */
+.yair-search-help {
+	display: none;
+	position: absolute;
+	top: calc(100% + 6px);
+	left: -1px;
+	width: min(640px, calc(100% + 2px));
+	z-index: 30;
+	padding: 12px 16px 10px;
+	border: 1px solid var(--rule-strong);
+	border-radius: 10px;
+	background: var(--sheet);
+	box-shadow: var(--shadow);
+	font-size: 12.5px;
+	color: var(--ink-soft);
+}
+.yair-search-container:focus-within #YAIRSearchInput:placeholder-shown ~ .yair-search-help { display: block; }
+.dlo-help-title { margin-bottom: 6px; font-weight: 600; color: var(--ink); }
+.yair-search-help dl {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	gap: 5px 16px;
+	margin: 0;
+}
+.yair-search-help dt { margin: 0; white-space: nowrap; }
+.yair-search-help dd { margin: 0; color: var(--postmark); }
+.yair-search-help code {
+	padding: 1px 5px;
+	border-radius: 4px;
+	background: var(--hover);
+	font: 500 12px ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+	color: var(--ink);
+}
 
 .yair-message-row.yair-row-focused { box-shadow: inset 0 0 0 2px var(--air-blue); z-index: 1; }
 .yair-message-row:focus { outline: none; }
@@ -727,6 +807,7 @@ button.icon { appearance: none; }
 	border-bottom: 1px solid var(--rule);
 }
 .yair-title-container { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; }
+.yair-conversation-header { flex-wrap: wrap; }
 .yair-title-container .yair-save-toggle { width: 22px; height: 22px; -webkit-mask-size: 20px; mask-size: 20px; }
 .yair-conversation-title {
 	min-width: 0;
