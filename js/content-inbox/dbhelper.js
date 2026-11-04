@@ -63,6 +63,13 @@
 		var pageNum = 1;
 		var totalAdded = 0;
 		var seen = {};
+		// Conversation id -> newest message time seen in the list
+		var listSeen = {};
+		var finish = function () {
+			crawlThreads(listSeen, !stopWhenNothingNew, function (fromThreads) {
+				done(totalAdded + fromThreads);
+			});
+		};
 
 		function fetchPage(path) {
 			seen[path] = true;
@@ -77,14 +84,17 @@
 					return;
 				}
 				var page = yair.helper.parseArchiveHtml(response.html);
-				if (!page.messages.length) return done(totalAdded);
+				page.conversations.forEach(function (c) {
+					listSeen[c.id] = Math.max(listSeen[c.id] || 0, c.latest);
+				});
+				if (!page.messages.length) return finish();
 				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
 					totalAdded += numAdded || 0;
 					var next = page.nextCandidates.filter(function (p) {
 						return !seen[p];
 					})[0];
 					if (!next || (stopWhenNothingNew && !numAdded)) {
-						return done(totalAdded);
+						return finish();
 					}
 					pageNum++;
 					// Pace requests so Reddit doesn't rate limit the crawl
@@ -95,6 +105,73 @@
 			});
 		}
 		fetchPage('/message/messages/');
+	}
+
+	// The archive list only previews the latest few messages of each
+	// conversation; its own page (/message/messages/<id>/) has all of them.
+	// Fetch a conversation's page when it's new to us or has newer activity
+	// than when we last read it. archiveThreads (per user, in the config)
+	// remembers {conversation id: newest message time} for that, so an
+	// interrupted run carries on where it left off.
+	function crawlThreads(listSeen, forceAll, done) {
+		var known = Object.assign({}, yair.cfg.data.archiveThreads || {});
+		var added = 0;
+		yair.model.getConversations(function (stored) {
+			var todo = [];
+			var queue = function (id) {
+				if (/^t4_[a-z0-9]+$/i.test(id) && todo.indexOf(id) < 0) todo.push(id);
+			};
+			Object.keys(listSeen).forEach(function (id) {
+				if (forceAll || !(id in known) || listSeen[id] > known[id]) queue(id);
+			});
+			// Conversations stored earlier but never read in full
+			stored.forEach(function (c) {
+				if (!(c.id in known)) queue(c.id);
+			});
+			if (!todo.length) return done(0);
+			var i = 0;
+			var save = function () {
+				yair.cfg.set('archiveThreads', known);
+			};
+			var next = function () {
+				if (i >= todo.length) {
+					save();
+					return done(added);
+				}
+				var id = todo[i++];
+				yair.view.showStatus("Reading full conversations, " + i + " of " + todo.length);
+				yair.request('getArchivePage', {
+					path: '/message/messages/' + id.substring(3) + '/'
+				}, function (response) {
+					var step = function () {
+						if (i % 20 === 0) save();
+						setTimeout(next, 250);
+					};
+					if (!response || response.__yairError || typeof response.html !== "string") {
+						var reason = response && response.__yairError;
+						if (reason === yair.CONTEXT_GONE) {
+							save();
+							return done(added);
+						}
+						// Gone on Reddit's side: don't keep asking. Anything else is retried next time.
+						if (/HTTP (404|403)/.test(reason || "")) known[id] = 9e15;
+						console.warn("YAIR: couldn't read conversation " + id + ":", reason);
+						return step();
+					}
+					var page = yair.helper.parseArchiveHtml(response.html);
+					var newest = listSeen[id] || 0;
+					page.messages.forEach(function (m) {
+						if (m.created_utc > newest) newest = m.created_utc;
+					});
+					yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
+						added += numAdded || 0;
+						known[id] = newest;
+						step();
+					});
+				});
+			};
+			next();
+		});
 	}
 
 	// --- Parsing the new Reddit archive page -------------------------------
@@ -194,6 +271,7 @@
 	yair.helper.parseArchiveHtml = function (html) {
 		var doc = new DOMParser().parseFromString(html, 'text/html');
 		var messages = [];
+		var conversations = [];
 		doc.querySelectorAll('[data-test-id="pm-archive-conversation"]').forEach(function (conv) {
 			var subjectLink = conv.querySelector('a');
 			var subject = subjectLink ? subjectLink.textContent.trim() : '';
@@ -229,6 +307,10 @@
 					return a.created_utc - b.created_utc;
 				})[0].name;
 			}
+			conversations.push({
+				id: rootName
+				, latest: convMessages.reduce(function (t, m) { return Math.max(t, m.created_utc || 0); }, 0)
+			});
 			convMessages.forEach(function (msg) {
 				msg.first_message_name = rootName;
 				if (!msg.author) msg.author = '[unknown]';
@@ -237,6 +319,7 @@
 		});
 		return {
 			messages: messages
+			, conversations: conversations
 			, nextCandidates: findNextPage(doc, html)
 		};
 	};
