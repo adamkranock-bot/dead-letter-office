@@ -26,10 +26,9 @@ const EXCLUDE = [
 ];
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
-const withoutPermission = (m, name) => { m.permissions = (m.permissions || []).filter((p) => p !== name); return m; };
 
 const TARGETS = {
-	// Chrome, Brave, Opera, Vivaldi: service worker background, offscreen document for the MV2 migration
+	// Chrome, Brave, Opera, Vivaldi: service worker background
 	chrome(m) {
 		m.background = { service_worker: m.background.service_worker };
 		delete m.browser_specific_settings;
@@ -42,7 +41,6 @@ const TARGETS = {
 	// Firefox: event-page background, AMO add-on ID and data-collection declaration
 	firefox(m) {
 		m.background = { scripts: m.background.scripts };
-		withoutPermission(m, 'offscreen');
 		delete m.minimum_chrome_version;
 		m.browser_specific_settings = {
 			gecko: {
@@ -59,7 +57,6 @@ const TARGETS = {
 	// Safari (macOS and iOS): event-page background; wrapped into an app by Xcode's converter
 	safari(m) {
 		m.background = { scripts: m.background.scripts };
-		withoutPermission(m, 'offscreen');
 		delete m.minimum_chrome_version;
 		delete m.browser_specific_settings;
 		return m;

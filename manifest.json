@@ -13,8 +13,7 @@
 	"permissions": [
 		"storage",
 		"unlimitedStorage",
-		"alarms",
-		"offscreen"
+		"alarms"
 	],
 	"host_permissions": [
 		"https://*.reddit.com/*"
