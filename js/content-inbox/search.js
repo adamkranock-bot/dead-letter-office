@@ -9,7 +9,7 @@
 //   subject:word  message:word      only that part of the conversation
 //   before:2020  after:2019-06  during:2021-03-14   any message in that range
 //   messages:>20  messages:5-10     thread length
-//   has:link   is:unread  is:saved  is:archived  is:draft  is:modmail
+//   has:link   is:unread  is:saved  is:archived  is:modmail
 (function () {
 	var DIACRITICS = /[̀-ͯ]/g;
 
@@ -234,7 +234,6 @@
 			case 'read': ok = !c['new']; break;
 			case 'saved': case 'starred': ok = flags.saved(c.id); break;
 			case 'archived': ok = flags.archived(c.id); break;
-			case 'draft': case 'drafts': ok = flags.draft(c.id); break;
 			case 'modmail': case 'mod': ok = !!c.modmail; break;
 			default: ok = true;
 			}

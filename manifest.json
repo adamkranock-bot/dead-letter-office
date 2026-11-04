@@ -50,14 +50,10 @@
 				"https://*.reddit.com/message/yair_*"
 			],
 			"css": [
-				"css/quill.core.css",
-				"css/quill.snow.css",
 				"css/yair.css"
 			],
 			"js": [
 				"js/content-inbox/jquery-3.7.1.min.js",
-				"js/content-inbox/jquery.autogrow-textarea.min.js",
-				"js/content-inbox/snuownd.min.js",
 				"js/global/constants.js",
 				"js/global/time.js",
 				"js/global/extension-scanner.js",
@@ -67,9 +63,7 @@
 				"js/content-inbox/generic.js",
 				"js/content-inbox/search.js",
 				"js/content-inbox/inbox.js",
-				"js/content-inbox/dbhelper.js",
-				"js/content-inbox/quill.min.js",
-				"js/content-inbox/turndown.min.js"
+				"js/content-inbox/dbhelper.js"
 			],
 			"run_at": "document_start"
 		}
@@ -82,7 +76,6 @@
 			"js/background/bg-storage.js",
 			"js/background/bg-config.js",
 			"js/background/bg-indexeddb.js",
-			"js/background/bg-drafts.js",
 			"js/background/bg_fetch.js",
 			"js/background/bg-proxy.js"
 		]

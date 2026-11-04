@@ -7,7 +7,6 @@ importScripts(
 	, 'bg-storage.js'
 	, 'bg-config.js'
 	, 'bg-indexeddb.js'
-	, 'bg-drafts.js'
 	, 'bg_fetch.js'
 	, 'bg-proxy.js'
 );

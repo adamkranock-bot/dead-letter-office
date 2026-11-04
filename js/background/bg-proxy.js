@@ -21,10 +21,6 @@
 		, 'yair_cfg_deleted.remove'
 		, 'yair_cfg_saved.add'
 		, 'yair_cfg_saved.remove'
-		, 'drafts.getAllKeys'
-		, 'drafts.get'
-		, 'drafts.set'
-		, 'drafts.delete'
 	];
 	// Reddit usernames: 3-20 chars of letters, digits, _ and -. Allow a little slack.
 	var USERNAME_RE = /^[A-Za-z0-9_-]{1,32}$/;

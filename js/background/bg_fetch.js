@@ -186,31 +186,21 @@ var actions = {
 	, updateNotifications: function () {
 		return yairNotifications.update();
 	}
-	// Reply to a conversation or mark messages read, on behalf of the inbox
-	// page. Done here rather than from the page so it works the same in every
-	// browser (Firefox and Safari restrict cross-origin requests from content
-	// scripts). Only these two endpoints, with validated ids, are allowed.
+	// Mark messages read, on behalf of the inbox page. Done here rather than
+	// from the page so it works the same in every browser (Firefox and Safari
+	// restrict cross-origin requests from content scripts). Only this
+	// endpoint, with validated ids, is allowed.
 	, redditPost: function (request) {
 		var form = request.form || {};
 		var body = new URLSearchParams();
-		if (request.endpoint === 'comment') {
-			if (!FULLNAME_RE.test(String(form.thing_id || '')) || typeof form.text !== 'string') {
-				return Promise.reject(new Error('Invalid reply'));
-			}
-			body.set('thing_id', form.thing_id);
-			body.set('text', form.text);
-			body.set('api_type', 'json');
-		}
-		else if (request.endpoint === 'read_message') {
-			var ids = String(form.id || '').split(',');
-			if (!ids.length || ids.length > 100 || !ids.every(function (id) { return FULLNAME_RE.test(id); })) {
-				return Promise.reject(new Error('Invalid message ids'));
-			}
-			body.set('id', ids.join(','));
-		}
-		else {
+		if (request.endpoint !== 'read_message') {
 			return Promise.reject(new Error('Unknown endpoint'));
 		}
+		var ids = String(form.id || '').split(',');
+		if (!ids.length || ids.length > 100 || !ids.every(function (id) { return FULLNAME_RE.test(id); })) {
+			return Promise.reject(new Error('Invalid message ids'));
+		}
+		body.set('id', ids.join(','));
 		body.set('uh', String(form.uh || ''));
 		return fetch(REDDIT_ORIGIN + '/api/' + request.endpoint, {
 			method: 'POST'

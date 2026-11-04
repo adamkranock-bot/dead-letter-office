@@ -16,10 +16,6 @@ function check(name, cond, detail) {
   results.push({ name, ok: !!cond, detail });
   console.log((cond ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  -> ' + JSON.stringify(detail).slice(0, 300) : ''));
 }
-async function openReplyBox(page) {
-  // Replies sit behind the read-only archive notice
-  if (await page.locator('.yair-reply-anyway').count()) await page.click('.yair-reply-anyway');
-}
 async function mockLog(page) {
   return page.evaluate(() => fetch('https://old.reddit.com/__log').then(r => r.json()));
 }
@@ -225,41 +221,12 @@ async function launch(profile = PROFILE) {
   rows = await page.locator('.yair-message-row').count();
   check('sidebar archive icon does not archive the open conversation', rows === 0 && page.url().endsWith('dlo_archived'), { rows, url: page.url() });
 
-  // 5. Reply
+  // 5. Read-only: no reply box, just the archive notice
   await page.click('.yair-sidebar-nav.inbox .yair-inbox');
   await page.waitForTimeout(500);
   await page.click('.yair-message-row:has-text("Hello there")');
   await page.waitForSelector('.yair-conversation');
-  check('archive notice shown instead of the reply box', await page.locator('.yair-archive-notice').isVisible() && !(await page.locator('.yair-message-editor').isVisible()));
-  await openReplyBox(page);
-  await page.click('.yair-switch-editor');
-  await page.fill('#markdown', 'Thanks!\n\nSecond paragraph');
-  await page.locator('#markdown').dispatchEvent('keyup');
-  const before = listingCalls().length;
-  await page.click('.yair-conversation-reply-btn');
-  await page.waitForFunction(() => document.querySelectorAll('.yair-private-message').length === 3, null, { timeout: 15000 }).catch(() => {});
-  check('reply sent and conversation refreshed with 3 messages', await page.locator('.yair-private-message').count() === 3);
-  log = await mockLog(page);
-  const comment = log.filter(e => e.path === '/api/comment').pop();
-  check('reply posted to the latest received message with modhash', comment && comment.body.thing_id === 't4_a1' && comment.body.uh === 'modhash123' && comment.body.text.includes('Second paragraph'), comment && comment.body);
-  const incr = listingCalls().slice(before);
-  check('incremental index stops at first page with nothing new', incr.length === 2, incr.map(e => e.query));
-
-  // 6. Reply rejected by Reddit (PMs moving to chat)
-  await page.evaluate(() => fetch('https://old.reddit.com/__replyMode?m=error'));
-  await openReplyBox(page);
-  await page.click('.yair-switch-editor');
-  await page.fill('#markdown', 'This will fail');
-  await page.locator('#markdown').dispatchEvent('keyup');
-  await page.click('.yair-conversation-reply-btn');
-  await page.waitForSelector('.yair-alert-error', { timeout: 5000 }).catch(() => {});
-  const alertText = await page.locator('.yair-alert-error').innerText().catch(() => '');
-  check("Reddit's own error message is shown", alertText.includes('only accepting messages through chat'), alertText);
-  await page.click('.yair-alert-error button.yair-alert-ok');
-  await page.waitForTimeout(800);
-  await page.evaluate(() => fetch('https://old.reddit.com/__replyMode?m=ok'));
-  const draft = await sw.evaluate(() => chrome.storage.local.get('YAIR_DRAFTS'));
-  check('failed reply keeps the draft', JSON.stringify(draft).includes('This will fail'), draft);
+  check('archive notice with a Reddit Chat link, and no reply box', await page.locator('.yair-archive-notice a[href="https://chat.reddit.com/"]').isVisible() && await page.locator('textarea, .ql-editor, .yair-message-editor').count() === 0);
 
   // 7. Export one conversation
   let [dl] = await Promise.all([page.waitForEvent('download'), page.click('#YairExportConversation')]);
@@ -284,7 +251,7 @@ async function launch(profile = PROFILE) {
   [dl] = await Promise.all([page.waitForEvent('download'), page.click('.yair-export-all[data-format="json"]')]);
   const exp = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
   const hello = exp.conversations.find(c => c.subject === 'Hello there');
-  check('export-all JSON has every conversation with flags', exp.conversations.length === 13 && hello.archived === true && hello.messages.length === 3, { n: exp.conversations.length, archived: hello && hello.archived });
+  check('export-all JSON has every conversation with flags', exp.conversations.length === 13 && hello.archived === true && hello.messages.length === 2, { n: exp.conversations.length, archived: hello && hello.archived });
   await page.keyboard.press('Escape');
   await page.mouse.click(5, 5);
   await page.waitForTimeout(800);
