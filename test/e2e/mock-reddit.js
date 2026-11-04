@@ -63,7 +63,7 @@ function archiveChunk(start) {
   const all = listing();
   const slice = all.slice(start, start + ARCHIVE_PAGE);
   const more = start + ARCHIVE_PAGE < all.length
-    ? `<infinite-loader><faceplate-partial loading="programmatic" src="/svc/shreddit/message/messages?after=${slice[slice.length - 1].root.name}"></faceplate-partial></infinite-loader>` : '';
+    ? `<infinite-loader><faceplate-partial loading="lazy" src="/svc/shreddit/pm-archive/${Buffer.from((start ? 't4_x' : 't4_0') + ':' + slice[slice.length - 1].root.name).toString('base64')}"></faceplate-partial></infinite-loader>` : '';
   return slice.map(archiveConversation).join('') + more;
 }
 function createMockReddit({ key, cert }) {
@@ -77,12 +77,13 @@ return https.createServer({ key, cert }, async (req, res) => {
   if (req.headers.host.startsWith('www.') && url.pathname === '/message/messages/') {
     res.writeHead(200, { 'content-type': 'text/html' });
     return res.end(source === 'archive'
-      ? `<!DOCTYPE html><html><head><title>Reddit - The heart of the internet</title><script>window.__xss=1</script></head><body><shreddit-app><main class="main w-full">${archiveChunk(0)}</main></shreddit-app></body></html>`
+      ? `<!DOCTYPE html><html><head><title>Reddit - The heart of the internet</title><script>window.__xss=1</script></head><body><faceplate-partial name="ReportFlow" src="/svc/shreddit/report-flow/:thing_id" loading="programmatic"></faceplate-partial><shreddit-app><main class="main w-full">${archiveChunk(0)}</main></shreddit-app></body></html>`
       : '<!DOCTYPE html><html><body><main></main></body></html>');
   }
-  if (req.headers.host.startsWith('www.') && url.pathname === '/svc/shreddit/message/messages') {
+  if (req.headers.host.startsWith('www.') && url.pathname.startsWith('/svc/shreddit/pm-archive/')) {
     const all = listing();
-    const start = all.findIndex(t => t.root.name === url.searchParams.get('after')) + 1;
+    const last = Buffer.from(decodeURIComponent(url.pathname.split('/').pop()), 'base64').toString().split(':')[1];
+    const start = all.findIndex(t => t.root.name === last) + 1;
     res.writeHead(200, { 'content-type': 'text/html' });
     return res.end(source === 'archive' ? archiveChunk(start) : '');
   }
