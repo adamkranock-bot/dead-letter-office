@@ -4,7 +4,7 @@ YAIR (Yet Another Inbox Revamp) is a browser extension for Chrome and Firefox th
 
 > **Version 0.4.0 runs on Manifest V3.** Chrome stopped running Manifest V2 extensions in 2025 (Chrome 138/139), so earlier versions of YAIR no longer load there. 0.4.0 works on current Chrome (121+) and Firefox (121+), and your saved/archived lists, drafts, and settings carry over automatically when you upgrade.
 >
-> **Reddit has moved direct messages to Chat.** Reddit now describes legacy private messages as a read-only archive, so most new conversations happen in Chat instead of here, and replies to old threads may be refused. When Reddit refuses a reply, YAIR shows Reddit's reason and keeps your draft. YAIR is still a fast, searchable, local copy of your PM history, and **Settings → Administration → Export All** saves the whole archive as text or JSON.
+> **Reddit has moved direct messages to Chat.** Reddit now describes legacy private messages as a read-only archive, so most new conversations happen in Chat instead of here, and replies to old threads may be refused. When Reddit refuses a reply, YAIR shows Reddit's reason and keeps your draft. YAIR now reads your history from Reddit's archive page (`www.reddit.com/message/messages/`), so it's still a fast, searchable, local copy of your PM history, and **Settings → Administration → Export All** saves the whole archive as text or JSON.
 
 ## Tell me more!
 

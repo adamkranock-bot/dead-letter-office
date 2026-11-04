@@ -19,8 +19,8 @@ function check(name, cond, detail) {
 async function mockLog(page) {
   return page.evaluate(() => fetch('https://old.reddit.com/__log').then(r => r.json()));
 }
-async function launch() {
-  const ctx = await chromium.launchPersistentContext(PROFILE, {
+async function launch(profile = PROFILE) {
+  const ctx = await chromium.launchPersistentContext(profile, {
     channel: 'chromium',
     headless: true,
     args: [
@@ -218,7 +218,57 @@ async function launch() {
   check('no script errors (ignoring blocked reddit CDN assets)', real.length === 0, real);
   await ctx.close();
 
-  // 14. MV2 -> MV3 migration: seed old localStorage, clear new storage, restart
+  // 14. Current Reddit: messages.json is empty, history only on the new-Reddit archive page
+  await (async () => {
+    const a = await launch(path.join(DIR, 'profile-archive'));
+    const p = await a.ctx.newPage();
+    const errs = [];
+    p.on('pageerror', e => errs.push(e.message));
+    await p.goto('https://old.reddit.com/__source?s=archive');
+    const before = (await mockLog(p)).length;
+    await p.goto('https://old.reddit.com/message/yair_inbox');
+    await p.waitForSelector('.yair-message-row', { timeout: 20000 });
+    await p.waitForTimeout(800);
+    const rowsA = await p.locator('.yair-message-row').count();
+    check('archive: all 13 conversations indexed from the archive page', rowsA === 13, rowsA);
+    let alog = (await mockLog(p)).slice(before);
+    const archiveCalls = alog.filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/')));
+    check('archive: followed the infinite-scroll pages', archiveCalls.length === 4, archiveCalls.map(e => e.path + e.query));
+    check('archive: subreddit sender shown as #modsub', (await p.locator('.yair-correspondent a', { hasText: '#modsub' }).getAttribute('href')) === 'https://www.reddit.com/r/modsub');
+    await p.click('.yair-message-row:has-text("Hello there")');
+    await p.waitForSelector('.yair-private-message');
+    await p.waitForTimeout(500);
+    const bodies = await p.locator('.yair-pm-body').allInnerTexts();
+    check('archive: conversation messages and bodies parsed', bodies.length >= 2 && bodies.some(b => b.includes('Line two')), bodies.map(b => b.slice(0, 40)));
+    const authors = await p.locator('.yair-pm-header h4').allInnerTexts();
+    check('archive: authors parsed from profile links', authors.includes('alice') && authors.includes('testuser'), authors);
+    const unsafe = await p.evaluate(() => ({
+      handlers: document.querySelectorAll('.yair-pm-body [onclick]').length,
+      jsLinks: [...document.querySelectorAll('.yair-pm-body a')].filter(a => /^javascript:/i.test(a.getAttribute('href') || '')).length,
+      goodLinks: [...document.querySelectorAll('.yair-pm-body a[href="https://example.com/x"]')].length,
+      xss: window.__xss,
+    }));
+    check('archive: message HTML sanitized (no handlers or javascript: links)', unsafe.handlers === 0 && unsafe.jsLinks === 0 && unsafe.goodLinks > 0 && unsafe.xss === undefined, unsafe);
+    const title = await p.locator('.yair-message-date-string').first().getAttribute('title');
+    check('archive: timestamps parsed', /20\d\d/.test(title || ''), title);
+    await p.click('.yair-sidebar-nav.inbox .yair-inbox');
+    await p.waitForTimeout(400);
+    await p.fill('#YAIRSearchInput', 'message:magicword');
+    await p.press('#YAIRSearchInput', 'Enter');
+    await p.waitForTimeout(500);
+    check('archive: search over archived bodies works', await p.locator('.yair-message-row').count() === 1);
+    const b2 = (await mockLog(p)).length;
+    await p.goto('https://old.reddit.com/message/yair_inbox');
+    await p.waitForSelector('.yair-message-row');
+    await p.waitForTimeout(800);
+    alog = (await mockLog(p)).slice(b2).filter(e => e.host.startsWith('www.') && (e.path === '/message/messages/' || e.path.startsWith('/svc/shreddit/')));
+    check('archive: reload with nothing new reads one archive page', alog.length === 1, alog.map(e => e.path + e.query));
+    check('archive: no script errors', errs.length === 0, errs);
+    await p.goto('https://old.reddit.com/__source?s=json');
+    await a.ctx.close();
+  })();
+
+  // 15. MV2 -> MV3 migration: seed old localStorage, clear new storage, restart
   ({ ctx, sw, extId } = await launch());
   const seed = await ctx.newPage();
   await seed.goto(`chrome-extension://${extId}/offscreen/migrate.html`);
