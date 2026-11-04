@@ -404,6 +404,38 @@ button.icon { appearance: none; }
 
 .yair-select-all-toggle { margin: 0; min-width: 0; font-size: 13px; white-space: nowrap; }
 
+/* Indexing problem, shown above the list without hiding it */
+.dlo-banner {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	margin: 14px 24px 0;
+	padding: 12px 14px 12px 16px;
+	border: 1px solid color-mix(in srgb, var(--air-red) 35%, var(--rule));
+	border-left: 3px solid var(--air-red);
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--air-red) 6%, var(--sheet));
+	color: var(--ink);
+	font-size: 13.5px;
+	line-height: 1.5;
+}
+.dlo-banner-text { flex: 1; }
+.dlo-banner-close {
+	flex: none;
+	width: 26px;
+	height: 26px;
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--postmark);
+	font-size: 18px;
+	line-height: 24px;
+	cursor: pointer;
+}
+.dlo-banner-close:hover { background: var(--hover); color: var(--ink); }
+.yair-show-conversation .dlo-banner { display: none; }
+
 /* ------------------------------------------------------------------ */
 /* Sort and filter bar                                                 */
 /* ------------------------------------------------------------------ */

@@ -60,17 +60,94 @@
 	// Read both: the JSON listing still carries anything Reddit delivers there,
 	// and the archive carries the history. Messages are keyed by id, so
 	// overlap between the two is ignored.
+	// Counts for the current indexing run, kept for the diagnostics download
+	var stats = null;
+
+	function note(kind, id, reason) {
+		if (!stats) return;
+		var list = stats[kind];
+		if (list.length < 50) list.push(id ? { conversation: id, reason: String(reason || '') } : String(reason || ''));
+	}
+
+	function saveStats(outcome) {
+		if (!stats) return;
+		stats.finished_utc = Math.floor(Date.now() / 1000);
+		stats.outcome = outcome;
+		yair.cfg.set('indexStats', stats);
+	}
+
 	function crawlAllSources(stopWhenNothingNew, done, fail) {
+		stats = {
+			started_utc: Math.floor(Date.now() / 1000)
+			, mode: stopWhenNothingNew ? 'incremental' : 'full'
+			, listPages: 0
+			, conversationsRead: 0
+			, olderChunksRead: 0
+			, messagesAdded: 0
+			, failures: []
+			, warnings: []
+		};
+		var failed = function (message) {
+			saveStats('failed: ' + message);
+			if (typeof fail === "function") fail(message);
+		};
 		crawlPrivateMessages(stopWhenNothingNew, function (fromJson) {
 			crawlArchive(stopWhenNothingNew, function (fromArchive) {
-				done((fromJson || 0) + (fromArchive || 0));
+				stats.messagesAdded = (fromJson || 0) + (fromArchive || 0);
+				saveStats('ok');
+				done(stats.messagesAdded);
 			}, function (message) {
 				// The JSON part worked; report the archive problem without losing it
 				console.error("DLO archive indexing failed:", message);
-				if (typeof fail === "function") fail(message);
+				failed(message);
 			});
-		}, fail);
+		}, failed);
 	}
+
+	// What an archive page looked like, without any of its text: tag and
+	// test-id counts and the shape of its "load more" links. Used to tell
+	// "you have no messages" from "Reddit changed the page", and included in
+	// the diagnostics download.
+	yair.helper.describeArchivePage = function (html) {
+		var doc = new DOMParser().parseFromString(html, 'text/html');
+		var count = function (list) {
+			var out = {};
+			list.forEach(function (k) { out[k] = (out[k] || 0) + 1; });
+			return out;
+		};
+		var testIds = [];
+		doc.querySelectorAll('[data-test-id], [data-testid]').forEach(function (el) {
+			var id = el.getAttribute('data-test-id') || el.getAttribute('data-testid');
+			if (/pm|message|archive|thread|conversation/i.test(id)) testIds.push(id);
+		});
+		var tags = [];
+		doc.querySelectorAll('*').forEach(function (el) {
+			if (el.tagName.indexOf('-') > 0) tags.push(el.tagName.toLowerCase());
+		});
+		var links = [];
+		doc.querySelectorAll('[src*="/svc/"], [href*="/svc/"]').forEach(function (el) {
+			var u = el.getAttribute('src') || el.getAttribute('href');
+			links.push(u.replace(/\?.*$/, '').replace(/\/(t\d_)?[A-Za-z0-9+=_-]{6,}(?=\/|$)/g, '/ID'));
+		});
+		var parsed = yair.helper.parseArchiveHtml(html);
+		return {
+			bytes: html.length
+			, title: (doc.title || '').replace(/[^\w\s|:-]/g, '').slice(0, 60)
+			, mentionsPmArchive: /pm-archive/.test(html)
+			// Dated items in the page body: messages, even if we can't read them
+			, timestamps: doc.querySelectorAll('main time[datetime]').length || doc.querySelectorAll('main faceplate-timeago').length
+			, looksLoggedOut: !!doc.querySelector('a[href*="/login"], [data-testid="login-button"], #login-button') && !/pm-archive/.test(html)
+			, testIds: count(testIds)
+			, customTags: count(tags)
+			, svcLinks: count(links)
+			, parsed: {
+				conversations: parsed.conversations.length
+				, messages: parsed.messages.length
+				, listPageLinks: parsed.nextCandidates.length
+				, olderMessageLinks: parsed.replyPages.length
+			}
+		};
+	};
 
 	function crawlArchive(stopWhenNothingNew, done, fail) {
 		var pageNum = 1;
@@ -97,9 +174,24 @@
 					return;
 				}
 				var page = yair.helper.parseArchiveHtml(response.html);
+				if (stats) stats.listPages++;
 				page.conversations.forEach(function (c) {
 					listSeen[c.id] = Math.max(listSeen[c.id] || 0, c.latest);
 				});
+				if (pageNum === 1) {
+					var described = yair.helper.describeArchivePage(response.html);
+					yair.model.cache.lastArchiveDiagnostics = described;
+					if (!page.messages.length) {
+						// Tell "no messages" apart from "can't read Reddit's page"
+						if (described.mentionsPmArchive && described.timestamps > 0) {
+							note('warnings', null, 'archive page has pm-archive markup but no readable messages');
+							return fail("Reddit's message archive page has changed, and Dead Letter Office can't read it yet. Your stored messages are safe. Settings \u2192 Administration \u2192 Download diagnostics will help get it fixed.");
+						}
+						if (described.looksLoggedOut) {
+							return fail("Reddit didn't show your message archive. Check you're logged in on www.reddit.com, then reload this page.");
+						}
+					}
+				}
 				if (!page.messages.length) return finish();
 				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
 					totalAdded += numAdded || 0;
@@ -172,12 +264,17 @@
 						}
 						// Gone on Reddit's side: don't keep asking. Anything else is retried next time.
 						if (/HTTP (404|403)/.test(reason || "")) known[id] = 9e15;
+						note('failures', id, reason);
 						console.warn("DLO: couldn't read conversation " + id + ":", reason);
 						return step();
 					}
 					var page = yair.helper.parseArchiveHtml(response.html, {
 						rootName: id
 					});
+					if (stats) stats.conversationsRead++;
+					if (!page.messages.length && /pm-archive/.test(response.html)) {
+						note('warnings', id, 'conversation page had pm-archive markup but no readable messages');
+					}
 					var newest = listSeen[id] || 0;
 					var subject = page.messages.length ? page.messages[0].subject : '';
 					var store = function (msgs, then) {
@@ -209,10 +306,12 @@
 								path: path
 							}, function (chunk) {
 								if (!chunk || chunk.__yairError || typeof chunk.html !== "string") {
+									note('failures', id, 'older messages: ' + (chunk && chunk.__yairError));
 									// Leave this conversation unmarked so it's tried again next time
 									console.warn("DLO: couldn't read part of conversation " + id + ":", chunk && chunk.__yairError);
 									return step();
 								}
+								if (stats) stats.olderChunksRead++;
 								var part = yair.helper.parseArchiveHtml(chunk.html, {
 									rootName: id
 									, subject: subject
@@ -302,6 +401,48 @@
 	// is base64 of "<id>:<id>". Find the link in the markup (it lives on a
 	// lazy faceplate-partial), falling back to a scan of the raw HTML.
 	var ARCHIVE_PAGE_RE = /\/svc\/shreddit\/pm-archive\/[^"'\s<>]+/g;
+
+	// Validate a JSON backup and turn it into message records and flags.
+	// Returns {error} or {messages, saved, archived, conversations}.
+	yair.helper.planRestore = function (data, username) {
+		if (!data || typeof data !== 'object' || !(data.conversations instanceof Array)) {
+			return { error: "This file doesn't look like a Dead Letter Office (or YAIR) backup. Choose a file made with Back up (JSON)." };
+		}
+		if (data.username && username && String(data.username).toLowerCase() !== String(username).toLowerCase()) {
+			return { error: 'This backup belongs to u/' + data.username + ", but you're logged in as u/" + username + '. Log in to that account on Reddit to restore it.' };
+		}
+		var columns = db_tables.privateMessages.columns;
+		var messages = [], saved = [], archived = [], conversations = 0;
+		data.conversations.forEach(function (c) {
+			if (!c || !(c.messages instanceof Array)) return;
+			var root = /^t4_[a-z0-9]+$/i.test(c.id || '') ? c.id : null;
+			var count = 0;
+			c.messages.forEach(function (m) {
+				if (!m || !/^t4_[a-z0-9]+$/i.test(m.name || '')) return;
+				var record = {};
+				columns.forEach(function (col) {
+					if (m[col] !== undefined) record[col] = m[col];
+				});
+				record.id = record.id || m.name.substring(3);
+				record.first_message_name = /^t4_[a-z0-9]+$/i.test(record.first_message_name || '') ? record.first_message_name : (root || m.name);
+				record.created_utc = +record.created_utc || 0;
+				record.author = String(record.author || '[unknown]');
+				record.body = String(record.body || '');
+				record.body_html = String(record.body_html || '');
+				record.subject = String(record.subject || c.subject || '');
+				record['new'] = !!record['new'];
+				messages.push(record);
+				count++;
+			});
+			if (!count) return;
+			conversations++;
+			var id = root || messages[messages.length - 1].first_message_name;
+			if (c.saved) saved.push(id);
+			if (c.archived) archived.push(id);
+		});
+		if (!messages.length) return { error: "This backup doesn't contain any messages." };
+		return { messages: messages, saved: saved, archived: archived, conversations: conversations };
+	};
 
 	// The one sanitiser for message HTML, whichever way it was indexed
 	yair.helper.sanitizeHtml = function (html) {

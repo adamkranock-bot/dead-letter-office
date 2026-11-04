@@ -22,6 +22,8 @@ jobs:
         run: npx web-ext lint --source-dir dist/firefox
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: Parser and helper unit tests (real archive markup fixture)
+        run: npm run test:unit
       - name: End-to-end test (built Chrome package) against a mock Reddit
         run: npm run test:e2e
         env:

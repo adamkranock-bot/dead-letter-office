@@ -21,6 +21,8 @@ var yair_default_cfg = {
 	, listSort: 'newest'
 	// Conversation id -> newest message time when its full page was last read
 	, archiveThreads: {}
+	// Counts from the last indexing run, for the diagnostics download
+	, indexStats: null
 };
 
 function yairAllUserCfgs() {

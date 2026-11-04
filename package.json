@@ -12,7 +12,8 @@
     "build:firefox": "node scripts/build.mjs firefox",
     "build:safari": "node scripts/build.mjs safari",
     "lint:firefox": "node scripts/build.mjs firefox && web-ext lint --source-dir dist/firefox",
-    "test:e2e": "node test/e2e/run.js"
+    "test:e2e": "node test/e2e/run.js",
+    "test:unit": "node test/unit/parser.test.js"
   },
   "devDependencies": {
     "eslint": "^10.14.0",
