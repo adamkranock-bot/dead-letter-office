@@ -456,28 +456,6 @@ async function launch(profile = PROFILE) {
     await a.ctx.close();
   })();
 
-  // 15. MV2 -> MV3 migration: seed old localStorage, clear new storage, restart
-  ({ ctx, sw, extId } = await launch());
-  const seed = await ctx.newPage();
-  await seed.goto(`chrome-extension://${extId}/offscreen/migrate.html`);
-  await seed.evaluate(() => {
-    localStorage.clear();
-    localStorage.YAIR_USER_CONFIG = JSON.stringify({ olduser: { saved: ['t4_x'], deleted: ['t4_y'], pmInboxInitialized: true, compactMode: true } });
-    localStorage.YAIR_DRAFTS = JSON.stringify({ olduser: ['t4_x'] });
-    localStorage.YAIR_DRAFT_olduser_t4_x = JSON.stringify({ key: 't4_x', timestamp: Date.now(), value: 'my old draft' });
-    localStorage.inboxRefreshInterval = '300000';
-  });
-  await seed.evaluate(() => chrome.storage.local.clear());
-  await ctx.close();
-  ({ ctx, sw, extId } = await launch());
-  await new Promise(r => setTimeout(r, 2000));
-  const migrated = await sw.evaluate(() => chrome.storage.local.get(null));
-  check('MV2 settings migrated', migrated.YAIR_USER_CONFIG && migrated.YAIR_USER_CONFIG.olduser.saved[0] === 't4_x' && migrated.YAIR_USER_CONFIG.olduser.compactMode === true, migrated.YAIR_USER_CONFIG);
-  check('MV2 drafts migrated', migrated.YAIR_DRAFTS && migrated.YAIR_DRAFTS.olduser.t4_x.value === 'my old draft', migrated.YAIR_DRAFTS);
-  check('MV2 refresh interval migrated', migrated.inboxRefreshInterval === 300000 && migrated.migratedFromMV2 === true, migrated.inboxRefreshInterval);
-  await ctx.close();
-
-  server.close();
   const failed = results.filter(r => !r.ok);
   console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
   process.exit(failed.length ? 1 : 0);

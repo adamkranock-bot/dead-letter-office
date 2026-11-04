@@ -92,7 +92,7 @@
 	}
 
 	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
-		if (!request || request.target === 'offscreen') return;
+		if (!request) return;
 		if (sender.id && sender.id !== chrome.runtime.id) return;
 		if (request.action === 'proxyCmd') {
 			yairStorage.ready.then(function () {
