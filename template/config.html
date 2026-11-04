@@ -1,107 +1,107 @@
-<div class="yair-config yair-slide-in">
+<div class="dlo-config dlo-slide-in">
 	<h2>Settings</h2>
-	<div class="yair-config-body">
-		<div class="yair-config-tabs">
-			<div class="yair-config-tab yair-active-tab" data-tab="settings">Settings</div>
-			<div class="yair-config-tab" data-tab="admin">Administration</div>
-			<div class="yair-config-tab" data-tab="about">About</div>
+	<div class="dlo-config-body">
+		<div class="dlo-config-tabs">
+			<div class="dlo-config-tab dlo-active-tab" data-tab="settings">Settings</div>
+			<div class="dlo-config-tab" data-tab="admin">Administration</div>
+			<div class="dlo-config-tab" data-tab="about">About</div>
 		</div>
-		<div class="yair-config-content-panel">
-			<div class="yair-config-content yair-active-tab" data-tab-content="settings">
-				<div id="ModMail-config" class="yair-modmail">
-					<div class="yair-checkbox">
-						<input class="styled-checkbox" type="checkbox" id="YAIRShowModMail">
-						<label for="YAIRShowModMail">Show Modmail Separately</label>
+		<div class="dlo-config-content-panel">
+			<div class="dlo-config-content dlo-active-tab" data-tab-content="settings">
+				<div id="ModMail-config" class="dlo-modmail">
+					<div class="dlo-checkbox">
+						<input class="styled-checkbox" type="checkbox" id="DLOShowModMail">
+						<label for="DLOShowModMail">Show Modmail Separately</label>
 					</div>
-					<p class="yair-config-info">
+					<p class="dlo-config-info">
 						Enabling this option displays modmail separately from your main inbox, with its own folders.
 					</p>
 				</div>
 				<div id="CompactMode-config">
-					<div class="yair-checkbox">
-						<input class="styled-checkbox" type="checkbox" id="YAIRCompactMode">
-						<label for="YAIRCompactMode">Compact Mode</label>
+					<div class="dlo-checkbox">
+						<input class="styled-checkbox" type="checkbox" id="DLOCompactMode">
+						<label for="DLOCompactMode">Compact Mode</label>
 					</div>
-					<p class="yair-config-info">
+					<p class="dlo-config-info">
 						Select this option to enable compact mode on the inbox. Selecting this option narrows the sidebar, and collapses the card containers.
 					</p>
 				</div>
 				<div id="NightMode-config">
-					<select id="YairNightMode">
+					<select id="DLONightMode">
 						<option value="off">Light</option>
 						<option value="on">Dark</option>
 						<option value="auto">Match system</option>
 					</select>
-					<label for="YairNightMode">Theme</label>
-					<p class="yair-config-info">
+					<label for="DLONightMode">Theme</label>
+					<p class="dlo-config-info">
 						Dead Letter Office also follows Reddit Enhancement Suite's night mode. "Match system" switches with your operating system's light/dark setting.
 					</p>
 				</div>
 				<div id="MessageOrder-config">
-					<div class="yair-checkbox">
-						<input class="styled-checkbox" type="checkbox" id="YAIRNewFirst">
-						<label for="YAIRNewFirst">New Messages First (Conversations)</label>
+					<div class="dlo-checkbox">
+						<input class="styled-checkbox" type="checkbox" id="DLONewFirst">
+						<label for="DLONewFirst">New Messages First (Conversations)</label>
 					</div>
-					<p class="yair-config-info">
+					<p class="dlo-config-info">
 						By default, messages in a conversation are sorted from old to new. Showing the first message at the top and the last message at the bottom. This option allows you to reverse the sorting so that messages are sorted from new to old inside a message thread.
 					</p>
 				</div>
 				<div id="RefreshInterval-config">
-					<select id="YAIRRefreshInterval">
+					<select id="DLORefreshInterval">
 						<option value="0">Off</option>
 						<option value="300000">Every 5 minutes</option>
 						<option value="900000">Every 15 minutes</option>
 						<option value="1800000">Every 30 minutes</option>
 						<option value="3600000">Every hour</option>
 					</select>
-					<label for="YAIRRefreshInterval">Check for unread messages</label>
-					<p class="yair-config-info">Updates the unread badge on the toolbar button. Reddit now delivers new messages to Chat, so unread private messages are rare; turn this off to stop the background checks entirely. The popup's refresh button still works either way.</p>
+					<label for="DLORefreshInterval">Check for unread messages</label>
+					<p class="dlo-config-info">Updates the unread badge on the toolbar button. Reddit now delivers new messages to Chat, so unread private messages are rare; turn this off to stop the background checks entirely. The popup's refresh button still works either way.</p>
 				</div>
 			</div>
-			<div class="yair-config-content" data-tab-content="admin">
+			<div class="dlo-config-content" data-tab-content="admin">
 				<div id="ResetInbox">
-					<button id="YAIRResetInboxToggle">Reset Inbox</button>
-					<p class="yair-config-info">
+					<button id="DLOResetInboxToggle">Reset Inbox</button>
+					<p class="dlo-config-info">
 						If something has gone wrong (somehow the data in your inbox has been corrupted), you can use this option to clear out your inbox and restart from scratch.
 					</p>
 					<br>
-					<p class="yair-config-info">
+					<p class="dlo-config-info">
 						Reset clears the local copy and reads everything from Reddit again. Anything Reddit no longer has (for example messages that were deleted there) will be gone from the copy too, so consider exporting first.
 					</p>
-					<div id="YAIRConfirmReset" class="yair-hide">
+					<div id="DLOConfirmReset" class="dlo-hide">
 						<p>Are you sure? This action can't be undone.</p>
-						<button id="YAIRResetInbox">Reset Inbox</button>
-						<button id="YAIRCancelResetInbox">Cancel</button>
+						<button id="DLOResetInbox">Reset Inbox</button>
+						<button id="DLOCancelResetInbox">Cancel</button>
 					</div>
 				</div>
 				<div id="reindexMessages">
-					<button id="YAIRReindexMessages">Reindex Inbox</button>
-					<p class="yair-config-info">
+					<button id="DLOReindexMessages">Reindex Inbox</button>
+					<p class="dlo-config-info">
 						If messages you know you've gotten aren't showing up in your inbox, click this button to reindex all messages without resetting the inbox. This might take a long time if you have a lot of messages!
 					</p>
 				</div>
 				<div id="exportAll">
-					<button class="yair-export-all" data-format="json">Back up (JSON)</button>
-					<button class="yair-export-all" data-format="txt">Export as text</button>
-					<p class="yair-config-info">
+					<button class="dlo-export-all" data-format="json">Back up (JSON)</button>
+					<button class="dlo-export-all" data-format="txt">Export as text</button>
+					<p class="dlo-config-info">
 						Your copy here is the only one outside Reddit, and it doesn't follow you to a new browser or computer. The JSON backup holds every conversation with its saved and archived flags, and can be restored below. The text export is for reading.
 					</p>
 				</div>
 				<div id="restoreBackup">
 					<button id="DLORestoreButton" type="button">Restore from backup&hellip;</button>
 					<input id="DLORestoreFile" type="file" accept=".json,application/json" hidden>
-					<p class="yair-config-info">
+					<p class="dlo-config-info">
 						Adds the conversations from a JSON backup (from Dead Letter Office or YAIR) to this account, along with their saved and archived flags. Nothing already here is changed or removed.
 					</p>
 				</div>
 				<div id="diagnostics">
 					<button id="DLODiagnosticsButton" type="button">Download diagnostics</button>
-					<p class="yair-config-info">
+					<p class="dlo-config-info">
 						If indexing goes wrong, this file helps work out why: counts, the last indexing run, and the structure of Reddit's archive page. It contains no message text, subjects, or usernames.
 					</p>
 				</div>
 			</div>
-			<div class="yair-config-content" data-tab-content="about">
+			<div class="dlo-config-content" data-tab-content="about">
 				<div>
 					<h3>Dead Letter Office</h3>
 					<p>
@@ -126,7 +126,7 @@
 			</div>
 		</div>
 	</div>
-	<div class="yair-config-footer">
-		<button class="yair-save-button">Save changes</button>
+	<div class="dlo-config-footer">
+		<button class="dlo-save-button">Save changes</button>
 	</div>
 </div>

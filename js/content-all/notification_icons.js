@@ -56,19 +56,19 @@
 			var parent_li = ori_mail.parentElement;
 			parent_li.style.display = 'none';
 			var new_pm = document.createElement('a');
-			new_pm.classList.add('yair-privatemessages');
+			new_pm.classList.add('dlo-privatemessages');
 			new_pm.setAttribute('href', '/message/dlo_inbox');
 		new_pm.setAttribute('title', 'Dead Letter Office');
 			var pm_li = document.createElement('li');
 			pm_li.appendChild(new_pm);
 			var new_reply = document.createElement('a');
-			new_reply.classList.add('yair-mail');
+			new_reply.classList.add('dlo-mail');
 			new_reply.setAttribute('href', '/message/inbox/');
 			var reply_li = document.createElement('li');
 			reply_li.appendChild(new_reply);
 			referenceElement(parent_li).insertAfter(pm_li).insertAfter(reply_li);
 			elements.defaultInboxIcons.push(new_reply);
-			elements.yairInboxIcons.push(new_pm);
+			elements.dloInboxIcons.push(new_pm);
 			if (initialMessageCount > 0) {
 				HelpFuncs.checkMail();
 			}
@@ -122,24 +122,24 @@
 		}
 		, updateMailElements: function (count) {
 			if (count.pm > 0) {
-				for (var i = 0; i < elements.yairInboxIcons.length; i++) {
-					elements.yairInboxIcons[i].classList.add('yair-havemail');
+				for (var i = 0; i < elements.dloInboxIcons.length; i++) {
+					elements.dloInboxIcons[i].classList.add('dlo-havemail');
 				}
-				for (var i = 0; i < elements.yairInboxCounts.length; i++) {
-					elements.yairInboxCounts[i].innerText = count.pm;
+				for (var i = 0; i < elements.dloInboxCounts.length; i++) {
+					elements.dloInboxCounts[i].innerText = count.pm;
 				}
 			}
 			else {
-				for (var i = 0; i < elements.yairInboxIcons.length; i++) {
-					elements.yairInboxIcons[i].classList.remove('yair-havemail');
+				for (var i = 0; i < elements.dloInboxIcons.length; i++) {
+					elements.dloInboxIcons[i].classList.remove('dlo-havemail');
 				}
-				for (var i = 0; i < elements.yairInboxCounts.length; i++) {
-					elements.yairInboxCounts[i].innerText = '';
+				for (var i = 0; i < elements.dloInboxCounts.length; i++) {
+					elements.dloInboxCounts[i].innerText = '';
 				}
 			}
 			if (count.reply > 0) {
 				for (var i = 0; i < elements.defaultInboxIcons.length; i++) {
-					elements.defaultInboxIcons[i].classList.add('yair-havemail');
+					elements.defaultInboxIcons[i].classList.add('dlo-havemail');
 				}
 				for (var i = 0; i < elements.defaultInboxCounts.length; i++) {
 					elements.defaultInboxCounts[i].innerText = count.reply;
@@ -147,7 +147,7 @@
 			}
 			else {
 				for (var i = 0; i < elements.defaultInboxIcons.length; i++) {
-					elements.defaultInboxIcons[i].classList.remove('yair-havemail');
+					elements.defaultInboxIcons[i].classList.remove('dlo-havemail');
 				}
 				for (var i = 0; i < elements.defaultInboxCounts.length; i++) {
 					elements.defaultInboxCounts[i].innerText = '';
@@ -173,8 +173,8 @@
 	var elements = {
 		defaultInboxIcons: []
 		, defaultInboxCounts: []
-		, yairInboxIcons: []
-		, yairInboxCounts: []
+		, dloInboxIcons: []
+		, dloInboxCounts: []
 	, };
 	var data = {
 		lastMailCheck: 0
@@ -188,11 +188,11 @@
 			var ori_mail = document.querySelector('.icon-message');
 		}
 		var new_pm = document.createElement('a');
-		new_pm.classList.add('yair-privatemessages');
+		new_pm.classList.add('dlo-privatemessages');
 		new_pm.setAttribute('href', '/message/dlo_inbox');
 		var new_pm_count = HelpFuncs.createMessageCount('/message/dlo_inbox');
 		var new_reply = document.createElement('a');
-		new_reply.classList.add('yair-mail');
+		new_reply.classList.add('dlo-mail');
 		new_reply.setAttribute('href', '/message/inbox/');
 		var new_reply_count = HelpFuncs.createMessageCount('/message/inbox');
 		if (ori_mail !== null) {
@@ -202,8 +202,8 @@
 		}
 		elements.defaultInboxIcons.push(new_reply);
 		elements.defaultInboxCounts.push(new_reply_count);
-		elements.yairInboxIcons.push(new_pm);
-		elements.yairInboxCounts.push(new_pm_count);
+		elements.dloInboxIcons.push(new_pm);
+		elements.dloInboxCounts.push(new_pm_count);
 	}
 		
 	function initDefaultDOMChangesForNewReddit() {
@@ -216,7 +216,7 @@
 			new_pm.style.fill = "#d7dadc";
 		}
 		new_pm.innerHTML = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"> <defs>  <pattern id=\"airmail\" width=\"4.2\" height=\"4.2\" patternUnits=\"userSpaceOnUse\" patternTransform=\"rotate(45)\">   <rect width=\"4.2\" height=\"4.2\" fill=\"#FFFFFF\"/>   <rect width=\"1.6\" height=\"4.2\" fill=\"#C9353D\"/>   <rect x=\"2.1\" width=\"1.6\" height=\"4.2\" fill=\"#2F55A4\"/>  </pattern> </defs> <rect x=\"0.5\" y=\"2.5\" width=\"15\" height=\"11\" rx=\"1.6\" fill=\"url(#airmail)\" stroke=\"#22283A\" stroke-width=\"1\"/> <rect x=\"2.5\" y=\"4.5\" width=\"11\" height=\"7\" rx=\".6\" fill=\"#FFFFFF\"/> <path d=\"M2.8 5l5.2 3.6L13.2 5\" fill=\"none\" stroke=\"#22283A\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>";
-		new_pm.classList.add('yair-privatemessages-newredit');
+		new_pm.classList.add('dlo-privatemessages-newredit');
 		new_pm.setAttribute('href', 'https://old.reddit.com/message/dlo_inbox');
 		var new_pm_count = document.createElement('span');
 		new_pm_count.classList.add('count_badge');
@@ -234,9 +234,9 @@
 				if (messages[i].kind === "t4") { new_pm_count_num++; } else {new_reply_count_num++; }
 			}
 			if (new_pm_count_num > 0) {
-				new_pm.classList.remove('yair-privatemessages-newredit');
-				new_pm.classList.remove('yair-privatemessages-newreddit-night');
-				new_pm.classList.add('yair-privatemessages-newredit-newmail');
+				new_pm.classList.remove('dlo-privatemessages-newredit');
+				new_pm.classList.remove('dlo-privatemessages-newreddit-night');
+				new_pm.classList.add('dlo-privatemessages-newredit-newmail');
 				new_pm.appendChild(new_pm_count);
 			}
 			new_pm_count.textContent = new_pm_count_num;
@@ -255,8 +255,8 @@
 			if (ori_mail !== null) {
 				referenceElement(ori_mail.previousSibling).insertAfter(new_pm_holder);
 			}
-			elements.yairInboxIcons.push(new_pm);
-			elements.yairInboxCounts.push(new_pm_count);
+			elements.dloInboxIcons.push(new_pm);
+			elements.dloInboxCounts.push(new_pm_count);
 		}
 		request().catch(function (e) {
 			console.warn('DLO: could not check unread messages', e);

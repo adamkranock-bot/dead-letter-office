@@ -1,6 +1,6 @@
 // Page shell: layout, overlays, loading and notification messages, and the favicon.
 (function ($) {
-	Object.assign(yair.view, {
+	Object.assign(dlo.view, {
 		setFavicon: function () {
 			var icon = '16.png';
 			$('head link[rel="shortcut icon"]').remove();
@@ -12,160 +12,160 @@
 		}
 		, initLayout: function () {
 			//  Set page title
-			if (!yair.cfg.data.pageTitle || yair.cfg.data.pageTitle === 'Reddit - YAIR') yair.cfg.data.pageTitle = 'Dead Letter Office';
-			document.title = yair.cfg.data.pageTitle;
+			if (!dlo.cfg.data.pageTitle || dlo.cfg.data.pageTitle === 'Reddit - YAIR') dlo.cfg.data.pageTitle = 'Dead Letter Office';
+			document.title = dlo.cfg.data.pageTitle;
 			// Establish container for saved DOM elements
-			yair.$e = {
+			dlo.$e = {
 				body: $('body')
-				, loading: $('<span class="yair-loading-icon">')
+				, loading: $('<span class="dlo-loading-icon">')
 				, get statusText() {
-					var $ele = $('.loading-message .yair-loading-status');
+					var $ele = $('.loading-message .dlo-loading-status');
 					if ($ele.length > 0) return $ele;
 					var $load = $('.loading-message');
 					if ($load.length > 0) {
-						return $('<span class="yair-loading-status">').appendTo($load);
+						return $('<span class="dlo-loading-status">').appendTo($load);
 					}
 					return $('<div>');
 				}
 			};
 			// "uh" is used to send messages
-			yair.model.uh = yair.$e.body.find('input[name="uh"]').val();
+			dlo.model.uh = dlo.$e.body.find('input[name="uh"]').val();
 			// If history.pushState has been used, popstate should trigger a view update
-			$(window).on('popstate', yair.view.update);
+			$(window).on('popstate', dlo.view.update);
 			// Create global container
-			yair.$e.content = $('<div class="yair-content">').appendTo($('body > .content'));
-			yair.$e.overlay = $('<div class="yair-overlay">').appendTo(yair.$e.body);
+			dlo.$e.content = $('<div class="dlo-content">').appendTo($('body > .content'));
+			dlo.$e.overlay = $('<div class="dlo-overlay">').appendTo(dlo.$e.body);
 			// Compact Mode
-			if (yair.cfg.data.compactMode) {
-				yair.$e.body.addClass('yair-compact-mode');
+			if (dlo.cfg.data.compactMode) {
+				dlo.$e.body.addClass('dlo-compact-mode');
 			}
-			yair.view.applyTheme();
+			dlo.view.applyTheme();
 			// Load page content
-			yair.$e.content.html(yair.templates.inbox_layout);
-			yair.$e.mainPanel = $('.yair-inbox-panel');
-			yair.$e.search = $('#YAIRSearchInput');
-			yair.$e.searchBtn = $('#YAIRSearchButton');
+			dlo.$e.content.html(dlo.templates.inbox_layout);
+			dlo.$e.mainPanel = $('.dlo-inbox-panel');
+			dlo.$e.search = $('#DLOSearchInput');
+			dlo.$e.searchBtn = $('#DLOSearchButton');
 			// Rebind the inbox / saved / archived buttons
 			// So that the entire page wont have to be redownloaded
-			yair.$e.content.find('a.yair-link').on('click', function (e) {
+			dlo.$e.content.find('a.dlo-link').on('click', function (e) {
 				var url = $(this).attr('href');
 				var refresh = (!location.search && location.pathname === url);
-				yair.$e.search.val('');
+				dlo.$e.search.val('');
 				$('#select-all').prop("checked", false);
-				$(".yair-sidebar-options").addClass("yair-hide");
+				$(".dlo-sidebar-options").addClass("dlo-hide");
 				e.preventDefault();
 				if (refresh) {
-					yair.controller.reloadInbox();
+					dlo.controller.reloadInbox();
 				}
 				else {
-					history.pushState({}, yair.cfg.data.pageTitle, url);
-					yair.view.update();
+					history.pushState({}, dlo.cfg.data.pageTitle, url);
+					dlo.view.update();
 				}
 			});
 			// Bind our searchbar: results update as you type
-			var $clear = $('#YAIRSearchClear');
+			var $clear = $('#DLOSearchClear');
 			var syncClear = function () {
-				$clear.toggleClass('yair-hide', !yair.$e.search.val());
+				$clear.toggleClass('dlo-hide', !dlo.$e.search.val());
 			};
 			var liveSearch = (function () {
 				var timer = null;
 				return function () {
 					clearTimeout(timer);
 					timer = setTimeout(function () {
-						yair.controller.search(yair.$e.search.val(), true);
+						dlo.controller.search(dlo.$e.search.val(), true);
 					}, 250);
 				};
 			})();
-			yair.$e.searchBtn.on('click', function () {
-				yair.controller.search(yair.$e.search.val());
+			dlo.$e.searchBtn.on('click', function () {
+				dlo.controller.search(dlo.$e.search.val());
 			});
-			yair.$e.search.on('input', function () {
+			dlo.$e.search.on('input', function () {
 				syncClear();
 				liveSearch();
 			});
-			yair.$e.search.on('keydown', function (e) {
-				if (e.key === 'Enter') yair.controller.search(yair.$e.search.val());
+			dlo.$e.search.on('keydown', function (e) {
+				if (e.key === 'Enter') dlo.controller.search(dlo.$e.search.val());
 				if (e.key === 'Escape') {
-					yair.controller.clearSearch();
-					yair.$e.search.blur();
+					dlo.controller.clearSearch();
+					dlo.$e.search.blur();
 				}
 			});
 			$clear.on('click', function () {
-				yair.controller.clearSearch();
-				yair.$e.search.trigger('focus');
+				dlo.controller.clearSearch();
+				dlo.$e.search.trigger('focus');
 			});
-			yair.view.bindKeyboard();
-			yair.model.listOptions.sort = yair.cfg.data.listSort || 'newest';
-			yair.view.initListToolbar();
+			dlo.view.bindKeyboard();
+			dlo.model.listOptions.sort = dlo.cfg.data.listSort || 'newest';
+			dlo.view.initListToolbar();
 			// If the URL includes a search, place the search in the search bar
-			if (yair._get.search) {
-				yair.$e.search.val(decodeURIComponent(yair._get.search));
+			if (dlo._get.search) {
+				dlo.$e.search.val(decodeURIComponent(dlo._get.search));
 			}
-			$('#YAIRSearchClear').toggleClass('yair-hide', !yair.$e.search.val());
+			$('#DLOSearchClear').toggleClass('dlo-hide', !dlo.$e.search.val());
 			if ( !$("#new_modmail").length && !$("#modmail").length) {
-				$(".yair-modmail").css("display","none");
+				$(".dlo-modmail").css("display","none");
 			}
 		}
 		, showOverlay: function (clickToDismiss, dismissCallback) {
-			yair.model.cache.hideOverlay = false;
-			yair.$e.overlay.show();
+			dlo.model.cache.hideOverlay = false;
+			dlo.$e.overlay.show();
 			setTimeout(function () {
-				yair.$e.overlay.addClass('show');
+				dlo.$e.overlay.addClass('show');
 			}, 10);
 			if (typeof clickToDismiss === "boolean" && clickToDismiss) {
 				setTimeout(function () {
-					yair.$e.overlay.children().on('click', stopEvent);
-					yair.$e.overlay.on('click', function () {
+					dlo.$e.overlay.children().on('click', stopEvent);
+					dlo.$e.overlay.on('click', function () {
 						if (typeof dismissCallback === 'function') dismissCallback();
-						yair.view.hideOverlay();
+						dlo.view.hideOverlay();
 					});
 				}, 10);
 			}
 		}
 		, hideOverlay: function () {
-			yair.model.cache.hideOverlay = true;
+			dlo.model.cache.hideOverlay = true;
 			setTimeout(function () {
-				if (!yair.model.cache.hideOverlay) return;
-				yair.$e.overlay.off().removeClass('show');
+				if (!dlo.model.cache.hideOverlay) return;
+				dlo.$e.overlay.off().removeClass('show');
 				setTimeout(function () {
-					if (!yair.model.cache.hideOverlay) return;
-					yair.$e.overlay.hide();
+					if (!dlo.model.cache.hideOverlay) return;
+					dlo.$e.overlay.hide();
 				}, 600);
 			}, 50);
 		}
 		, isLoading: function () {
-			return $('.yair-overlay.show .loading-message').length > 0;
+			return $('.dlo-overlay.show .loading-message').length > 0;
 		}
 		, showLoading: function (message) {
 			if (message === undefined) message = 'Loading';
 			var $element;
-			if (yair.view.isLoading()) {
-				$element = $('.yair-overlay.show .loading-message').text(message).prepend(yair.$e.loading.clone());
+			if (dlo.view.isLoading()) {
+				$element = $('.dlo-overlay.show .loading-message').text(message).prepend(dlo.$e.loading.clone());
 			}
 			else {
-				$element = $('<div class="loading-message">').text(message).prepend(yair.$e.loading.clone()).appendTo(yair.$e.overlay.empty());
-				yair.view.showOverlay();
+				$element = $('<div class="loading-message">').text(message).prepend(dlo.$e.loading.clone()).appendTo(dlo.$e.overlay.empty());
+				dlo.view.showOverlay();
 			}
 			return $element;
 		}
 		, showNotification: function (message, duration) {
 			if (typeof duration === "undefined") duration = 1500;
 			if (message === undefined) message = 'Loading';
-			$('<div class="notification-message">').text(message).appendTo(yair.$e.overlay.empty());
-			yair.$e.overlay.show().addClass('show');
+			$('<div class="notification-message">').text(message).appendTo(dlo.$e.overlay.empty());
+			dlo.$e.overlay.show().addClass('show');
 			if (duration < 0) return;
 			setTimeout(function () {
-				yair.view.hideOverlay();
+				dlo.view.hideOverlay();
 			}, duration);
 		}
 		, showStatus: function (statusMsg) {
 			if (statusMsg !== false) {
-				yair.$e.statusText.text(statusMsg);
+				dlo.$e.statusText.text(statusMsg);
 			}
 			else {
-				yair.view.hideOverlay();
+				dlo.view.hideOverlay();
 				setTimeout(function () {
-					yair.view.showNotification("The system failed too many times in retrieving messages, please try again at a later time.");
+					dlo.view.showNotification("The system failed too many times in retrieving messages, please try again at a later time.");
 				}, 1000);
 			}
 		}

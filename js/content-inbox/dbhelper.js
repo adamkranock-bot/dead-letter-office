@@ -1,5 +1,5 @@
 (function (undefined) {
-	yair.helper.fixPrivateMessage = function (obj) {
+	dlo.helper.fixPrivateMessage = function (obj) {
 		var msg = getObjAttributes(obj, db_tables.privateMessages.columns);
 		if (!msg.author && obj.subreddit) msg.author = '#' + obj.subreddit;
 		if (!msg.author) msg.author = "[unknown]";
@@ -23,34 +23,34 @@
 		}
 		return r;
 	}
-	yair.model.updateDb = function (success, error) {
+	dlo.model.updateDb = function (success, error) {
 		var done = success, failed = error;
 		success = function () {
-			yair.model.invalidateConversations();
+			dlo.model.invalidateConversations();
 			done.apply(this, arguments);
 		};
 		// A failed run may still have stored some messages
 		error = function () {
-			yair.model.invalidateConversations();
+			dlo.model.invalidateConversations();
 			if (typeof failed === 'function') failed.apply(this, arguments);
 		};
-		yair.proxy(['yair', 'db', 'countObjectsInStore'], [db_tables.privateMessages.name], function (num) {
-			if (yair.cfg.data.pmInboxInitialized && num > 10) {
+		dlo.proxy(['dlo', 'db', 'countObjectsInStore'], [db_tables.privateMessages.name], function (num) {
+			if (dlo.cfg.data.pmInboxInitialized && num > 10) {
 				// Only fetch until we reach messages we already have
 				crawlAllSources(true, success, error);
 			}
 			else {
 				// First run (or after a reset): index everything Reddit will give us
 				crawlAllSources(false, function (added) {
-					yair.cfg.set('pmInboxInitialized', true);
+					dlo.cfg.set('pmInboxInitialized', true);
 					success(added);
 				}, error);
 			}
 		});
 	};
-	yair.model.reindexPrivateMessages = function (success, error) {
+	dlo.model.reindexPrivateMessages = function (success, error) {
 		crawlAllSources(false, function () {
-			yair.model.invalidateConversations();
+			dlo.model.invalidateConversations();
 			success.apply(this, arguments);
 		}, error);
 	};
@@ -73,7 +73,7 @@
 		if (!stats) return;
 		stats.finished_utc = Math.floor(Date.now() / 1000);
 		stats.outcome = outcome;
-		yair.cfg.set('indexStats', stats);
+		dlo.cfg.set('indexStats', stats);
 	}
 
 	function crawlAllSources(stopWhenNothingNew, done, fail) {
@@ -108,7 +108,7 @@
 	// test-id counts and the shape of its "load more" links. Used to tell
 	// "you have no messages" from "Reddit changed the page", and included in
 	// the diagnostics download.
-	yair.helper.describeArchivePage = function (html) {
+	dlo.helper.describeArchivePage = function (html) {
 		var doc = new DOMParser().parseFromString(html, 'text/html');
 		var count = function (list) {
 			var out = {};
@@ -129,7 +129,7 @@
 			var u = el.getAttribute('src') || el.getAttribute('href');
 			links.push(u.replace(/\?.*$/, '').replace(/\/(t\d_)?[A-Za-z0-9+=_-]{6,}(?=\/|$)/g, '/ID'));
 		});
-		var parsed = yair.helper.parseArchiveHtml(html);
+		var parsed = dlo.helper.parseArchiveHtml(html);
 		return {
 			bytes: html.length
 			, title: (doc.title || '').replace(/[^\w\s|:-]/g, '').slice(0, 60)
@@ -163,24 +163,24 @@
 
 		function fetchPage(path) {
 			seen[path] = true;
-			yair.view.showStatus("Reading message archive, page " + pageNum);
-			yair.request('getArchivePage', {
+			dlo.view.showStatus("Reading message archive, page " + pageNum);
+			dlo.request('getArchivePage', {
 				path: path
 			}, function (response) {
-				if (!response || response.__yairError || typeof response.html !== "string") {
-					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
-					if (reason === yair.CONTEXT_GONE) return fail("Dead Letter Office was updated or reloaded. Reload this page to keep going.");
+				if (!response || response.__dloError || typeof response.html !== "string") {
+					var reason = (response && response.__dloError) ? response.__dloError : "unexpected response";
+					if (reason === dlo.CONTEXT_GONE) return fail("Dead Letter Office was updated or reloaded. Reload this page to keep going.");
 					fail("Couldn't load your message archive from Reddit (" + reason + "). Are you logged in on www.reddit.com?");
 					return;
 				}
-				var page = yair.helper.parseArchiveHtml(response.html);
+				var page = dlo.helper.parseArchiveHtml(response.html);
 				if (stats) stats.listPages++;
 				page.conversations.forEach(function (c) {
 					listSeen[c.id] = Math.max(listSeen[c.id] || 0, c.latest);
 				});
 				if (pageNum === 1) {
-					var described = yair.helper.describeArchivePage(response.html);
-					yair.model.cache.lastArchiveDiagnostics = described;
+					var described = dlo.helper.describeArchivePage(response.html);
+					dlo.model.cache.lastArchiveDiagnostics = described;
 					if (!page.messages.length) {
 						// Tell "no messages" apart from "can't read Reddit's page"
 						if (described.mentionsPmArchive && described.timestamps > 0) {
@@ -193,7 +193,7 @@
 					}
 				}
 				if (!page.messages.length) return finish();
-				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
+				dlo.proxy(['dlo', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
 					totalAdded += numAdded || 0;
 					var next = page.nextCandidates.filter(function (p) {
 						return !seen[p];
@@ -219,13 +219,13 @@
 	// remembers {conversation id: newest message time} for that, so an
 	// interrupted run carries on where it left off.
 	function crawlThreads(listSeen, forceAll, done) {
-		var known = Object.assign({}, yair.cfg.data.archiveThreads || {});
+		var known = Object.assign({}, dlo.cfg.data.archiveThreads || {});
 		// Version 2 follows a conversation's "load more" chunks. Records from
 		// earlier builds only saw the first chunk, so start those over.
 		var THREADS_FORMAT = 2;
 		if (known.__v !== THREADS_FORMAT) known = { __v: THREADS_FORMAT };
 		var added = 0;
-		yair.model.getConversations(function (stored) {
+		dlo.model.getConversations(function (stored) {
 			var todo = [];
 			var queue = function (id) {
 				if (/^t4_[a-z0-9]+$/i.test(id) && todo.indexOf(id) < 0) todo.push(id);
@@ -240,7 +240,7 @@
 			if (!todo.length) return done(0);
 			var i = 0;
 			var save = function () {
-				yair.cfg.set('archiveThreads', known);
+				dlo.cfg.set('archiveThreads', known);
 			};
 			var next = function () {
 				if (i >= todo.length) {
@@ -248,17 +248,17 @@
 					return done(added);
 				}
 				var id = todo[i++];
-				yair.view.showStatus("Reading full conversations, " + i + " of " + todo.length);
-				yair.request('getArchivePage', {
+				dlo.view.showStatus("Reading full conversations, " + i + " of " + todo.length);
+				dlo.request('getArchivePage', {
 					path: '/message/messages/' + id.substring(3) + '/'
 				}, function (response) {
 					var step = function () {
 						if (i % 20 === 0) save();
 						setTimeout(next, 250);
 					};
-					if (!response || response.__yairError || typeof response.html !== "string") {
-						var reason = response && response.__yairError;
-						if (reason === yair.CONTEXT_GONE) {
+					if (!response || response.__dloError || typeof response.html !== "string") {
+						var reason = response && response.__dloError;
+						if (reason === dlo.CONTEXT_GONE) {
 							save();
 							return done(added);
 						}
@@ -268,7 +268,7 @@
 						console.warn("DLO: couldn't read conversation " + id + ":", reason);
 						return step();
 					}
-					var page = yair.helper.parseArchiveHtml(response.html, {
+					var page = dlo.helper.parseArchiveHtml(response.html, {
 						rootName: id
 					});
 					if (stats) stats.conversationsRead++;
@@ -282,7 +282,7 @@
 							if (m.created_utc > newest) newest = m.created_utc;
 						});
 						if (!msgs.length) return then();
-						yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, msgs], function (numAdded) {
+						dlo.proxy(['dlo', 'db', 'addAll'], [db_tables.privateMessages.name, msgs], function (numAdded) {
 							added += numAdded || 0;
 							then();
 						});
@@ -300,19 +300,19 @@
 						}
 						seenChunks[path] = true;
 						chunks++;
-						yair.view.showStatus("Reading full conversations, " + i + " of " + todo.length + " (older messages, part " + chunks + ")");
+						dlo.view.showStatus("Reading full conversations, " + i + " of " + todo.length + " (older messages, part " + chunks + ")");
 						setTimeout(function () {
-							yair.request('getArchivePage', {
+							dlo.request('getArchivePage', {
 								path: path
 							}, function (chunk) {
-								if (!chunk || chunk.__yairError || typeof chunk.html !== "string") {
-									note('failures', id, 'older messages: ' + (chunk && chunk.__yairError));
+								if (!chunk || chunk.__dloError || typeof chunk.html !== "string") {
+									note('failures', id, 'older messages: ' + (chunk && chunk.__dloError));
 									// Leave this conversation unmarked so it's tried again next time
-									console.warn("DLO: couldn't read part of conversation " + id + ":", chunk && chunk.__yairError);
+									console.warn("DLO: couldn't read part of conversation " + id + ":", chunk && chunk.__dloError);
 									return step();
 								}
 								if (stats) stats.olderChunksRead++;
-								var part = yair.helper.parseArchiveHtml(chunk.html, {
+								var part = dlo.helper.parseArchiveHtml(chunk.html, {
 									rootName: id
 									, subject: subject
 								});
@@ -404,7 +404,7 @@
 
 	// Validate a JSON backup and turn it into message records and flags.
 	// Returns {error} or {messages, saved, archived, conversations}.
-	yair.helper.planRestore = function (data, username) {
+	dlo.helper.planRestore = function (data, username) {
 		if (!data || typeof data !== 'object' || !(data.conversations instanceof Array)) {
 			return { error: "This file doesn't look like a Dead Letter Office (or YAIR) backup. Choose a file made with Back up (JSON)." };
 		}
@@ -445,7 +445,7 @@
 	};
 
 	// The one sanitiser for message HTML, whichever way it was indexed
-	yair.helper.sanitizeHtml = function (html) {
+	dlo.helper.sanitizeHtml = function (html) {
 		if (!html) return '';
 		var doc = new DOMParser().parseFromString('<div>' + String(html) + '</div>', 'text/html');
 		return sanitizeHtml(doc.body.firstChild);
@@ -524,7 +524,7 @@
 	// Parses an archive list page, a conversation page, or a chunk of a
 	// conversation. Chunks carry bare messages with no conversation wrapper,
 	// so `context` ({rootName, subject}) says which conversation they belong to.
-	yair.helper.parseArchiveHtml = function (html, context) {
+	dlo.helper.parseArchiveHtml = function (html, context) {
 		var doc = new DOMParser().parseFromString(html, 'text/html');
 		var messages = [];
 		var conversations = [];
@@ -588,20 +588,20 @@
 		};
 
 		function fetchPage(after) {
-			yair.view.showStatus("Indexing messages from page " + pageNum);
-			yair.request('getPrivateMessages', {
+			dlo.view.showStatus("Indexing messages from page " + pageNum);
+			dlo.request('getPrivateMessages', {
 				direction: after ? 'after' : null
 				, reference: after
 			}, function (response) {
-				if (!response || response.__yairError || !response.data || !response.data.children) {
-					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
-					if (reason === yair.CONTEXT_GONE) return failed("Dead Letter Office was updated or reloaded. Reload this page to keep going.");
+				if (!response || response.__dloError || !response.data || !response.data.children) {
+					var reason = (response && response.__dloError) ? response.__dloError : "unexpected response";
+					if (reason === dlo.CONTEXT_GONE) return failed("Dead Letter Office was updated or reloaded. Reload this page to keep going.");
 					failed("Couldn't load your messages from Reddit (" + reason + "). Are you still logged in?");
 					return;
 				}
 				var messages = extractPrivateMessages(response);
 				if (!messages.length) return done(totalAdded);
-				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, messages], function (numAdded) {
+				dlo.proxy(['dlo', 'db', 'addAll'], [db_tables.privateMessages.name, messages], function (numAdded) {
 					totalAdded += numAdded || 0;
 					var next = response.data.after;
 					if (!next || (stopWhenNothingNew && !numAdded)) {
@@ -632,7 +632,7 @@
 	}
 
 	function dataObjToPrivateMessage(dataObj) {
-		var msg = yair.helper.fixPrivateMessage(dataObj.data);
+		var msg = dlo.helper.fixPrivateMessage(dataObj.data);
 		return msg;
 	}
 
@@ -652,16 +652,16 @@
 	// folders, searching, and sorting all work from this copy.
 	var conversationCache = null;
 	var waiting = null;
-	yair.model.invalidateConversations = function () {
+	dlo.model.invalidateConversations = function () {
 		conversationCache = null;
 	};
-	yair.model.getConversations = function (callback) {
+	dlo.model.getConversations = function (callback) {
 		if (conversationCache) return callback(conversationCache);
 		if (waiting) return waiting.push(callback);
 		waiting = [callback];
 		var queryParams = [db_tables.privateMessages.name, 'created_utc', true, 0, -1];
-		yair.proxy(['yair', 'db', 'get'], queryParams, function (messages) {
-			conversationCache = yair.model.getConversationsFromMessages(messages || []);
+		dlo.proxy(['dlo', 'db', 'get'], queryParams, function (messages) {
+			conversationCache = dlo.model.getConversationsFromMessages(messages || []);
 			var callbacks = waiting;
 			waiting = null;
 			callbacks.forEach(function (cb) {
@@ -669,7 +669,7 @@
 			});
 		});
 	};
-	yair.model.getConversation = function (name, callback) {
+	dlo.model.getConversation = function (name, callback) {
 		if (conversationCache) {
 			for (var c = 0; c < conversationCache.length; c++) {
 				if (conversationCache[c].id === name) return callback(conversationCache[c]);
@@ -680,17 +680,17 @@
 			, value: name
 		};
 		var queryParams = [db_tables.privateMessages.name, index, true, 0, -1];
-		yair.proxy(['yair', 'db', 'get'], queryParams, function (messages) {
-			var conversations = yair.model.getConversationsFromMessages(messages);
+		dlo.proxy(['dlo', 'db', 'get'], queryParams, function (messages) {
+			var conversations = dlo.model.getConversationsFromMessages(messages);
 			if (!conversations.length) {
-				yair.view.showNotification("That conversation isn't in your local inbox yet. Try Reindex Inbox in Settings.", 4000);
+				dlo.view.showNotification("That conversation isn't in your local inbox yet. Try Reindex Inbox in Settings.", 4000);
 				return;
 			}
 			callback(conversations[0]);
 		});
 	};
-	//yair_db.updateMessage bg func
-	yair.model.getConversationsFromMessages = function (messages) {
+	//dlo_db.updateMessage bg func
+	dlo.model.getConversationsFromMessages = function (messages) {
 		var conversations = {};
 		for (var i = 0; i < messages.length; i++) {
 			var obj = messages[i];

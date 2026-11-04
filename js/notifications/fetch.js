@@ -90,7 +90,7 @@
 			title.id = 'tagline';
 			title.appendChild(el('span', 'author', data.author ? data.author : '#' + (data.subreddit || '')));
 			title.appendChild(el('span', 'subjectLine', truncate(data.subject, 60)));
-			title.appendChild(el('div', 'date', yairTime.fromNow(data.created_utc)));
+			title.appendChild(el('div', 'date', dloTime.fromNow(data.created_utc)));
 			row.appendChild(title);
 			row.appendChild(el('div', 'body', truncate(data.body, 256)));
 			container.appendChild(row);
@@ -106,8 +106,8 @@
 		chrome.runtime.sendMessage({
 			action: 'updateNotifications'
 		}, function (response) {
-			if (chrome.runtime.lastError || !response || response.__yairError) {
-				var reason = chrome.runtime.lastError ? chrome.runtime.lastError.message : (response ? response.__yairError : 'no response');
+			if (chrome.runtime.lastError || !response || response.__dloError) {
+				var reason = chrome.runtime.lastError ? chrome.runtime.lastError.message : (response ? response.__dloError : 'no response');
 				showError("Couldn't reach Reddit (" + reason + "). Are you logged in?");
 				return;
 			}

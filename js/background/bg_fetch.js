@@ -38,14 +38,14 @@ function toPrivateMessageRecord(data) {
 	};
 }
 
-var yairNotifications = (function () {
-	var ALARM = 'yair-refresh-notifications';
+var dloNotifications = (function () {
+	var ALARM = 'dlo-refresh-notifications';
 	// Reddit moved DMs to Chat, so unread PMs are rare now: check every 15
 	// minutes by default, and not at all when set to 0 ("Off").
 	var DEFAULT_INTERVAL = 900000;
 
 	function intervalMs() {
-		var stored = yairStorage.get('inboxRefreshInterval');
+		var stored = dloStorage.get('inboxRefreshInterval');
 		return (stored === undefined || stored === null || isNaN(+stored)) ? DEFAULT_INTERVAL : +stored;
 	}
 
@@ -87,19 +87,19 @@ var yairNotifications = (function () {
 			var pms = data.data.children.filter(function (m) {
 				return m.kind === 't4';
 			});
-			yairStorage.set('notifications', data);
-			yairStorage.set('lastUpdate', yairTimeNow());
-			yairStorage.set('notificationCount', pms.length);
+			dloStorage.set('notifications', data);
+			dloStorage.set('lastUpdate', dloTimeNow());
+			dloStorage.set('notificationCount', pms.length);
 			setBadge(pms.length);
 			// Store new messages for users whose inbox has already been indexed
 			var byUser = {};
 			pms.forEach(function (m) {
 				var user = m.data.dest;
-				if (!yairHasUserCfg(user) || !yairUserCfg(user).pmInboxInitialized) return;
+				if (!dloHasUserCfg(user) || !dloUserCfg(user).pmInboxInitialized) return;
 				(byUser[user] = byUser[user] || []).push(toPrivateMessageRecord(m.data));
 			});
 			return Promise.all(Object.keys(byUser).map(function (user) {
-				return yair.db.addAll.call({
+				return dlo.db.addAll.call({
 					username: user
 				}, db_tables.privateMessages.name, byUser[user]).catch(function (e) {
 					console.error('DLO: could not store new messages for', user, e);
@@ -111,7 +111,7 @@ var yairNotifications = (function () {
 	}
 	chrome.alarms.onAlarm.addListener(function (alarm) {
 		if (alarm.name !== ALARM) return;
-		yairStorage.ready.then(update).catch(function (e) {
+		dloStorage.ready.then(update).catch(function (e) {
 			console.warn('DLO: notification refresh failed', e.message);
 		});
 	});
@@ -123,13 +123,13 @@ var yairNotifications = (function () {
 		, setRefreshInterval: function (ms) {
 			ms = parseInt(ms, 10);
 			if (isNaN(ms) || ms < 0) return;
-			yairStorage.set('inboxRefreshInterval', ms);
+			dloStorage.set('inboxRefreshInterval', ms);
 			schedule();
 		}
 	};
 })();
 
-function yairTimeNow() {
+function dloTimeNow() {
 	return Math.floor(Date.now() / 1000);
 }
 
@@ -196,7 +196,7 @@ var actions = {
 		});
 	}
 	, updateNotifications: function () {
-		return yairNotifications.update();
+		return dloNotifications.update();
 	}
 	// Mark messages read, on behalf of the inbox page. Done here rather than
 	// from the page so it works the same in every browser (Firefox and Safari
@@ -244,16 +244,16 @@ var actions = {
 			method: 'POST'
 			, body: body
 		}).then(function () {
-			var count = Math.max(0, (+yairStorage.get('notificationCount') || 0) - 1);
-			yairStorage.set('notificationCount', count);
-			var notifications = yairStorage.get('notifications');
+			var count = Math.max(0, (+dloStorage.get('notificationCount') || 0) - 1);
+			dloStorage.set('notificationCount', count);
+			var notifications = dloStorage.get('notifications');
 			if (notifications && notifications.data && notifications.data.children) {
 				notifications.data.children = notifications.data.children.filter(function (m) {
 					return m.data.name !== name;
 				});
-				yairStorage.save('notifications');
+				dloStorage.save('notifications');
 			}
-			yairNotifications.setBadge(count);
+			dloNotifications.setBadge(count);
 			return true;
 		});
 	}
@@ -261,31 +261,31 @@ var actions = {
 
 // YAIR checked every minute by default. That was never a choice anyone made,
 // so move installs still on it to the new default once.
-function yairMigratePollingDefault() {
-	if (yairStorage.get('pollingDefaultV2')) return;
-	if (+yairStorage.get('inboxRefreshInterval') === 60000) yairStorage.set('inboxRefreshInterval', 900000);
-	var cfgs = yairStorage.get('YAIR_USER_CONFIG') || {};
+function dloMigratePollingDefault() {
+	if (dloStorage.get('pollingDefaultV2')) return;
+	if (+dloStorage.get('inboxRefreshInterval') === 60000) dloStorage.set('inboxRefreshInterval', 900000);
+	var cfgs = dloStorage.get(USER_CONFIG_KEY) || {};
 	Object.keys(cfgs).forEach(function (user) {
 		if (cfgs[user] && +cfgs[user].inboxRefreshInterval === 60000) cfgs[user].inboxRefreshInterval = 900000;
 	});
-	yairStorage.save('YAIR_USER_CONFIG');
-	yairStorage.set('pollingDefaultV2', true);
+	dloStorage.save(USER_CONFIG_KEY);
+	dloStorage.set('pollingDefaultV2', true);
 }
 
-function yairStartNotifier() {
-	yairStorage.ready.then(function () {
-		yairMigratePollingDefault();
-		yairNotifications.schedule();
-		if (yairNotifications.intervalMs() <= 0) return;
-		return yairNotifications.update();
+function dloStartNotifier() {
+	dloStorage.ready.then(function () {
+		dloMigratePollingDefault();
+		dloNotifications.schedule();
+		if (dloNotifications.intervalMs() <= 0) return;
+		return dloNotifications.update();
 	}).catch(function (e) {
 		console.warn('DLO: initial notification refresh failed', e.message);
 	});
 }
-chrome.runtime.onStartup.addListener(yairStartNotifier);
-chrome.runtime.onInstalled.addListener(yairStartNotifier);
+chrome.runtime.onStartup.addListener(dloStartNotifier);
+chrome.runtime.onInstalled.addListener(dloStartNotifier);
 // Make sure the alarm matches the setting whenever the background context starts
-yairStorage.ready.then(function () {
-	yairMigratePollingDefault();
-	yairNotifications.schedule();
+dloStorage.ready.then(function () {
+	dloMigratePollingDefault();
+	dloNotifications.schedule();
 });

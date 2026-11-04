@@ -1,4 +1,4 @@
-// Minimal fake of the Reddit endpoints YAIR uses, served over HTTPS.
+// Minimal fake of the Reddit endpoints Dead Letter Office uses, served over HTTPS.
 // The browser is pointed at it with --host-resolver-rules, so the extension
 // sees real https://old.reddit.com / www.reddit.com URLs.
 const https = require('https');

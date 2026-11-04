@@ -1,4 +1,4 @@
-var yair = {
+var dlo = {
 	init: {
 		funcs: []
 		, waitingCallbacks: []
@@ -23,13 +23,13 @@ var yair = {
 			, params: params
 		};
 		if (!cmdObj.username) {
-			console.error("yair.proxy(...); requires the username (from DOM) for most features");
+			console.error("dlo.proxy(...); requires the username (from DOM) for most features");
 		}
-		yair.sendToBackground(cmdObj, function (response) {
-			if (!response || response.__yairError) {
-				var message = response ? response.__yairError : 'No response from the extension';
+		dlo.sendToBackground(cmdObj, function (response) {
+			if (!response || response.__dloError) {
+				var message = response ? response.__dloError : 'No response from the extension';
 				console.error("DLO background call " + path.join('.') + " failed:", message);
-				yair.reportBackgroundProblem(message);
+				dlo.reportBackgroundProblem(message);
 				return;
 			}
 			callback.apply(this, response);
@@ -40,40 +40,40 @@ var yair = {
 		var msg = Object.assign({}, data || {}, {
 			action: action
 		});
-		yair.sendToBackground(msg, function (response) {
+		dlo.sendToBackground(msg, function (response) {
 			if (typeof callback === "function") callback(response);
 		});
 	}
 	// Message the background, retrying when its service worker was stopped or
 	// restarted mid-call (Chrome does this to idle workers). Every background
-	// call is safe to repeat. Calls back with the response, or {__yairError}.
+	// call is safe to repeat. Calls back with the response, or {__dloError}.
 	, sendToBackground: function (msg, callback, attempt) {
 		attempt = attempt || 0;
 		var TRANSIENT = /message channel closed|message port closed|Receiving end does not exist|Could not establish connection/i;
 		var fail = function (message) {
 			callback({
-				__yairError: message
+				__dloError: message
 			});
 		};
-		if (!yair.extensionAlive()) return fail(yair.CONTEXT_GONE);
+		if (!dlo.extensionAlive()) return fail(dlo.CONTEXT_GONE);
 		try {
 			chrome.runtime.sendMessage(msg, function (response) {
 				var err = chrome.runtime.lastError;
 				if (err) {
 					if (TRANSIENT.test(err.message) && attempt < 3) {
 						setTimeout(function () {
-							yair.sendToBackground(msg, callback, attempt + 1);
+							dlo.sendToBackground(msg, callback, attempt + 1);
 						}, 300 * (attempt + 1));
 						return;
 					}
-					return fail(yair.extensionAlive() ? err.message : yair.CONTEXT_GONE);
+					return fail(dlo.extensionAlive() ? err.message : dlo.CONTEXT_GONE);
 				}
 				callback(response);
 			});
 		}
 		catch (e) {
 			// Thrown synchronously once the extension has been reloaded or removed
-			fail(yair.extensionAlive() ? (e && e.message) || String(e) : yair.CONTEXT_GONE);
+			fail(dlo.extensionAlive() ? (e && e.message) || String(e) : dlo.CONTEXT_GONE);
 		}
 	}
 	, CONTEXT_GONE: 'context-gone'
@@ -87,13 +87,13 @@ var yair = {
 		}
 	}
 	, reportBackgroundProblem: function (message) {
-		if (!(yair.view && yair.view.showNotification && yair.$e)) return;
-		if (message === yair.CONTEXT_GONE) {
+		if (!(dlo.view && dlo.view.showNotification && dlo.$e)) return;
+		if (message === dlo.CONTEXT_GONE) {
 			// Stays up: nothing on this page can work until it is reloaded
-			yair.view.showNotification("Dead Letter Office was updated or reloaded. Reload this page to keep going.", -1);
+			dlo.view.showNotification("Dead Letter Office was updated or reloaded. Reload this page to keep going.", -1);
 			return;
 		}
-		yair.view.showNotification("Dead Letter Office couldn't finish that (" + message + "). Reload the page if this keeps happening.", 5000);
+		dlo.view.showNotification("Dead Letter Office couldn't finish that (" + message + "). Reload the page if this keeps happening.", 5000);
 	}
 	, helper: {}
 	, manifest: chrome.runtime.getManifest()
@@ -121,12 +121,12 @@ var yair = {
 	});
 })();
 (function ($, undefined) {
-	yair.functions = {};
+	dlo.functions = {};
 	var startTime;
 
 	function checkCallbacksReady() {
-		var callbacks = yair.init.waitingCallbacks;
-		var completed = yair.init.completed;
+		var callbacks = dlo.init.waitingCallbacks;
+		var completed = dlo.init.completed;
 		callbackLoop: for (var i = 0; i < callbacks.length; i++) {
 			var keys = callbacks[i].keys;
 			var callback = callbacks[i].callback;
@@ -138,86 +138,86 @@ var yair = {
 		}
 	}
 	// Start executing all functions that can be preloaded
-	yair.init.start = function () {
+	dlo.init.start = function () {
 		startTime = getTime();
-		for (var i = 0; i < yair.init.funcs.length; i++) {
-			yair.init.funcs[i]();
+		for (var i = 0; i < dlo.init.funcs.length; i++) {
+			dlo.init.funcs[i]();
 		}
 	};
 	// An init function calls this function when it is done
 	// The 'key' parameter is the name of the function
-	yair.init.done = function (key) {
-		yair.init.completed.push(key);
+	dlo.init.done = function (key) {
+		dlo.init.completed.push(key);
 		checkCallbacksReady();
 	};
 	// Call this function and pass the names of the functions in an array
 	// and a callback that needs to execute after those functions are done
-	yair.init.executeAfter = function (keys, callback) {
+	dlo.init.executeAfter = function (keys, callback) {
 		if (typeof keys === "string") keys = [keys];
-		yair.init.waitingCallbacks.push({
+		dlo.init.waitingCallbacks.push({
 			keys: keys
 			, callback: callback
 		});
 		checkCallbacksReady();
 	};
 	// Wait until the DOM is ready
-	yair.functions.DOMReady = function () {
+	dlo.functions.DOMReady = function () {
 		$(function () {
-			yair.init.done("DOMReady");
+			dlo.init.done("DOMReady");
 		});
 		return false;
 	};
 	// Preload HTML templates
-	yair.templates = {
+	dlo.templates = {
 		add: function (obj) {
 			var objKeys = Object.keys(obj);
 			for (var i = 0; i < objKeys.length; i++) {
 				var k = objKeys[i];
-				yair.templates[k] = obj[k];
+				dlo.templates[k] = obj[k];
 			}
 		}
 	};
-	yair.functions.preloadTemplatesReady = function () {
-		var tArray = Object.keys(yair.templates);
+	dlo.functions.preloadTemplatesReady = function () {
+		var tArray = Object.keys(dlo.templates);
 		var loadedTemplates = 0;
 		for (var i = 0; i < tArray.length; i++) {
 			(function (template) {
-				var url = yair.templates[template];
+				var url = dlo.templates[template];
 				if (typeof url !== "string") {
 					return ++loadedTemplates;
 				}
 				$.get(url).done(function (html) {
-					yair.templates[template] = html;
+					dlo.templates[template] = html;
 				}).always(function () {
 					if (++loadedTemplates >= tArray.length) {
-						yair.init.done("preloadTemplatesReady");
+						dlo.init.done("preloadTemplatesReady");
 					}
 				});
 			})(tArray[i]);
 		}
 		return false;
 	};
-	// Note: This function requires DOMReady because it requires getUsername() for yair.proxy()
-	yair.functions.initConfig = function (callback) {
-		yair.proxy(['yair', 'cfg_get'], [], function (cfg) {
+	// Note: This function requires DOMReady because it requires getUsername() for dlo.proxy()
+	dlo.functions.initConfig = function (callback) {
+		dlo.proxy(['dlo', 'cfg_get'], [], function (cfg) {
 			if (!cfg.doImport) {
-				yair.cfg.data = cfg;
+				dlo.cfg.data = cfg;
 			}
 			else {
 				// An import needs to be attempted
 				if (typeof localStorage['YAIR_CONFIG'] !== "undefined") {
 					// There is something to import
-					yair.cfg.data = JSON.parse(localStorage['YAIR_CONFIG']);
+					dlo.cfg.data = JSON.parse(localStorage['YAIR_CONFIG']);
 					//console.log("Importing old data");
 				}
 				else {
 					// There is nothing to import
-					yair.cfg.data = cfg;
+					dlo.cfg.data = cfg;
 				}
-				yair.cfg.data.doImport = false;
-				yair.proxy(['yair', 'cfg_import'], yair.cfg.data);
+				dlo.cfg.data.doImport = false;
+				dlo.proxy(['dlo', 'cfg_import'], dlo.cfg.data);
 			}
-			yair.init.done("CFGReady");
+			dlo.init.done("CFGReady");
 			if (typeof callback === "function") callback();
 		});
 	};

@@ -1,50 +1,50 @@
 // Conversation list: rendering, summary, sort/filter bar, folders, and bulk selection.
 (function ($) {
-	Object.assign(yair.view, {
+	Object.assign(dlo.view, {
 		update: function () {
 			// Init search from URL
-			yair.view.hideOverlay();
-			yair.view.showIndexBanner();
-			yair.controller.parseUrl();
-			yair.view.updateBodyClass();
-			if (yair.show === "conversation") {
+			dlo.view.hideOverlay();
+			dlo.view.showIndexBanner();
+			dlo.controller.parseUrl();
+			dlo.view.updateBodyClass();
+			if (dlo.show === "conversation") {
 				// Show this conversation
-				yair.model.getConversation(yair.showid, yair.view.showConversation);
+				dlo.model.getConversation(dlo.showid, dlo.view.showConversation);
 			}
-			if (['inbox', 'saved', 'archived', 'modmail', 'modsaved', 'modarchived'].indexOf(yair.show) >= 0) {
+			if (['inbox', 'saved', 'archived', 'modmail', 'modsaved', 'modarchived'].indexOf(dlo.show) >= 0) {
 				// Fetch all conversations and add them to the inbox view
-				yair.model.getConversations(yair.view.showInbox);
+				dlo.model.getConversations(dlo.view.showInbox);
 			}
 		}
 		, showInbox: function (conversations, hideOverlay) {
 			if (typeof hideOverlay !== "boolean") hideOverlay = true;
 			// Empty panel
-			yair.$e.mainPanel.empty();
+			dlo.$e.mainPanel.empty();
 			// Cache the fetched conversations
-			yair.model.cache.conversations = conversations;
-			yair.view.setFavicon();
+			dlo.model.cache.conversations = conversations;
+			dlo.view.setFavicon();
 			(function () {
 				// Folder first, so counts like "34 of 276" are relative to the folder you're in
 				var folderConversations = conversations.slice();
-				yair.model.directoryFilter(folderConversations);
-				yair.model.showModmailInInbox(folderConversations);
-				yair.view.updateListToolbar(folderConversations);
+				dlo.model.directoryFilter(folderConversations);
+				dlo.model.showModmailInInbox(folderConversations);
+				dlo.view.updateListToolbar(folderConversations);
 				var filteredConversations = folderConversations.slice();
-				yair.model.searchFilter(filteredConversations);
-				yair.model.listFilter(filteredConversations);
-				yair.model.sortConversations(filteredConversations);
-				yair.$e.mainPanel.empty();
-				yair.view.addInboxSummary(folderConversations, filteredConversations);
-				yair.model.cache.lastGroup = null;
-				yair.model.cache.focusIndex = -1;
+				dlo.model.searchFilter(filteredConversations);
+				dlo.model.listFilter(filteredConversations);
+				dlo.model.sortConversations(filteredConversations);
+				dlo.$e.mainPanel.empty();
+				dlo.view.addInboxSummary(folderConversations, filteredConversations);
+				dlo.model.cache.lastGroup = null;
+				dlo.model.cache.focusIndex = -1;
 				if (!filteredConversations.length) {
-					var narrowed = yair._get.searchObj || yair.model.listFiltersActive();
-					$('<div class="yair-empty-state">').text(narrowed ? 'No conversations match. Try widening the filters.' : 'Nothing here.').appendTo(yair.$e.mainPanel);
+					var narrowed = dlo._get.searchObj || dlo.model.listFiltersActive();
+					$('<div class="dlo-empty-state">').text(narrowed ? 'No conversations match. Try widening the filters.' : 'Nothing here.').appendTo(dlo.$e.mainPanel);
 				}
-				yair.view.addConversationsToInbox(filteredConversations);
+				dlo.view.addConversationsToInbox(filteredConversations);
 			})();
 			// Hide overlay
-			if (hideOverlay) yair.view.hideOverlay();
+			if (hideOverlay) dlo.view.hideOverlay();
 		}
 		// "276 conversations · 1,000 messages · Dec 2015 – Mar 2025", or the match count when searching
 		, addInboxSummary: function (all, shown) {
@@ -64,7 +64,7 @@
 			});
 			var text;
 			var msgText = fmt(messages) + (messages === 1 ? ' message' : ' messages');
-			if (yair._get.searchObj || yair.model.listFiltersActive()) {
+			if (dlo._get.searchObj || dlo.model.listFiltersActive()) {
 				text = fmt(shown.length) + ' of ' + fmt(all.length) + ' conversations match, with ' + msgText;
 			}
 			else {
@@ -73,38 +73,38 @@
 			if (newest) {
 				text += monthYear(oldest) === monthYear(newest) ? ' from ' + monthYear(newest) : ' from ' + monthYear(oldest) + ' to ' + monthYear(newest);
 			}
-			var $summary = $('<div class="yair-summary">').append($('<span>').text(text));
-			if (yair._get.searchObj) {
-				$('<button class="yair-summary-clear" type="button">').text('Clear search').on('click', yair.controller.clearSearch).appendTo($summary);
+			var $summary = $('<div class="dlo-summary">').append($('<span>').text(text));
+			if (dlo._get.searchObj) {
+				$('<button class="dlo-summary-clear" type="button">').text('Clear search').on('click', dlo.controller.clearSearch).appendTo($summary);
 			}
-			if (yair.model.listFiltersActive()) {
-				$('<button class="yair-summary-clear" type="button">').text('Clear filters').on('click', yair.controller.clearListFilters).appendTo($summary);
+			if (dlo.model.listFiltersActive()) {
+				$('<button class="dlo-summary-clear" type="button">').text('Clear filters').on('click', dlo.controller.clearListFilters).appendTo($summary);
 			}
-			$summary.appendTo(yair.$e.mainPanel);
+			$summary.appendTo(dlo.$e.mainPanel);
 		}
 		// Highlight the current search's words inside an element ('subject', 'people', or 'message')
 		, highlight: function ($el, part) {
-			var q = yair._get.searchObj;
+			var q = dlo._get.searchObj;
 			if (!q || !$el || !$el.length) return;
-			yair.search.mark($el[0], yair.search.terms(q, part));
+			dlo.search.mark($el[0], dlo.search.terms(q, part));
 		}
 		// Indexing couldn't finish: still show what's stored, with the problem above it
 		, indexingFailed: function (message) {
-			yair.view.hideOverlay();
-			yair.model.cache.indexBanner = message;
-			yair.view.update();
+			dlo.view.hideOverlay();
+			dlo.model.cache.indexBanner = message;
+			dlo.view.update();
 		}
 		, showIndexBanner: function () {
 			$('.dlo-banner').remove();
-			var message = yair.model.cache.indexBanner;
+			var message = dlo.model.cache.indexBanner;
 			if (!message) return;
 			var $banner = $('<div class="dlo-banner" role="alert">');
 			$('<span class="dlo-banner-text">').text(message).appendTo($banner);
 			$('<button type="button" class="dlo-banner-close" aria-label="Dismiss">').text('\u00d7').on('click', function () {
-				yair.model.cache.indexBanner = null;
+				dlo.model.cache.indexBanner = null;
 				$banner.remove();
 			}).appendTo($banner);
-			$banner.insertBefore('.yair-list-toolbar');
+			$banner.insertBefore('.dlo-list-toolbar');
 		}
 		, addMessageInInbox: function (conversation) {
 			var unread = conversation['new']
@@ -114,82 +114,82 @@
 				, message = decodeBasicEntities(conversation.text || '')
 				, datetime = conversation.last_update
 				, modmail = conversation.modmail;
-			var checkboxId = 'yair_cb_' + id;
-			var html = replaceAll(yair.templates.inbox_message_row, "{checkboxid}", checkboxId);
-			var $row = $(html).appendTo(yair.$e.mainPanel);
+			var checkboxId = 'dlo_cb_' + id;
+			var html = replaceAll(dlo.templates.inbox_message_row, "{checkboxid}", checkboxId);
+			var $row = $(html).appendTo(dlo.$e.mainPanel);
 			if (conversation.last_author === getUsername()) {
-				$row.find('.yair-last-author').addClass('yair-last-sent').attr('title', 'The last message in this thread was sent by you');
+				$row.find('.dlo-last-author').addClass('dlo-last-sent').attr('title', 'The last message in this thread was sent by you');
 			}
 			else {
-				$row.find('.yair-last-author').addClass('yair-last-received').attr('title', 'The last message in this thread was sent by ' + conversation.last_author);
+				$row.find('.dlo-last-author').addClass('dlo-last-received').attr('title', 'The last message in this thread was sent by ' + conversation.last_author);
 			}
-			$row.find('.yair-message-row-content').attr('data-type', 'message');
-			$row.find('.yair-message-row-content').attr('data-author', conversation.correspondent);
-			if (yair.cfg.saved.contains(conversation.id)) {
-				$row.find('.yair-save-toggle').addClass('yair-saved');
+			$row.find('.dlo-message-row-content').attr('data-type', 'message');
+			$row.find('.dlo-message-row-content').attr('data-author', conversation.correspondent);
+			if (dlo.cfg.saved.contains(conversation.id)) {
+				$row.find('.dlo-save-toggle').addClass('dlo-saved');
 			}
-			$row.find('.yair-save-toggle').on('click', yair.controller.action.toggleSave);
-			$row.find('.icon-archive').on('click', yair.controller.action.delete);
-			$row.find('.icon-restore').on('click', yair.controller.action.restore);
-			$row.find('.icon-markRead').on('click', yair.controller.action.markRead);
-			$row.find('.icon-markUnread').on('click', yair.controller.action.markUnread);
+			$row.find('.dlo-save-toggle').on('click', dlo.controller.action.toggleSave);
+			$row.find('.icon-archive').on('click', dlo.controller.action.delete);
+			$row.find('.icon-restore').on('click', dlo.controller.action.restore);
+			$row.find('.icon-markRead').on('click', dlo.controller.action.markRead);
+			$row.find('.icon-markUnread').on('click', dlo.controller.action.markUnread);
 			if (unread) {
-				$row.addClass('yair-unread');
+				$row.addClass('dlo-unread');
 			} else {
-				$row.addClass('yair-read');
+				$row.addClass('dlo-read');
 			}
-			if (modmail) $row.addClass('yair-modmail');
+			if (modmail) $row.addClass('dlo-modmail');
 			$row.data('conversation', conversation);
 			var correspondentHref = (correspondent && correspondent.charAt(0) === "#") ?
 				'https://www.reddit.com/r/' + encodeURIComponent(correspondent.substring(1)) :
 				'https://www.reddit.com/user/' + encodeURIComponent(correspondent || '');
 			var $author = $('<a class="author">').attr('href', correspondentHref).text(correspondent || '[unknown]');
-			$row.find('.yair-correspondent').empty().append($author);
-			yair.view.highlight($author, 'people');
+			$row.find('.dlo-correspondent').empty().append($author);
+			dlo.view.highlight($author, 'people');
 			var count = conversation.messages.length;
 			if (count > 1) {
-				$('<span class="yair-message-count">').text(count).attr('title', count + ' messages in this conversation').appendTo($row.find('.yair-correspondent'));
+				$('<span class="dlo-message-count">').text(count).attr('title', count + ' messages in this conversation').appendTo($row.find('.dlo-correspondent'));
 			}
-			yair.view.highlight($row.find('.yair-subject').text(subject), 'subject');
+			dlo.view.highlight($row.find('.dlo-subject').text(subject), 'subject');
 			// While searching, show the newest message that matched rather than the latest one
-			var result = yair.model.cache.searchResults && yair.model.cache.searchResults.get(conversation);
-			var $text = $row.find('.yair-text');
+			var result = dlo.model.cache.searchResults && dlo.model.cache.searchResults.get(conversation);
+			var $text = $row.find('.dlo-text');
 			if (result && result.matched && result.matched.length) {
 				var hit = result.matched[0];
-				var words = yair.search.terms(yair._get.searchObj, 'message');
+				var words = dlo.search.terms(dlo._get.searchObj, 'message');
 				$text.empty();
 				$('<span class="dlo-snippet-author">').text((hit.author === getUsername() ? 'You' : hit.author) + ': ').appendTo($text);
-				$('<span>').text(yair.search.excerpt(decodeBasicEntities(hit.body || ''), words)).appendTo($text);
-				yair.view.highlight($text, 'message');
+				$('<span>').text(dlo.search.excerpt(decodeBasicEntities(hit.body || ''), words)).appendTo($text);
+				dlo.view.highlight($text, 'message');
 				if (result.matched.length > 1) {
-					$('<span class="dlo-match-count">').text(result.matched.length + ' matching messages').appendTo($row.find('.yair-subject'));
+					$('<span class="dlo-match-count">').text(result.matched.length + ' matching messages').appendTo($row.find('.dlo-subject'));
 				}
 			}
 			else {
 				$text.text(message);
-				yair.view.highlight($text, 'message');
+				dlo.view.highlight($text, 'message');
 			}
-			$row.find('.yair-datetime').text(dateString(datetime)).attr('title', yairTime.full(datetime));
+			$row.find('.dlo-datetime').text(dateString(datetime)).attr('title', dloTime.full(datetime));
 			$row.attr('tabindex', '-1');
 			var $checkbox = $row.find('input');
 			$checkbox.on('change', function () {
-				$row.toggleClass('yair-row-checked');
+				$row.toggleClass('dlo-row-checked');
 			});
-			$row.on('click', yair.controller.showMessageClick);
-			$row.find('.yair-message-row-control').on('click', function (e) {
+			$row.on('click', dlo.controller.showMessageClick);
+			$row.find('.dlo-message-row-control').on('click', function (e) {
 				e.stopPropagation();
 			});
-			$row.find('.yair-correspondent').on('click', function (e) {
+			$row.find('.dlo-correspondent').on('click', function (e) {
 				e.stopPropagation();
 			});
-			$row.find('.yair-message-buttons').on('click', function (e) {
+			$row.find('.dlo-message-buttons').on('click', function (e) {
 				e.stopPropagation();
 			});
 		}
 		, updateBodyClass: function () {
-			if (['inbox', 'saved', 'archived', 'conversation', 'modmail', 'modsaved', 'modarchived'].indexOf(yair.show) < 0) return;
-			yair.$e.body.removeClass('yair-show-inbox yair-show-saved yair-show-archived yair-show-conversation yair-show-modmail yair-show-modsaved yair-show-modarchived');
-			yair.$e.body.addClass('yair-show-' + yair.show);
+			if (['inbox', 'saved', 'archived', 'conversation', 'modmail', 'modsaved', 'modarchived'].indexOf(dlo.show) < 0) return;
+			dlo.$e.body.removeClass('dlo-show-inbox dlo-show-saved dlo-show-archived dlo-show-conversation dlo-show-modmail dlo-show-modsaved dlo-show-modarchived');
+			dlo.$e.body.addClass('dlo-show-' + dlo.show);
 		}
 		, addConversationsToInbox: function (conversations) {
 			var copy = conversations.slice();
@@ -198,21 +198,21 @@
 				var conversation = copy[i];
 				// Group heading whenever the group changes: the year when sorted by
 				// date, the thread length when sorted by size, the initial for A-Z
-				var group = yair.model.groupFor(conversation);
-				if (group && group.key !== yair.model.cache.lastGroup) {
+				var group = dlo.model.groupFor(conversation);
+				if (group && group.key !== dlo.model.cache.lastGroup) {
 					// Skip "this year" as the very first heading of a date-sorted list
-					var skip = yair.model.cache.lastGroup === null && group.isCurrentYear;
+					var skip = dlo.model.cache.lastGroup === null && group.isCurrentYear;
 					if (!skip) {
-						$('<div class="yair-year-divider">').toggleClass('yair-group-text', !group.numeric).text(group.label).appendTo(yair.$e.mainPanel);
+						$('<div class="dlo-year-divider">').toggleClass('dlo-group-text', !group.numeric).text(group.label).appendTo(dlo.$e.mainPanel);
 					}
-					yair.model.cache.lastGroup = group.key;
+					dlo.model.cache.lastGroup = group.key;
 				}
 				// Add message to inbox
-				yair.view.addMessageInInbox(conversation);
+				dlo.view.addMessageInInbox(conversation);
 				// If the maximum number of conversations has been added
-				if (++conversationsAdded > yair.cfg.data.maxInitialMessagesShown) {
+				if (++conversationsAdded > dlo.cfg.data.maxInitialMessagesShown) {
 					// Add load more content element
-					yair.view.addLoadMoreElement(yair.templates['load_more_messages'], yair.$e.mainPanel, yair.view.addConversationsToInbox, copy.splice(i + 1));
+					dlo.view.addLoadMoreElement(dlo.templates['load_more_messages'], dlo.$e.mainPanel, dlo.view.addConversationsToInbox, copy.splice(i + 1));
 					break;
 				}
 			}
@@ -231,60 +231,60 @@
 		// Sort and filter bar above the list. Built once; the year list is
 		// refreshed from whichever folder is showing.
 		, initListToolbar: function () {
-			var $bar = $('.yair-list-toolbar');
-			var opts = yair.model.listOptions;
-			$bar.find('#YAIRSort').val(opts.sort).on('change', function () {
+			var $bar = $('.dlo-list-toolbar');
+			var opts = dlo.model.listOptions;
+			$bar.find('#DLOSort').val(opts.sort).on('change', function () {
 				opts.sort = this.value;
-				yair.cfg.set('listSort', opts.sort);
-				yair.view.rerenderList();
+				dlo.cfg.set('listSort', opts.sort);
+				dlo.view.rerenderList();
 			});
 			var numberInput = function (selector, key) {
 				$bar.find(selector).on('input', function () {
 					var n = parseInt(this.value, 10);
 					opts[key] = n > 0 ? n : null;
-					yair.view.rerenderListSoon();
+					dlo.view.rerenderListSoon();
 				});
 			};
-			numberInput('#YAIRMinMessages', 'min');
-			numberInput('#YAIRMaxMessages', 'max');
-			$bar.find('#YAIRYear').on('change', function () {
+			numberInput('#DLOMinMessages', 'min');
+			numberInput('#DLOMaxMessages', 'max');
+			$bar.find('#DLOYear').on('change', function () {
 				opts.year = this.value ? parseInt(this.value, 10) : null;
-				yair.view.rerenderList();
+				dlo.view.rerenderList();
 			});
-			$bar.find('#YAIRLastFrom').on('change', function () {
+			$bar.find('#DLOLastFrom').on('change', function () {
 				opts.lastFrom = this.value || null;
-				yair.view.rerenderList();
+				dlo.view.rerenderList();
 			});
-			$bar.find('.yair-length-preset').on('click', function () {
+			$bar.find('.dlo-length-preset').on('click', function () {
 				var $b = $(this);
 				opts.min = $b.data('min') || null;
 				opts.max = $b.data('max') || null;
-				yair.view.syncListToolbar();
-				yair.view.rerenderList();
+				dlo.view.syncListToolbar();
+				dlo.view.rerenderList();
 			});
-			yair.view.syncListToolbar();
+			dlo.view.syncListToolbar();
 		}
 		, syncListToolbar: function () {
-			var $bar = $('.yair-list-toolbar');
-			var opts = yair.model.listOptions;
-			$bar.find('#YAIRSort').val(opts.sort);
-			$bar.find('#YAIRMinMessages').val(opts.min || '');
-			$bar.find('#YAIRMaxMessages').val(opts.max || '');
-			$bar.find('#YAIRYear').val(opts.year ? String(opts.year) : '');
-			$bar.find('#YAIRLastFrom').val(opts.lastFrom || '');
-			$bar.find('.yair-length-preset').each(function () {
+			var $bar = $('.dlo-list-toolbar');
+			var opts = dlo.model.listOptions;
+			$bar.find('#DLOSort').val(opts.sort);
+			$bar.find('#DLOMinMessages').val(opts.min || '');
+			$bar.find('#DLOMaxMessages').val(opts.max || '');
+			$bar.find('#DLOYear').val(opts.year ? String(opts.year) : '');
+			$bar.find('#DLOLastFrom').val(opts.lastFrom || '');
+			$bar.find('.dlo-length-preset').each(function () {
 				var $b = $(this);
 				var on = (($b.data('min') || null) === opts.min) && (($b.data('max') || null) === opts.max);
-				$b.toggleClass('yair-active', on).attr('aria-pressed', on ? 'true' : 'false');
+				$b.toggleClass('dlo-active', on).attr('aria-pressed', on ? 'true' : 'false');
 			});
-			$bar.toggleClass('yair-filters-active', yair.model.listFiltersActive());
+			$bar.toggleClass('dlo-filters-active', dlo.model.listFiltersActive());
 		}
 		, updateListToolbar: function (folderConversations) {
 			var years = {};
 			folderConversations.forEach(function (c) {
 				if (c.last_update) years[new Date(c.last_update * 1000).getFullYear()] = true;
 			});
-			var $year = $('#YAIRYear');
+			var $year = $('#DLOYear');
 			var current = $year.val();
 			$year.find('option:not([value=""])').remove();
 			Object.keys(years).sort().reverse().forEach(function (y) {
@@ -295,31 +295,31 @@
 			$year.val(current);
 		}
 		, rerenderList: function () {
-			yair.view.syncListToolbar();
-			if (yair.show === 'conversation' || !yair.model.cache.conversations) return;
-			yair.view.showInbox(yair.model.cache.conversations, false);
+			dlo.view.syncListToolbar();
+			if (dlo.show === 'conversation' || !dlo.model.cache.conversations) return;
+			dlo.view.showInbox(dlo.model.cache.conversations, false);
 		}
 		, rerenderListSoon: (function () {
 			var timer = null;
 			return function () {
 				clearTimeout(timer);
-				timer = setTimeout(yair.view.rerenderList, 250);
+				timer = setTimeout(dlo.view.rerenderList, 250);
 			};
 		})()
 		, bindActionButtons: function(){
-            $('#YAIRBulkDelete').on('click', yair.controller.action.bulkDelete);
-            $('#YAIRBulkRestore').on('click', yair.controller.action.bulkRestore);
-            $('#YAIRBulkMarkUnread').on('click', yair.controller.action.bulkMarkUnread);
-            $('#YAIRBulkMarkRead').on('click', yair.controller.action.bulkMarkRead);
-            $('#YAIRShowConfig').on('click', yair.view.showConfig);
-			$(document).on('change', '.styled-checkbox', yair.view.showBulkOptions);
-			$('#select-all').on('change', yair.view.selectAll);
+            $('#DLOBulkDelete').on('click', dlo.controller.action.bulkDelete);
+            $('#DLOBulkRestore').on('click', dlo.controller.action.bulkRestore);
+            $('#DLOBulkMarkUnread').on('click', dlo.controller.action.bulkMarkUnread);
+            $('#DLOBulkMarkRead').on('click', dlo.controller.action.bulkMarkRead);
+            $('#DLOShowConfig').on('click', dlo.view.showConfig);
+			$(document).on('change', '.styled-checkbox', dlo.view.showBulkOptions);
+			$('#select-all').on('change', dlo.view.selectAll);
         }
 		, showBulkOptions: function () {
-			if($('.yair-main-panel .styled-checkbox').is(":checked")) {
-				$(".yair-sidebar-options").removeClass("yair-hide");
+			if($('.dlo-main-panel .styled-checkbox').is(":checked")) {
+				$(".dlo-sidebar-options").removeClass("dlo-hide");
 			} else {
-				$(".yair-sidebar-options").addClass("yair-hide");
+				$(".dlo-sidebar-options").addClass("dlo-hide");
 				$('#select-all').prop("checked", false);
 			}
 		}

@@ -1,77 +1,77 @@
-<div class="yair-body">
-	<div class="yair-sidebar-panel">
-			<div class="yair-sidebar-menu">	
-				<div class="yair-sidebar-title">
-					<div class="title-message"><a href="/message/dlo_inbox" class="dlo-wordmark" aria-label="Dead Letter Office"><span class="dlo-mark" aria-hidden="true"></span><span class="dlo-name"><span class="dlo-full">Dead Letter Office</span><span class="dlo-short">DLO</span></span></a><span class="yair-tagline">Your Reddit messages, kept</span></div>
+<div class="dlo-body">
+	<div class="dlo-sidebar-panel">
+			<div class="dlo-sidebar-menu">	
+				<div class="dlo-sidebar-title">
+					<div class="title-message"><a href="/message/dlo_inbox" class="dlo-wordmark" aria-label="Dead Letter Office"><span class="dlo-mark" aria-hidden="true"></span><span class="dlo-name"><span class="dlo-full">Dead Letter Office</span><span class="dlo-short">DLO</span></span></a><span class="dlo-tagline">Your Reddit messages, kept</span></div>
 				</div>
-				<div class="yair-sidebar-nav inbox">
-					<a href="/message/dlo_inbox" class="nav-item yair-inbox yair-link">
+				<div class="dlo-sidebar-nav inbox">
+					<a href="/message/dlo_inbox" class="nav-item dlo-inbox dlo-link">
 						<div class="icon icon-inbox"></div>
 						<div class="title">Inbox</div>
 					</a>
-					<a href="/message/dlo_saved" class="nav-item yair-saved yair-link">
+					<a href="/message/dlo_saved" class="nav-item dlo-saved dlo-link">
 						<div class="icon icon-saved"></div>
 						<div class="title">Saved</div>
 					</a>
-					<a href="/message/dlo_archived" class="nav-item yair-archived yair-link">
+					<a href="/message/dlo_archived" class="nav-item dlo-archived dlo-link">
 						<div class="icon icon-archive"></div>
 						<div class="title">Archived</div>
 					</a>
 				</div>
-				<div class="yair-sidebar-nav modmail yair-modmail yair-hide">
-					<h4 class="yair-sidebar-label">Modmail</h4>
-					<a href="/message/dlo_modmail" class="nav-item modmail-inbox yair-link">
+				<div class="dlo-sidebar-nav modmail dlo-modmail dlo-hide">
+					<h4 class="dlo-sidebar-label">Modmail</h4>
+					<a href="/message/dlo_modmail" class="nav-item modmail-inbox dlo-link">
 						<div class="icon icon-modmail"></div>
 						<div class="title">Inbox</div>
 					</a>
-					<a href="/message/dlo_modsaved" class="nav-item modmail yair-saved yair-link">
+					<a href="/message/dlo_modsaved" class="nav-item modmail dlo-saved dlo-link">
 						<div class="icon icon-saved"></div>
 						<div class="title">Saved</div>
 					</a>
-					<a href="/message/dlo_modarchived" class="nav-item modmail yair-archived yair-link">
+					<a href="/message/dlo_modarchived" class="nav-item modmail dlo-archived dlo-link">
 						<div class="icon icon-archive"></div>
 						<div class="title">Archived</div>
 					</a>
 				</div>
 
 
-				<div class="yair-sidebar-options yair-hide">
-					<h4 class="yair-sidebar-label">With selected</h4>
-					<div id="YAIRBulkDelete" class="options-item">
+				<div class="dlo-sidebar-options dlo-hide">
+					<h4 class="dlo-sidebar-label">With selected</h4>
+					<div id="DLOBulkDelete" class="options-item">
 						<div class="icon icon-archive"></div>
 						Archive
 					</div>
 
-					<div id="YAIRBulkRestore" class="options-item">
+					<div id="DLOBulkRestore" class="options-item">
 						<div class="icon icon-restore"></div>
 						Restore
 					</div>
 
-					<div id="YAIRBulkMarkUnread" class="options-item">
+					<div id="DLOBulkMarkUnread" class="options-item">
 						<div class="icon icon-markRead"></div>
 						Mark Selected Unread
 					</div>
 
-					<div id="YAIRBulkMarkRead" class="options-item">
+					<div id="DLOBulkMarkRead" class="options-item">
 						<div class="icon icon-markUnread"></div>
 						Mark Selected Read
 					</div>
 				</div>
 			</div>
-			<div class="yair-sidebar-footer">
-				<div id="YAIRShowConfig">
+			<div class="dlo-sidebar-footer">
+				<div id="DLOShowConfig">
 					<div class="icon icon-config"></div>
 					Settings
 				</div>
 			</div>
 	</div>
-	<div class="yair-main-panel">
-		<div class="yair-header-panel">
-			<div class="yair-search-panel">
-				<div class="yair-search-container">
+	<div class="dlo-main-panel">
+		<div class="dlo-header-panel">
+			<div class="dlo-search-panel">
+				<div class="dlo-search-container">
 					<!-- Input and search button -->
-					<input type="text" id="YAIRSearchInput" placeholder="Search messages, people, and subjects" aria-label="Search conversations"><button id="YAIRSearchClear" class="yair-search-clear yair-hide" type="button" title="Clear search" aria-label="Clear search">&times;</button>
-					<div class="yair-search-help" role="note">
+					<input type="text" id="DLOSearchInput" placeholder="Search messages, people, and subjects" aria-label="Search conversations"><button id="DLOSearchClear" class="dlo-search-clear dlo-hide" type="button" title="Clear search" aria-label="Clear search">&times;</button>
+					<div class="dlo-search-help" role="note">
 						<div class="dlo-help-title">Search tips</div>
 						<dl>
 							<dt><code>"exact phrase"</code></dt><dd>words together, in order</dd>
@@ -84,17 +84,17 @@
 							<dt><code>has:link</code> <code>is:unread</code> <code>is:saved</code></dt><dd>also <code>is:archived</code> and <code>is:modmail</code></dd>
 						</dl>
 					</div></div>
-				<button id="YAIRSearchButton">Search</button>
+				<button id="DLOSearchButton">Search</button>
 			</div>
-			<div class="yair-select-all-toggle">
+			<div class="dlo-select-all-toggle">
 				<input class="styled-checkbox" id="select-all" type="checkbox">
 				<label for="select-all">Select All</label>
 			</div>
 		</div>
-		<div class="yair-list-toolbar" role="toolbar" aria-label="Sort and filter conversations">
-			<label class="yair-tool">
-				<span class="yair-tool-label">Sort</span>
-				<select id="YAIRSort">
+		<div class="dlo-list-toolbar" role="toolbar" aria-label="Sort and filter conversations">
+			<label class="dlo-tool">
+				<span class="dlo-tool-label">Sort</span>
+				<select id="DLOSort">
 					<option value="newest">Latest activity</option>
 					<option value="oldest">Oldest activity</option>
 					<option value="started">Recently started</option>
@@ -103,38 +103,38 @@
 					<option value="az">Name, A to Z</option>
 				</select>
 			</label>
-			<div class="yair-tool yair-length-tool" role="group" aria-label="Messages in the conversation">
-				<span class="yair-tool-label">Messages</span>
-				<span class="yair-length-presets">
-					<button type="button" class="yair-length-preset">Any</button>
-					<button type="button" class="yair-length-preset" data-min="1" data-max="1">1</button>
-					<button type="button" class="yair-length-preset" data-min="2">2+</button>
-					<button type="button" class="yair-length-preset" data-min="5">5+</button>
-					<button type="button" class="yair-length-preset" data-min="10">10+</button>
-					<button type="button" class="yair-length-preset" data-min="25">25+</button>
+			<div class="dlo-tool dlo-length-tool" role="group" aria-label="Messages in the conversation">
+				<span class="dlo-tool-label">Messages</span>
+				<span class="dlo-length-presets">
+					<button type="button" class="dlo-length-preset">Any</button>
+					<button type="button" class="dlo-length-preset" data-min="1" data-max="1">1</button>
+					<button type="button" class="dlo-length-preset" data-min="2">2+</button>
+					<button type="button" class="dlo-length-preset" data-min="5">5+</button>
+					<button type="button" class="dlo-length-preset" data-min="10">10+</button>
+					<button type="button" class="dlo-length-preset" data-min="25">25+</button>
 				</span>
-				<span class="yair-length-range">
-					<input id="YAIRMinMessages" type="number" min="1" inputmode="numeric" placeholder="min" aria-label="At least this many messages">
+				<span class="dlo-length-range">
+					<input id="DLOMinMessages" type="number" min="1" inputmode="numeric" placeholder="min" aria-label="At least this many messages">
 					<span aria-hidden="true">to</span>
-					<input id="YAIRMaxMessages" type="number" min="1" inputmode="numeric" placeholder="max" aria-label="At most this many messages">
+					<input id="DLOMaxMessages" type="number" min="1" inputmode="numeric" placeholder="max" aria-label="At most this many messages">
 				</span>
 			</div>
-			<label class="yair-tool">
-				<span class="yair-tool-label">Year</span>
-				<select id="YAIRYear">
+			<label class="dlo-tool">
+				<span class="dlo-tool-label">Year</span>
+				<select id="DLOYear">
 					<option value="">All</option>
 				</select>
 			</label>
-			<label class="yair-tool">
-				<span class="yair-tool-label">Last message</span>
-				<select id="YAIRLastFrom">
+			<label class="dlo-tool">
+				<span class="dlo-tool-label">Last message</span>
+				<select id="DLOLastFrom">
 					<option value="">From anyone</option>
 					<option value="them">From them</option>
 					<option value="me">From me</option>
 				</select>
 			</label>
 		</div>
-		<div class="yair-inbox-panel">
+		<div class="dlo-inbox-panel">
 			<!-- Checkbox, Correspondent, Title, Text, Date/Time -->
 		</div>
 		<div style="height:8px"></div>

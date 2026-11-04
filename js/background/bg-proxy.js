@@ -1,26 +1,26 @@
 // Single message router for the background context.
 //
 // Content scripts call background functions with
-//   {action: 'proxyCmd', username, path: ['yair', 'db', 'get'], params: [...]}
+//   {action: 'proxyCmd', username, path: ['dlo', 'db', 'get'], params: [...]}
 // Only the paths listed in PROXY_WHITELIST can be called; previously any
 // function reachable from `window` could be invoked.
 (function () {
 	var PROXY_WHITELIST = [
-		'yair.cfg_get'
-		, 'yair.cfg_set'
-		, 'yair.cfg_import'
-		, 'yair.db.init'
-		, 'yair.db.clearObjectStore'
-		, 'yair.db.countObjectsInStore'
-		, 'yair.db.get'
-		, 'yair.db.add'
-		, 'yair.db.addAll'
-		, 'yair.db.update'
-		, 'yair.db.updateAll'
-		, 'yair_cfg_deleted.add'
-		, 'yair_cfg_deleted.remove'
-		, 'yair_cfg_saved.add'
-		, 'yair_cfg_saved.remove'
+		'dlo.cfg_get'
+		, 'dlo.cfg_set'
+		, 'dlo.cfg_import'
+		, 'dlo.db.init'
+		, 'dlo.db.clearObjectStore'
+		, 'dlo.db.countObjectsInStore'
+		, 'dlo.db.get'
+		, 'dlo.db.add'
+		, 'dlo.db.addAll'
+		, 'dlo.db.update'
+		, 'dlo.db.updateAll'
+		, 'dlo_cfg_deleted.add'
+		, 'dlo_cfg_deleted.remove'
+		, 'dlo_cfg_saved.add'
+		, 'dlo_cfg_saved.remove'
 	];
 	// Reddit usernames: 3-20 chars of letters, digits, _ and -. Allow a little slack.
 	var USERNAME_RE = /^[A-Za-z0-9_-]{1,32}$/;
@@ -37,7 +37,7 @@
 
 	function errorResponse(e) {
 		return {
-			__yairError: (e && e.message) ? e.message : String(e)
+			__dloError: (e && e.message) ? e.message : String(e)
 		};
 	}
 
@@ -91,13 +91,13 @@
 		if (!request) return;
 		if (sender.id && sender.id !== chrome.runtime.id) return;
 		if (request.action === 'proxyCmd') {
-			yairStorage.ready.then(function () {
+			dloStorage.ready.then(function () {
 				handleProxyCmd(request, sendResponse);
 			});
 			return true;
 		}
 		if (Object.prototype.hasOwnProperty.call(actions, request.action)) {
-			yairStorage.ready.then(function () {
+			dloStorage.ready.then(function () {
 				return actions[request.action](request);
 			}).then(function (result) {
 				sendResponse(result);

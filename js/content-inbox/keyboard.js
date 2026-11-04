@@ -1,34 +1,34 @@
 // Keyboard shortcuts: j/k, Enter/o, x, /, Esc/u, and n/N for search matches.
 (function ($) {
-	Object.assign(yair.view, {
+	Object.assign(dlo.view, {
 		// j/k move through conversations, Enter/o opens, Esc/u goes back, / searches
 		bindKeyboard: function () {
-			$(document).on('keydown.yairKeys', function (e) {
+			$(document).on('keydown.dloKeys', function (e) {
 				if (e.ctrlKey || e.metaKey || e.altKey) return;
 				var target = e.target;
 				if (target && (/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName) || target.isContentEditable)) return;
-				if (yair.$e.overlay.hasClass('show')) return;
-				if (yair.show === 'conversation') {
-					if ((e.key === 'n' || e.key === 'N') && yair.model.cache.findStep) {
+				if (dlo.$e.overlay.hasClass('show')) return;
+				if (dlo.show === 'conversation') {
+					if ((e.key === 'n' || e.key === 'N') && dlo.model.cache.findStep) {
 						e.preventDefault();
-						yair.model.cache.findStep(e.key === 'N' ? -1 : 1);
+						dlo.model.cache.findStep(e.key === 'N' ? -1 : 1);
 						return;
 					}
 					if (e.key === 'Escape' || e.key === 'u') {
 						e.preventDefault();
-						yair.controller.backToList();
+						dlo.controller.backToList();
 					}
 					return;
 				}
-				var $rows = yair.$e.mainPanel.find('.yair-message-row');
+				var $rows = dlo.$e.mainPanel.find('.dlo-message-row');
 				if (!$rows.length) return;
-				var index = yair.model.cache.focusIndex;
+				var index = dlo.model.cache.focusIndex;
 				if (e.key === 'j' || e.key === 'k') {
 					e.preventDefault();
 					index = Math.max(0, Math.min($rows.length - 1, index + (e.key === 'j' ? 1 : -1)));
-					yair.model.cache.focusIndex = index;
-					$rows.removeClass('yair-row-focused');
-					var row = $rows.eq(index).addClass('yair-row-focused')[0];
+					dlo.model.cache.focusIndex = index;
+					$rows.removeClass('dlo-row-focused');
+					var row = $rows.eq(index).addClass('dlo-row-focused')[0];
 					row.focus({ preventScroll: true });
 					row.scrollIntoView({ block: 'nearest' });
 				}
@@ -42,7 +42,7 @@
 				}
 				else if (e.key === '/') {
 					e.preventDefault();
-					yair.$e.search.trigger('focus');
+					dlo.$e.search.trigger('focus');
 				}
 			});
 		}

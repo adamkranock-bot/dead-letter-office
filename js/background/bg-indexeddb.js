@@ -4,7 +4,85 @@
 // worker was stopped and restarted since the inbox page called `init`.
 (function () {
 	var DB_VERSION = 4;
-	var DB_NAME = "YAIR_Messages";
+	var DB_NAME = "DLO_Messages";
+	// Versions before 2.0 kept messages in "YAIR_Messages" + username
+	var LEGACY_DB_NAME = "YAIR_Messages";
+
+	// Reads every message from the YAIR-era database, if there is one. Opening a
+	// database that doesn't exist would create it, so that case is aborted in
+	// onupgradeneeded and nothing is left behind.
+	function readLegacy(username) {
+		return new Promise(function (resolve) {
+			var req;
+			try {
+				req = self.indexedDB.open(LEGACY_DB_NAME + username);
+			}
+			catch (e) {
+				return resolve(null);
+			}
+			req.onupgradeneeded = function (e) {
+				if (e.oldVersion === 0) req.transaction.abort();
+			};
+			req.onerror = function (e) {
+				if (e && e.preventDefault) e.preventDefault();
+				resolve(null);
+			};
+			req.onsuccess = function () {
+				var db = req.result;
+				var name = db_tables.privateMessages.name;
+				if (!db.objectStoreNames.contains(name)) {
+					db.close();
+					return resolve({ messages: [] });
+				}
+				var all = db.transaction(name, db_mode.readonly).objectStore(name).getAll();
+				all.onsuccess = function () {
+					db.close();
+					resolve({ messages: all.result || [] });
+				};
+				all.onerror = function () {
+					db.close();
+					resolve(null);
+				};
+			};
+		});
+	}
+
+	function deleteLegacy(username) {
+		return new Promise(function (resolve) {
+			try {
+				var req = self.indexedDB.deleteDatabase(LEGACY_DB_NAME + username);
+				req.onsuccess = req.onerror = req.onblocked = function () {
+					resolve();
+				};
+			}
+			catch (e) {
+				resolve();
+			}
+		});
+	}
+
+	// Opens the user's database, first carrying over anything from the
+	// YAIR-era one. The old database is only deleted after the copy succeeds.
+	function openWithMigration(username) {
+		return readLegacy(username).then(function (legacy) {
+			var cfg = dloUserCfg(username);
+			var wasInitialized = !!cfg.pmInboxInitialized;
+			return openDatabase(username).then(function (instance) {
+				if (!legacy) return instance;
+				return instance.writeAll(db_tables.privateMessages.name, legacy.messages, false).then(function (n) {
+					if (legacy.messages.length) {
+						// The index is as complete as it was before the move
+						cfg.pmInboxInitialized = wasInitialized;
+						dlo_cfg_save();
+						console.info("DLO: moved " + n + " messages to the renamed database for", username);
+					}
+					return deleteLegacy(username).then(function () {
+						return instance;
+					});
+				});
+			});
+		});
+	}
 
 	function openDatabase(username) {
 		return new Promise(function (resolve, reject) {
@@ -41,10 +119,10 @@
 					});
 				});
 				// The store was (re)created empty, so a full index is needed
-				var cfg = yairUserCfg(username);
+				var cfg = dloUserCfg(username);
 				cfg.pmInboxInitialized = false;
 				cfg.replyInboxInitialized = false;
-				yair_cfg_save();
+				dlo_cfg_save();
 			};
 		});
 	}
@@ -150,14 +228,14 @@
 
 	function instance(username) {
 		if (!dbInstances[username]) {
-			dbInstances[username] = openDatabase(username).catch(function (e) {
+			dbInstances[username] = openWithMigration(username).catch(function (e) {
 				delete dbInstances[username];
 				throw e;
 			});
 		}
 		return dbInstances[username];
 	}
-	yair.db = {
+	dlo.db = {
 		instance: instance
 		, init: function () {
 			return instance(this.username).then(function () {
@@ -180,7 +258,7 @@
 			});
 		}
 		, add: function (store_name, obj) {
-			return yair.db.addAll.call(this, store_name, [obj]).then(function (n) {
+			return dlo.db.addAll.call(this, store_name, [obj]).then(function (n) {
 				return n > 0;
 			});
 		}
@@ -190,7 +268,7 @@
 			});
 		}
 		, update: function (store_name, obj) {
-			return yair.db.updateAll.call(this, store_name, [obj]);
+			return dlo.db.updateAll.call(this, store_name, [obj]);
 		}
 		, updateAll: function (store_name, arr) {
 			return instance(this.username).then(function (db) {

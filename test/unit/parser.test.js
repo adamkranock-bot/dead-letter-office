@@ -38,8 +38,8 @@ function check(name, cond, detail) {
 	for (const file of SCRIPTS) {
 		if (file === '__setup__') {
 			await page.evaluate(() => {
-				yair.model = { cache: {} };
-				yair.view = { showStatus() {}, showNotification() {} };
+				dlo.model = { cache: {} };
+				dlo.view = { showStatus() {}, showNotification() {} };
 			});
 			continue;
 		}
@@ -48,7 +48,7 @@ function check(name, cond, detail) {
 	const run = (fn, ...args) => page.evaluate(fn, ...args);
 
 	// --- Real archive markup ---------------------------------------------
-	const parsed = await run((html) => yair.helper.parseArchiveHtml(html), FIXTURE);
+	const parsed = await run((html) => dlo.helper.parseArchiveHtml(html), FIXTURE);
 	check('real markup: one conversation found', parsed.conversations.length === 1 && parsed.conversations[0].id === 't4_abc123', parsed.conversations);
 	const m = parsed.messages[0] || {};
 	check('real markup: message id from the overflow-menu id', parsed.messages.length === 1 && m.name === 't4_ID' && m.id === 'ID', m);
@@ -59,23 +59,23 @@ function check(name, cond, detail) {
 	check('real markup: body HTML sanitised (Reddit classes and junk links dropped, links opened safely)', /^<div class="md"><p>/.test(m.body_html) && (m.body_html.match(/class=/g) || []).length === 1 && !/href="x"/.test(m.body_html) && /rel="noopener noreferrer"/.test(m.body_html), m.body_html);
 
 	// --- Layout-change detection -----------------------------------------
-	const described = await run((html) => yair.helper.describeArchivePage(html), FIXTURE);
+	const described = await run((html) => dlo.helper.describeArchivePage(html), FIXTURE);
 	check('describe: sees the archive markup and one dated item', described.mentionsPmArchive && described.timestamps === 1 && described.parsed.messages === 1, described);
 	const changed = FIXTURE.replace(/pm-archive-message-template/g, 'pm-archive-letter-v2');
-	const changedParsed = await run((html) => ({ p: yair.helper.parseArchiveHtml(html).messages.length, d: yair.helper.describeArchivePage(html) }), changed);
+	const changedParsed = await run((html) => ({ p: dlo.helper.parseArchiveHtml(html).messages.length, d: dlo.helper.describeArchivePage(html) }), changed);
 	check('describe: a renamed message block reads as "changed", not "empty"', changedParsed.p === 0 && changedParsed.d.mentionsPmArchive && changedParsed.d.timestamps > 0, changedParsed);
 	const empty = '<html><body><main><div data-test-id="pm-archive-empty">x</div></main></body></html>';
-	const emptyDescribed = await run((html) => yair.helper.describeArchivePage(html), empty);
+	const emptyDescribed = await run((html) => dlo.helper.describeArchivePage(html), empty);
 	check('describe: an empty archive has no dated items', emptyDescribed.timestamps === 0, emptyDescribed);
 	const secret = FIXTURE.replace('<p>x', '<p>SECRET-TEXT x').replace('href="x"', 'href="/user/SecretUser/"');
-	const leak = JSON.stringify(await run((html) => yair.helper.describeArchivePage(html), secret));
+	const leak = JSON.stringify(await run((html) => dlo.helper.describeArchivePage(html), secret));
 	check('describe: diagnostics never include message text or usernames', !/SECRET-TEXT|SecretUser/.test(leak), leak.slice(0, 200));
 
 	// --- Sanitiser --------------------------------------------------------
-	const clean = await run(() => yair.helper.sanitizeHtml('<p onclick="x()" style="color:red">hi<script>bad()</script><a href="javascript:alert(1)">j</a> <a href="https://example.com/">ok</a><img src="http://e.com/a.png"><iframe src="https://e.com"></iframe></p>'));
+	const clean = await run(() => dlo.helper.sanitizeHtml('<p onclick="x()" style="color:red">hi<script>bad()</script><a href="javascript:alert(1)">j</a> <a href="https://example.com/">ok</a><img src="http://e.com/a.png"><iframe src="https://e.com"></iframe></p>'));
 	check('sanitiser: no scripts, handlers, styles, iframes, or javascript: links', !/script|onclick|style=|iframe|javascript:/i.test(clean), clean);
 	check('sanitiser: keeps https links (opened safely) and drops insecure images', /href="https:\/\/example.com\/"/.test(clean) && /rel="noopener noreferrer"/.test(clean) && !/http:\/\/e.com\/a.png/.test(clean), clean);
-	check('sanitiser: empty input gives empty output', (await run(() => yair.helper.sanitizeHtml(''))) === '');
+	check('sanitiser: empty input gives empty output', (await run(() => dlo.helper.sanitizeHtml(''))) === '');
 
 	// --- Restore planning -------------------------------------------------
 	const backup = {
@@ -89,13 +89,13 @@ function check(name, cond, detail) {
 			{ id: 't4_bbb', archived: true, messages: [] },
 		],
 	};
-	const plan = await run((b) => yair.helper.planRestore(b, 'Alice'), backup);
+	const plan = await run((b) => dlo.helper.planRestore(b, 'Alice'), backup);
 	check('restore: valid backup planned (username match ignores case)', !plan.error && plan.messages.length === 2 && plan.conversations === 1, plan);
 	check('restore: records normalised and unknown fields dropped', plan.messages[1].id === 'aab' && plan.messages[1].first_message_name === 't4_aaa' && plan.messages[1].created_utc === 101 && plan.messages[0].extra === undefined, plan.messages);
 	check('restore: saved flag kept; empty conversations skipped', plan.saved.join() === 't4_aaa' && plan.archived.length === 0, plan);
-	const wrongUser = await run((b) => yair.helper.planRestore(b, 'mallory'), backup);
+	const wrongUser = await run((b) => dlo.helper.planRestore(b, 'mallory'), backup);
 	check('restore: refuses another account\'s backup', /belongs to u\/alice/.test(wrongUser.error || ''), wrongUser);
-	const notBackup = await run(() => yair.helper.planRestore({ hello: 1 }, 'alice'));
+	const notBackup = await run(() => dlo.helper.planRestore({ hello: 1 }, 'alice'));
 	check('restore: rejects files that aren\'t backups', /doesn't look like/.test(notBackup.error || ''), notBackup);
 
 	// --- Search -----------------------------------------------------------
@@ -104,14 +104,14 @@ function check(name, cond, detail) {
 			{ name: 't4_c', author: 'Zoë', dest: 'me', body: 'Meet at the crème brûlée place?', created_utc: 1700000000 },
 		] };
 		const flags = { saved: () => false, archived: () => false };
-		const q = (s) => yair.search.match(conv, yair.search.parse(s, 'me'), flags).ok;
+		const q = (s) => dlo.search.match(conv, dlo.search.parse(s, 'me'), flags).ok;
 		return {
 			accents: q('cafe') && q('creme brulee') && q('from:zoe'),
 			phrase: q('"brûlée place"') && !q('"place brûlée"'),
 			exclude: !q('cafe -creme'),
 			or: q('pizza OR plans'),
 			dates: q('during:2023-11') && !q('before:2023'),
-			excerpt: yair.search.excerpt('a '.repeat(80) + 'needle ' + 'b '.repeat(80), ['needle']).includes('needle'),
+			excerpt: dlo.search.excerpt('a '.repeat(80) + 'needle ' + 'b '.repeat(80), ['needle']).includes('needle'),
 		};
 	});
 	Object.keys(searched).forEach((k) => check('search: ' + k, searched[k]));

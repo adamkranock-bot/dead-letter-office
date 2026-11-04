@@ -8,7 +8,7 @@ const shared = {
 	ERROR: 'readonly', INFO: 'readonly', DEBUG: 'readonly', MONTHS: 'readonly',
 	db_tables: 'readonly', db_mode: 'readonly',
 	// time.js
-	yairTime: 'readonly',
+	dloTime: 'readonly',
 	chrome: 'readonly',
 };
 
@@ -32,12 +32,12 @@ module.exports = [
 		},
 	},
 	{
-		// Content scripts on the YAIR inbox pages
+		// Content scripts on the archive pages
 		files: ['js/content-inbox/**/*.js', 'js/global/**/*.js'],
 		languageOptions: {
 			globals: {
 				$: 'readonly', jQuery: 'readonly', Quill: 'readonly', TurndownService: 'readonly', SnuOwnd: 'readonly',
-				yair: 'writable',
+				dlo: 'writable',
 				getUsername: 'readonly', isLoggedIn: 'readonly', htmlDecode: 'readonly', escapeHtml: 'readonly',
 				decodeBasicEntities: 'readonly', safeFilename: 'readonly', downloadText: 'readonly',
 				isMessageHTMLEncoded: 'readonly', throttle: 'readonly', ObjectValues: 'readonly', replaceAll: 'readonly',
@@ -59,10 +59,10 @@ module.exports = [
 			globals: {
 				...globals.serviceworker,
 				localStorage: 'readonly',
-				yair: 'writable', yairStorage: 'readonly', chromeCall: 'readonly',
-				yair_default_cfg: 'readonly', yairUserCfg: 'readonly', yairHasUserCfg: 'readonly', yair_cfg_save: 'readonly',
-				yair_cfg_deleted: 'readonly', yair_cfg_saved: 'readonly', drafts: 'readonly',
-				yairNotifications: 'readonly', actions: 'readonly', yairTimeNow: 'readonly', toPrivateMessageRecord: 'readonly',
+				dlo: 'writable', dloStorage: 'readonly', chromeCall: 'readonly',
+				dlo_default_cfg: 'readonly', dloUserCfg: 'readonly', dloHasUserCfg: 'readonly', dlo_cfg_save: 'readonly',
+				dlo_cfg_deleted: 'readonly', dlo_cfg_saved: 'readonly', USER_CONFIG_KEY: 'readonly',
+				dloNotifications: 'readonly', actions: 'readonly', dloTimeNow: 'readonly', toPrivateMessageRecord: 'readonly',
 				redditRequest: 'readonly',
 			},
 		},
@@ -84,7 +84,7 @@ module.exports = [
 			ecmaVersion: 2022,
 			sourceType: 'commonjs',
 			// Test callbacks passed to page.evaluate run in the browser
-			globals: { ...globals.node, ...globals.browser, chrome: 'readonly', yairNotifications: 'readonly' },
+			globals: { ...globals.node, ...globals.browser, chrome: 'readonly', dloNotifications: 'readonly' },
 		},
 	},
 ];

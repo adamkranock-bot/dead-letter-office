@@ -343,7 +343,7 @@
 		return (start > 0 ? '…' : '') + out + (start + length < text.length ? '…' : '');
 	}
 
-	yair.search = {
+	dlo.search = {
 		fold: fold
 		, parse: parse
 		, match: match

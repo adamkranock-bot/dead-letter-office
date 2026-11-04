@@ -50,7 +50,7 @@
 				"https://*.reddit.com/message/yair_*"
 			],
 			"css": [
-				"css/yair.css"
+				"css/dlo.css"
 			],
 			"js": [
 				"js/content-inbox/jquery-3.7.1.min.js",
