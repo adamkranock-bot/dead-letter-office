@@ -27,19 +27,199 @@
 		yair.proxy(['yair', 'db', 'countObjectsInStore'], [db_tables.privateMessages.name], function (num) {
 			if (yair.cfg.data.pmInboxInitialized && num > 10) {
 				// Only fetch until we reach messages we already have
-				crawlPrivateMessages(true, success, error);
+				crawlAllSources(true, success, error);
 			}
 			else {
 				// First run (or after a reset): index everything Reddit will give us
-				crawlPrivateMessages(false, function () {
+				crawlAllSources(false, function (added) {
 					yair.cfg.set('pmInboxInitialized', true);
-					success();
+					success(added);
 				}, error);
 			}
 		});
 	};
 	yair.model.reindexPrivateMessages = function (success, error) {
-		crawlPrivateMessages(false, success, error);
+		crawlAllSources(false, success, error);
+	};
+
+	// Reddit moved private message history out of messages.json and into a
+	// read-only archive page on new Reddit (www.reddit.com/message/messages/).
+	// Read both: the JSON listing still carries anything Reddit delivers there,
+	// and the archive carries the history. Messages are keyed by id, so
+	// overlap between the two is ignored.
+	function crawlAllSources(stopWhenNothingNew, done, fail) {
+		crawlPrivateMessages(stopWhenNothingNew, function (fromJson) {
+			crawlArchive(stopWhenNothingNew, function (fromArchive) {
+				done((fromJson || 0) + (fromArchive || 0));
+			}, function (message) {
+				// The JSON part worked; report the archive problem without losing it
+				console.error("YAIR archive indexing failed:", message);
+				if (typeof fail === "function") fail(message);
+			});
+		}, fail);
+	}
+
+	function crawlArchive(stopWhenNothingNew, done, fail) {
+		var pageNum = 1;
+		var totalAdded = 0;
+		var seen = {};
+
+		function fetchPage(path) {
+			seen[path] = true;
+			yair.view.showStatus("Reading message archive, page " + pageNum);
+			yair.request('getArchivePage', {
+				path: path
+			}, function (response) {
+				if (!response || response.__yairError || typeof response.html !== "string") {
+					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
+					fail("Couldn't load your message archive from Reddit (" + reason + "). Are you logged in on www.reddit.com?");
+					return;
+				}
+				var page = yair.helper.parseArchiveHtml(response.html);
+				if (!page.messages.length) return done(totalAdded);
+				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
+					totalAdded += numAdded || 0;
+					if (!page.next || seen[page.next] || (stopWhenNothingNew && !numAdded)) {
+						return done(totalAdded);
+					}
+					pageNum++;
+					fetchPage(page.next);
+				});
+			});
+		}
+		fetchPage('/message/messages/');
+	}
+
+	// --- Parsing the new Reddit archive page -------------------------------
+
+	function nameFromLink(a) {
+		var href = a.getAttribute('href') || '';
+		var m = href.match(/\/(?:user|u)\/([A-Za-z0-9_-]+)/);
+		if (m) return m[1];
+		m = href.match(/\/r\/([A-Za-z0-9_]+)/);
+		if (m) return '#' + m[1];
+		var text = a.textContent.trim();
+		if (/^\/?r\//.test(text)) return '#' + text.replace(/^\/?r\//, '');
+		return text.replace(/^\/?u\//, '') || null;
+	}
+
+	function timestampOf(el) {
+		var time = el.querySelector('time[datetime]');
+		var raw = time ? time.getAttribute('datetime') : null;
+		if (!raw) {
+			var ago = el.querySelector('faceplate-timeago[ts]');
+			// "2025-03-27T14:26:42.746000+0000" -> something Date can parse
+			raw = ago ? ago.getAttribute('ts').replace(/(\.\d{3})\d+/, '$1').replace(/([+-]\d\d)(\d\d)$/, '$1:$2') : null;
+		}
+		var ms = raw ? Date.parse(raw) : NaN;
+		return isNaN(ms) ? 0 : Math.floor(ms / 1000);
+	}
+
+	var BLOCK_TAGS = /^(P|DIV|LI|BLOCKQUOTE|PRE|H[1-6]|TR|TABLE|UL|OL|HR)$/;
+
+	function htmlToText(el) {
+		var out = '';
+		(function walk(node) {
+			node.childNodes.forEach(function (child) {
+				if (child.nodeType === 3) {
+					out += child.textContent;
+				}
+				else if (child.nodeType === 1) {
+					if (child.tagName === 'BR') { out += '\n'; return; }
+					if (child.tagName === 'LI') out += '* ';
+					walk(child);
+					if (BLOCK_TAGS.test(child.tagName)) out += '\n\n';
+				}
+			});
+		})(el);
+		return out.replace(/\n{3,}/g, '\n\n').trim();
+	}
+
+	// Keep Reddit's rendered formatting but nothing that could run or restyle the page
+	function sanitizeHtml(el) {
+		var clone = el.cloneNode(true);
+		clone.querySelectorAll('script, style, iframe, object, embed, form, input, button, svg, link, meta').forEach(function (n) {
+			n.remove();
+		});
+		[clone].concat(Array.prototype.slice.call(clone.querySelectorAll('*'))).forEach(function (n) {
+			Array.prototype.slice.call(n.attributes).forEach(function (attr) {
+				var keep = (n.tagName === 'A' && (attr.name === 'href' || attr.name === 'title')) || (n.tagName === 'IMG' && (attr.name === 'src' || attr.name === 'alt'));
+				if (!keep) n.removeAttribute(attr.name);
+			});
+			if (n.tagName === 'A') {
+				var href = n.getAttribute('href') || '';
+				if (!/^(https?:|\/|#|mailto:)/i.test(href.trim())) n.removeAttribute('href');
+				n.setAttribute('target', '_blank');
+				n.setAttribute('rel', 'noopener noreferrer');
+			}
+			if (n.tagName === 'IMG' && !/^https:/i.test(n.getAttribute('src') || '')) n.removeAttribute('src');
+		});
+		return '<div class="md">' + clone.innerHTML + '</div>';
+	}
+
+	function findNextPage(doc) {
+		var candidates = doc.querySelectorAll('infinite-loader faceplate-partial[src], faceplate-partial[src], [src*="after="], [src*="cursor="], a[href*="after="]');
+		for (var i = 0; i < candidates.length; i++) {
+			var val = candidates[i].getAttribute('src') || candidates[i].getAttribute('href') || '';
+			if (/(after|cursor)=/.test(val) || /\/svc\/shreddit\/[^?]*message/.test(val)) {
+				try {
+					var url = new URL(val, 'https://www.reddit.com');
+					if (url.origin === 'https://www.reddit.com') return url.pathname + url.search;
+				}
+				catch (e) {}
+			}
+		}
+		return null;
+	}
+
+	yair.helper.parseArchiveHtml = function (html) {
+		var doc = new DOMParser().parseFromString(html, 'text/html');
+		var messages = [];
+		doc.querySelectorAll('[data-test-id="pm-archive-conversation"]').forEach(function (conv) {
+			var subjectLink = conv.querySelector('a');
+			var subject = subjectLink ? subjectLink.textContent.trim() : '';
+			var convMessages = [];
+			var rootName = null;
+			conv.querySelectorAll('[data-test-id="pm-archive-message-template"]').forEach(function (m) {
+				var idEl = m.querySelector('[id^="pm-archive-overflow-menu-"]');
+				var name = idEl ? idEl.id.replace('pm-archive-overflow-menu-', '') : '';
+				if (!/^t4_[a-z0-9]+$/i.test(name)) return;
+				var share = m.querySelector('[permalink]');
+				var permalinkId = share ? (share.getAttribute('permalink').match(/\/message\/messages\/([a-z0-9]+)/i) || [])[1] : null;
+				if (permalinkId && !rootName) rootName = 't4_' + permalinkId.toLowerCase();
+				var meta = m.querySelector('.text-neutral-content-weak') || m;
+				var people = meta.querySelectorAll('a');
+				var bodyEl = m.querySelector('[id$="post-rtjson-content"]') || m.querySelector('.text-14');
+				convMessages.push({
+					id: name.substring(3)
+					, name: name
+					, author: people[0] ? nameFromLink(people[0]) : '[unknown]'
+					, dest: people[1] ? nameFromLink(people[1]) : null
+					, subject: subject
+					, body: bodyEl ? htmlToText(bodyEl) : ''
+					, body_html: bodyEl ? sanitizeHtml(bodyEl) : ''
+					, created_utc: timestampOf(m)
+					, 'new': false
+					, distinguished: null
+				});
+			});
+			if (!convMessages.length) return;
+			if (!rootName) {
+				// Fall back to the oldest message in the conversation
+				rootName = convMessages.slice().sort(function (a, b) {
+					return a.created_utc - b.created_utc;
+				})[0].name;
+			}
+			convMessages.forEach(function (msg) {
+				msg.first_message_name = rootName;
+				if (!msg.author) msg.author = '[unknown]';
+				messages.push(msg);
+			});
+		});
+		return {
+			messages: messages
+			, next: findNextPage(doc)
+		};
 	};
 
 	// Walks Reddit's private message listing from newest to oldest, storing
@@ -175,6 +355,16 @@
 			}
 			
 		}
-		return ObjectValues(conversations);
+		var list = ObjectValues(conversations);
+		// If the first message wasn't stored, work out who it's with from the oldest one we have
+		list.forEach(function (conversation) {
+			if (conversation.correspondent) return;
+			var oldest = conversation.messages.slice().sort(function (a, b) {
+				return a.created_utc - b.created_utc;
+			})[0];
+			conversation.correspondent = getCorrespondentFromMsg(oldest);
+			if (oldest.dest && oldest.dest.charAt(0) === "#") conversation.modmail = true;
+		});
+		return list;
 	};
 })();

@@ -33,6 +33,10 @@ Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manif
 * Opening a conversation sent one mark-read request per message; it now batches them and refreshes the toolbar badge.
 * Several crashes on New Reddit pages when expected header elements were missing.
 
+**Reddit's PM archive**
+* Reddit stopped serving private message history through `message/messages.json` (it now returns an empty list) and redirects old Reddit's message pages to a read-only archive on new Reddit. YAIR now reads that archive page (`www.reddit.com/message/messages/`), follows its infinite-scroll pages, and stores the messages in the same local database, so search, folders, and export work as before. The JSON listing is still read too, in case Reddit delivers anything there.
+* Message bodies from the archive are Reddit's rendered HTML, so they're sanitized (no scripts, event handlers, or `javascript:` links) before display, and plain text is derived for search and export. Original Markdown isn't available from the archive.
+
 **New**
 * Settings → Administration → **Export All** (text or JSON) downloads every stored conversation, including saved/archived flags in JSON.
 * Search box placeholder lists the `from:`, `subject:`, and `message:` prefixes.

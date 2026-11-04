@@ -43,6 +43,29 @@ const page = (title) => `<!DOCTYPE html><html><head><title>${title}</title></hea
 <div class="content" role="main"></div></body></html>`;
 
 let replyMode = 'ok';
+// 'json': PM history via messages.json (pre-2025 Reddit)
+// 'archive': messages.json is empty and history lives on www.reddit.com/message/messages/ (current Reddit)
+let source = 'json';
+const ARCHIVE_PAGE = 4;
+const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const who = n => n && n.charAt(0) === '#' ? `/r/${n.slice(1)}/` : `/user/${n}/`;
+// Mirrors the markup captured from the real archive page (Nov 2026)
+function archiveConversation(t) {
+  const permalink = '/message/messages/' + t.root.id;
+  const msgs = [t.root, ...t.replies].map(m => {
+    const author = m.author || '#' + m.subreddit;
+    const iso = new Date(m.created_utc * 1000).toISOString();
+    return `<div class="px-md py-xs " data-test-id="pm-archive-message-template"><div class="text-12 flex items-center justify-between"><div class="text-neutral-content-weak"><span class="font-semibold"><a href="${who(author)}" class="text-12 font-semibold w-fit text-primary-plain">${author.charAt(0) === '#' ? 'r/' + author.slice(1) : 'u/' + author}</a> to <a href="${who(m.dest)}" class="text-12 font-semibold">u/${m.dest}</a></span><span> · </span><faceplate-timeago ts="${iso.replace('Z', '000+0000')}" short=""><time datetime="${iso}" title="x">1y</time></faceplate-timeago></div><faceplate-dropdown-menu><button id="pm-archive-overflow-menu-${m.name}" aria-haspopup="true"><svg viewBox="0 0 20 20"></svg></button><faceplate-menu slot="menu" hidden=""><shreddit-share-list-item permalink="${permalink}"><li>Share</li></shreddit-share-list-item></faceplate-menu></faceplate-dropdown-menu></div><span class="text-14"><div id="-post-rtjson-content" class="[--emote-size:20px]" dir="auto">${m.body.split('\n').map(l => `<p onclick="window.__xss=1">${esc(l)}</p>`).join('')}<p><a href="javascript:window.__xss=1">bad link</a> <a href="https://example.com/x" rel="noopener nofollow ugc" target="_blank">good link</a></p></div></span></div>`;
+  }).join('');
+  return `<div actioned=""><div data-test-id="pm-archive-conversation" class="flex flex-col"><div class="py-xs px-md flex flex-col"><a class="text-16 font-bold" href="${permalink}">${esc(t.root.subject)}</a><span class="font-semibold"><a href="${who(t.root.author === ME ? t.root.dest : (t.root.author || '#' + t.root.subreddit))}">x</a></span></div><div class="h-px"></div>${msgs}</div></div>`;
+}
+function archiveChunk(start) {
+  const all = listing();
+  const slice = all.slice(start, start + ARCHIVE_PAGE);
+  const more = start + ARCHIVE_PAGE < all.length
+    ? `<infinite-loader><faceplate-partial loading="programmatic" src="/svc/shreddit/message/messages?after=${slice[slice.length - 1].root.name}"></faceplate-partial></infinite-loader>` : '';
+  return slice.map(archiveConversation).join('') + more;
+}
 function createMockReddit({ key, cert }) {
 return https.createServer({ key, cert }, async (req, res) => {
   const url = new URL(req.url, 'https://' + req.headers.host);
@@ -50,11 +73,25 @@ return https.createServer({ key, cert }, async (req, res) => {
   log.push(entry);
   if (url.pathname === '/__log') return json(res, log);
   if (url.pathname === '/__replyMode') { replyMode = url.searchParams.get('m'); return json(res, { replyMode }); }
+  if (url.pathname === '/__source') { source = url.searchParams.get('s'); return json(res, { source }); }
+  if (req.headers.host.startsWith('www.') && url.pathname === '/message/messages/') {
+    res.writeHead(200, { 'content-type': 'text/html' });
+    return res.end(source === 'archive'
+      ? `<!DOCTYPE html><html><head><title>Reddit - The heart of the internet</title><script>window.__xss=1</script></head><body><shreddit-app><main class="main w-full">${archiveChunk(0)}</main></shreddit-app></body></html>`
+      : '<!DOCTYPE html><html><body><main></main></body></html>');
+  }
+  if (req.headers.host.startsWith('www.') && url.pathname === '/svc/shreddit/message/messages') {
+    const all = listing();
+    const start = all.findIndex(t => t.root.name === url.searchParams.get('after')) + 1;
+    res.writeHead(200, { 'content-type': 'text/html' });
+    return res.end(source === 'archive' ? archiveChunk(start) : '');
+  }
   if (url.pathname.startsWith('/message/yair_')) {
     res.writeHead(200, { 'content-type': 'text/html' });
     return res.end(page('messages: inbox'));
   }
   if (url.pathname === '/message/messages.json') {
+    if (source === 'archive') return json(res, { kind: 'Listing', data: { after: null, before: null, children: [], modhash: 'modhash123' } });
     const all = listing();
     let start = 0;
     const after = url.searchParams.get('after');

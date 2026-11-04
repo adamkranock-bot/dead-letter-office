@@ -134,6 +134,40 @@ var actions = {
 		}
 		return redditRequest(REDDIT_ORIGIN + '/message/messages.json?' + params.toString());
 	}
+	// One page of Reddit's private message archive (new Reddit HTML). Reddit
+	// stopped serving PM history through messages.json, so this is now the
+	// main source. Returns the HTML for the content script to parse.
+	, getArchivePage: function (request) {
+		var url;
+		try {
+			url = new URL(request.path || '/message/messages/', REDDIT_WWW);
+		}
+		catch (e) {
+			return Promise.reject(new Error('Invalid archive URL'));
+		}
+		if (url.origin !== REDDIT_WWW || !/^\/(message\/messages|svc\/shreddit\/)/.test(url.pathname)) {
+			return Promise.reject(new Error('Refusing to fetch ' + url.pathname));
+		}
+		return fetch(url.toString(), {
+			credentials: 'include'
+			, cache: 'no-store'
+			, headers: {
+				'Accept': 'text/html'
+			}
+		}).then(function (response) {
+			if (!response.ok) {
+				var err = new Error('Reddit returned HTTP ' + response.status);
+				err.status = response.status;
+				throw err;
+			}
+			return response.text().then(function (html) {
+				return {
+					html: html
+					, url: response.url
+				};
+			});
+		});
+	}
 	, updateNotifications: function () {
 		return yairNotifications.update();
 	}
