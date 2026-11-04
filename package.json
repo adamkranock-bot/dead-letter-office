@@ -1,0 +1,19 @@
+{
+  "name": "yair",
+  "version": "0.4.0",
+  "private": true,
+  "description": "YAIR (Yet Another Inbox Revamp) browser extension for Reddit private messages",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint .",
+    "lint:firefox": "web-ext lint --source-dir . --ignore-files node_modules dist package.json package-lock.json eslint.config.js \"scss/**\" \"images/promotional/**\" \"*.md\" \".github/**\" \"test/**\"",
+    "build": "web-ext build --source-dir . --artifacts-dir dist --overwrite-dest --ignore-files node_modules dist package.json package-lock.json eslint.config.js \"scss/**\" \"images/promotional/**\" \"*.md\" \".github/**\" \"test/**\"",
+    "test:e2e": "node test/e2e/run.js"
+  },
+  "devDependencies": {
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
+    "web-ext": "^10.8.0",
+    "playwright": "^1.63.0"
+  }
+}
