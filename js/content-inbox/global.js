@@ -22,7 +22,29 @@ var yair = {
 			console.error("yair.proxy(...); requires the username (from DOM) for most features");
 		}
 		chrome.runtime.sendMessage(cmdObj, function (response) {
+			var err = chrome.runtime.lastError;
+			if (err || !response || response.__yairError) {
+				var message = err ? err.message : (response ? response.__yairError : 'No response from the extension');
+				console.error("YAIR background call " + path.join('.') + " failed:", message);
+				if (yair.view && yair.view.showNotification && yair.$e) {
+					yair.view.showNotification("Something went wrong talking to the YAIR extension: " + message, 5000);
+				}
+				return;
+			}
 			callback.apply(this, response);
+		});
+	}
+	// Send a plain {action: ...} request to the background (network calls etc.)
+	, request: function (action, data, callback) {
+		var msg = Object.assign({}, data || {}, {
+			action: action
+		});
+		chrome.runtime.sendMessage(msg, function (response) {
+			var err = chrome.runtime.lastError;
+			if (err) response = {
+				__yairError: err.message
+			};
+			if (typeof callback === "function") callback(response);
 		});
 	}
 	, helper: {}

@@ -1,52 +1,115 @@
+// Single message router for the background context.
+//
+// Content scripts call background functions with
+//   {action: 'proxyCmd', username, path: ['yair', 'db', 'get'], params: [...]}
+// Only the paths listed in PROXY_WHITELIST can be called; previously any
+// function reachable from `window` could be invoked.
 (function () {
-	function argsToArr(args) {
-		var arr = [];
-		for (var i = 0; i < args.length; i++) {
-			arr.push(args[i]);
+	var PROXY_WHITELIST = [
+		'yair.cfg_get'
+		, 'yair.cfg_set'
+		, 'yair.cfg_import'
+		, 'yair.db.init'
+		, 'yair.db.clearObjectStore'
+		, 'yair.db.countObjectsInStore'
+		, 'yair.db.get'
+		, 'yair.db.add'
+		, 'yair.db.addAll'
+		, 'yair.db.update'
+		, 'yair.db.updateAll'
+		, 'yair_cfg_deleted.add'
+		, 'yair_cfg_deleted.remove'
+		, 'yair_cfg_saved.add'
+		, 'yair_cfg_saved.remove'
+		, 'drafts.getAllKeys'
+		, 'drafts.get'
+		, 'drafts.set'
+		, 'drafts.delete'
+	];
+	// Reddit usernames: 3-20 chars of letters, digits, _ and -. Allow a little slack.
+	var USERNAME_RE = /^[A-Za-z0-9_-]{1,32}$/;
+
+	function resolvePath(path) {
+		var target = self;
+		var context = null;
+		for (var i = 0; i < path.length; i++) {
+			context = target;
+			target = target ? target[path[i]] : undefined;
 		}
-		return arr;
+		return typeof target === 'function' ? target : null;
 	}
 
-	function logRequest(request, sender) {
-		var paramsClone = JSON.parse(JSON.stringify(request.params));
-		for (var i = 0; i < paramsClone.length; i++) {
-			if (typeof paramsClone[i] === "string") paramsClone[i] = '"' + paramsClone[i] + '"';
-			else if (paramsClone[i] instanceof Array) paramsClone[i] = 'Array[' + paramsClone[i].length + ']';
-			else if (typeof paramsClone[i] === "object") paramsClone[i] = JSON.stringify(paramsClone[i]);
-			if (typeof paramsClone[i] === "string" && paramsClone[i].length > 30) {
-				paramsClone[i] = paramsClone[i].substring(0, 26) + " ...";
-			}
-		}
-		console.log("Received proxyCmd:", request.path.join('.') + '(' + paramsClone.join(', ') + ');', sender);
+	function errorResponse(e) {
+		return {
+			__yairError: (e && e.message) ? e.message : String(e)
+		};
 	}
-	var messageListener = function (request, sender, sendResponse) {
-		if (request.action && request.action === 'proxyCmd') {
-			logRequest(request, sender);
-			var func = window;
-			for (var i = 0; i < request.path.length; i++) {
-				var key = request.path[i];
-				func = func[key];
-			}
-			var context = {
-				username: request.username
-				, callback: function () {
-					var args = argsToArr(arguments);
-					sendResponse(args);
-				}
-			};
-			var response = func.apply(context, request.params);
-			if (typeof response === "undefined") return true;
-			if (response instanceof Promise) {
-				response.then(function () {
-					var args = argsToArr(arguments);
-					sendResponse(args);
-				});
-				return true;
-			}
-			sendResponse([response]);
+
+	function handleProxyCmd(request, sendResponse) {
+		if (!(request.path instanceof Array) || PROXY_WHITELIST.indexOf(request.path.join('.')) < 0) {
+			return sendResponse(errorResponse('Not allowed: ' + request.path));
 		}
-	};
-	var messageBroadcaster = function (user, data) {};
-	var messageSender = function () {};
-	chrome.runtime.onMessage.addListener(messageListener);
+		if (!USERNAME_RE.test(request.username || '')) {
+			return sendResponse(errorResponse('Missing or invalid username'));
+		}
+		var func = resolvePath(request.path);
+		if (!func) {
+			return sendResponse(errorResponse('No such function: ' + request.path.join('.')));
+		}
+		var responded = false;
+		var context = {
+			username: request.username
+			, callback: function () {
+				if (responded) return;
+				responded = true;
+				sendResponse(Array.prototype.slice.call(arguments));
+			}
+		};
+		var params = (request.params instanceof Array) ? request.params : [];
+		var result;
+		try {
+			result = func.apply(context, params);
+		}
+		catch (e) {
+			console.error('YAIR: proxy call failed', request.path.join('.'), e);
+			return sendResponse(errorResponse(e));
+		}
+		if (result && typeof result.then === 'function') {
+			result.then(function (value) {
+				context.callback(value);
+			}, function (e) {
+				console.error('YAIR: proxy call failed', request.path.join('.'), e);
+				if (!responded) {
+					responded = true;
+					sendResponse(errorResponse(e));
+				}
+			});
+		}
+		else if (typeof result !== 'undefined') {
+			context.callback(result);
+		}
+		// Otherwise the function will call this.callback() itself
+	}
+
+	chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+		if (!request || request.target === 'offscreen') return;
+		if (sender.id && sender.id !== chrome.runtime.id) return;
+		if (request.action === 'proxyCmd') {
+			yairStorage.ready.then(function () {
+				handleProxyCmd(request, sendResponse);
+			});
+			return true;
+		}
+		if (Object.prototype.hasOwnProperty.call(actions, request.action)) {
+			yairStorage.ready.then(function () {
+				return actions[request.action](request);
+			}).then(function (result) {
+				sendResponse(result);
+			}, function (e) {
+				console.warn('YAIR: action failed', request.action, e.message);
+				sendResponse(errorResponse(e));
+			});
+			return true;
+		}
+	});
 })();

@@ -1,9 +1,8 @@
 yair.templates.add({
-	alert_alert: chrome.extension.getURL('template/alert_alert.html')
-	, alert_html: chrome.extension.getURL('template/alert_html.html')
-	, alert_confirm: chrome.extension.getURL('template/alert_confirm.html')
+	alert_alert: chrome.runtime.getURL('template/alert_alert.html')
+	, alert_html: chrome.runtime.getURL('template/alert_html.html')
+	, alert_confirm: chrome.runtime.getURL('template/alert_confirm.html')
 });
-var testI = 0;
 yair.alerts = {
 	html: function (title, html, buttons, clickToDismiss) {
 		var $alert = $(yair.templates.alert_html);

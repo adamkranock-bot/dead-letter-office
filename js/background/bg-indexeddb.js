@@ -1,76 +1,78 @@
-(function (undefined) {
-	var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-	var IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction;
-	var IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
+// Local message store: one IndexedDB database per Reddit user.
+//
+// Connections are opened lazily, so every call works even if the service
+// worker was stopped and restarted since the inbox page called `init`.
+(function () {
 	var DB_VERSION = 4;
 	var DB_NAME = "YAIR_Messages";
 
-	function errorhandler(event) {
-		console.error(this, event);
-	};
-
-	function DBInstance(username, callback) {
-		this.username = username;
-		this.db = null;
-		this.open(callback);
-	}
-	DBInstance.prototype.open = function (callback) {
-		var _this = this;
-		var req = indexedDB.open(DB_NAME + this.username, DB_VERSION);
-		req.onerror = errorhandler;
-		req.onsuccess = function (e) {
-			_this.db = req.result;
-			callback();
-		};
-		req.onupgradeneeded = function (e) {
-			console.log("openDb.onupgradeneeded");
-			var tables = Object.keys(db_tables);
-			for (var i = 0; i < tables.length; i++) {
-				var tableName = tables[i];
-				var table = db_tables[tableName];
-				var indexes = table.indexes;
-				if (e.currentTarget.result.objectStoreNames.contains(tableName)) {
-					e.currentTarget.result.deleteObjectStore(tableName);
-				}
-				var store = e.currentTarget.result.createObjectStore(tableName, {
-					keyPath: table.key
-				});
-				for (var j = 0; j < indexes.length; j++) {
-					store.createIndex(indexes[j], indexes[j], {
-						unique: false
+	function openDatabase(username) {
+		return new Promise(function (resolve, reject) {
+			var req = self.indexedDB.open(DB_NAME + username, DB_VERSION);
+			req.onerror = function () {
+				reject(req.error);
+			};
+			req.onblocked = function () {
+				console.warn("YAIR: database upgrade blocked by another open connection", username);
+			};
+			req.onsuccess = function () {
+				var db = req.result;
+				// Let a future version upgrade proceed instead of blocking on us
+				db.onversionchange = function () {
+					db.close();
+					delete dbInstances[username];
+				};
+				resolve(new DBInstance(username, db));
+			};
+			req.onupgradeneeded = function () {
+				var db = req.result;
+				Object.keys(db_tables).forEach(function (tableName) {
+					var table = db_tables[tableName];
+					if (db.objectStoreNames.contains(tableName)) {
+						db.deleteObjectStore(tableName);
+					}
+					var store = db.createObjectStore(tableName, {
+						keyPath: table.key
 					});
-				}
-			}
-			yair_user_cfg[_this.username].pmInboxInitialized = false;
-			yair_user_cfg[_this.username].replyInboxInitialized = false;
-		};
-	};
+					table.indexes.forEach(function (index) {
+						store.createIndex(index, index, {
+							unique: false
+						});
+					});
+				});
+				// The store was (re)created empty, so a full index is needed
+				var cfg = yairUserCfg(username);
+				cfg.pmInboxInitialized = false;
+				cfg.replyInboxInitialized = false;
+				yair_cfg_save();
+			};
+		});
+	}
+
+	function DBInstance(username, db) {
+		this.username = username;
+		this.db = db;
+	}
+
+	function requestToPromise(req, label) {
+		return new Promise(function (resolve, reject) {
+			req.onsuccess = function () {
+				resolve(req.result);
+			};
+			req.onerror = function () {
+				console.error("YAIR: " + label + " failed", req.error);
+				reject(req.error);
+			};
+		});
+	}
 	DBInstance.prototype.getObjectStore = function (store_name, mode) {
 		return this.db.transaction(store_name, mode).objectStore(store_name);
 	};
 	DBInstance.prototype.clearObjectStore = function (store_name) {
-		var store = this.getObjectStore(store_name, db_mode.readwrite);
-		return new Promise(function (callback) {
-			var req = store.clear();
-			req.onsuccess = function () {
-				callback();
-			};
-			req.onerror = function (e) {
-				console.error("Failed to remove objects in store", e, req);
-			};
-		});
+		return requestToPromise(this.getObjectStore(store_name, db_mode.readwrite).clear(), "clear store");
 	};
 	DBInstance.prototype.countObjectsInStore = function (store_name) {
-		var store = this.getObjectStore(store_name, db_mode.readonly);
-		return new Promise(function (callback) {
-			var req = store.count();
-			req.onsuccess = function (e) {
-				callback(e.target.result);
-			};
-			req.onerror = function (e) {
-				console.error("Failed to count objects in store", e, req);
-			};
-		});
+		return requestToPromise(this.getObjectStore(store_name, db_mode.readonly).count(), "count store");
 	};
 	DBInstance.prototype.get = function (store_name, index, reverse, from, limit) {
 		if (typeof limit !== "number") limit = -1;
@@ -78,118 +80,122 @@
 		if (typeof reverse !== "boolean") reverse = true;
 		var store = this.getObjectStore(store_name, db_mode.readonly);
 		var keyRange = null;
-		if (typeof index === "object") {
+		if (index && typeof index === "object") {
 			keyRange = IDBKeyRange.only(index.value);
 			index = index.key;
 		}
 		var results = [];
-		return new Promise(function (callback) {
-			var req = store.index(index).openCursor(keyRange, reverse ? 'prev' : undefined);
-			req.onerror = function (e) {
-				if (e instanceof InvalidStateError) {
-					callback(results);
-				}
-				else {
-					callback(null);
-					errorhandler(e);
-				}
+		return new Promise(function (resolve) {
+			var req = store.index(index).openCursor(keyRange, reverse ? 'prev' : 'next');
+			req.onerror = function () {
+				console.error("YAIR: cursor failed", req.error);
+				// Return whatever was collected before the failure
+				resolve(results);
 			};
-			req.onsuccess = function (e) {
-				var cursor = e.target.result;
-				if (!cursor) return callback(results);
+			req.onsuccess = function () {
+				var cursor = req.result;
+				if (!cursor) return resolve(results);
 				if (from > 0) {
 					cursor.advance(from);
 					from = 0;
 					return;
 				}
 				results.push(cursor.value);
-				if (--limit === 0) return callback(results);
+				if (--limit === 0) return resolve(results);
 				cursor.continue();
 			};
 		});
 	};
-	DBInstance.prototype.add = function (store_name, obj) {
-		var store = this.getObjectStore(store_name, db_mode.readwrite);
-		return new Promise(function (callback) {
-			var req = store.add(obj);
-			req.onsuccess = function (e) {
-				callback(true);
+	// Writes many objects in a single transaction. With `overwrite` false,
+	// objects whose key already exists are left untouched. Resolves with the
+	// number of objects written.
+	DBInstance.prototype.writeAll = function (store_name, arr, overwrite) {
+		var db = this.db;
+		return new Promise(function (resolve, reject) {
+			if (!arr || !arr.length) return resolve(0);
+			var tx = db.transaction(store_name, db_mode.readwrite);
+			var store = tx.objectStore(store_name);
+			var written = 0;
+			arr.forEach(function (obj) {
+				if (!obj) return;
+				var req = overwrite ? store.put(obj) : store.add(obj);
+				req.onsuccess = function () {
+					written++;
+				};
+				req.onerror = function (e) {
+					// Duplicate keys are expected when re-indexing; don't abort the transaction
+					if (req.error && req.error.name === 'ConstraintError') {
+						e.preventDefault();
+						e.stopPropagation();
+					}
+					else {
+						console.error("YAIR: failed to write to DB", req.error, obj);
+						e.preventDefault();
+					}
+				};
+			});
+			tx.oncomplete = function () {
+				resolve(written);
 			};
-			req.onerror = function (e) {
-				if (this.error.message === "Key already exists in the object store.") {
-					callback(false);
-				}
-				else {
-					console.error("Failed to add to DB", e, req, obj);
-					callback(false);
-				}
+			tx.onerror = function () {
+				// Individual request errors are handled above; this is for anything else
+				if (tx.error) console.error("YAIR: transaction error", tx.error);
+			};
+			tx.onabort = function () {
+				reject(tx.error || new Error('Transaction aborted'));
 			};
 		});
 	};
-	DBInstance.prototype.update = function (store_name, obj) {
-		var store = this.getObjectStore(store_name, db_mode.readwrite);
-		return new Promise(function (callback) {
-			var req = store.put(obj);
-			req.onsuccess = function (e) {
-				callback();
-			};
-			req.onerror = function (e) {
-				console.error("Failed to update obj in DB", e, req, obj);
-				callback(false);
-			};
-		});
-	};
-	// Update function missing
 	var dbInstances = {};
+
+	function instance(username) {
+		if (!dbInstances[username]) {
+			dbInstances[username] = openDatabase(username).catch(function (e) {
+				delete dbInstances[username];
+				throw e;
+			});
+		}
+		return dbInstances[username];
+	}
 	yair.db = {
-		init: function () {
-			if (dbInstances[this.username] === undefined) {
-				dbInstances[this.username] = new DBInstance(this.username, this.callback);
-			}
-			else {
-				this.callback();
-			}
+		instance: instance
+		, init: function () {
+			return instance(this.username).then(function () {
+				return true;
+			});
 		}
 		, clearObjectStore: function (store_name) {
-			return dbInstances[this.username].clearObjectStore(store_name);
+			return instance(this.username).then(function (db) {
+				return db.clearObjectStore(store_name);
+			});
 		}
 		, countObjectsInStore: function (store_name) {
-			return dbInstances[this.username].countObjectsInStore(store_name);
+			return instance(this.username).then(function (db) {
+				return db.countObjectsInStore(store_name);
+			});
 		}
 		, 'get': function (store_name, index, reverse, from, limit) {
-			return dbInstances[this.username].get(store_name, index, reverse, from, limit);
+			return instance(this.username).then(function (db) {
+				return db.get(store_name, index, reverse, from, limit);
+			});
 		}
 		, add: function (store_name, obj) {
-			return dbInstances[this.username].add(store_name, obj);
+			return yair.db.addAll.call(this, store_name, [obj]).then(function (n) {
+				return n > 0;
+			});
 		}
 		, addAll: function (store_name, arr) {
-			var callback = this.callback;
-			var _this = this;
-			var index = 0;
-			var added = 0;
-			var next = function () {
-				yair.db.add.call(_this, store_name, arr[index++]).then(function (r) {
-					if (r) added++;
-					if (index < arr.length) next();
-					else callback(added);
-				});
-			};
-			next();
+			return instance(this.username).then(function (db) {
+				return db.writeAll(store_name, arr, false);
+			});
 		}
 		, update: function (store_name, obj) {
-			return dbInstances[this.username].update(store_name, obj);
+			return yair.db.updateAll.call(this, store_name, [obj]);
 		}
 		, updateAll: function (store_name, arr) {
-			var callback = this.callback;
-			var _this = this;
-			var index = 0;
-			var next = function () {
-				yair.db.update.call(_this, store_name, arr[index++]).then(function () {
-					if (index < arr.length) next();
-					else callback();
-				});
-			};
-			next();
+			return instance(this.username).then(function (db) {
+				return db.writeAll(store_name, arr, true);
+			});
 		}
 	};
 })();

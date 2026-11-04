@@ -1,3 +1,6 @@
+// Per-user configuration, persisted in chrome.storage.local under YAIR_USER_CONFIG.
+// Functions on `yair.*` / `yair_cfg_*` are called through the proxy with
+// `this` = {username, callback}.
 var yair_default_cfg = {
 	version: '0'
 	, pmInboxInitialized: false
@@ -9,6 +12,7 @@ var yair_default_cfg = {
 	, showModmail: false
 	, conversationNewToOld: false
 	, compactMode: false
+	, nightMode: false
 	, deleteDraftAfterDays: 60
 	, doImport: true
 	, maxAjaxRetries: 5
@@ -16,38 +20,66 @@ var yair_default_cfg = {
 	, max403Retries: 15
 	, inboxRefreshInterval: 60000
 };
-var yair_user_cfg = {};
-if (typeof localStorage['YAIR_USER_CONFIG'] !== "undefined") {
-	yair_user_cfg = JSON.parse(localStorage['YAIR_USER_CONFIG']);
-	console.log("Config loaded from localstorage");
+
+function yairAllUserCfgs() {
+	var all = yairStorage.get('YAIR_USER_CONFIG');
+	if (!all || typeof all !== 'object') {
+		all = {};
+		yairStorage.set('YAIR_USER_CONFIG', all);
+	}
+	return all;
 }
-else {
-	console.log("No config found in localstorage");
+
+// Returns the config object for a user, creating it (from a fresh copy of the
+// defaults, so users never share arrays) and filling in any missing keys.
+function yairUserCfg(username) {
+	var all = yairAllUserCfgs();
+	if (typeof all[username] !== 'object' || all[username] === null) {
+		all[username] = {};
+	}
+	var cfg = all[username];
+	for (var attr in yair_default_cfg) {
+		if (typeof cfg[attr] === 'undefined') {
+			cfg[attr] = JSON.parse(JSON.stringify(yair_default_cfg[attr]));
+		}
+	}
+	return cfg;
 }
+
+function yairHasUserCfg(username) {
+	var all = yairStorage.get('YAIR_USER_CONFIG');
+	return !!(all && all[username]);
+}
+
+function yair_cfg_save() {
+	return yairStorage.save('YAIR_USER_CONFIG');
+}
+
 yair.cfg_import = function (cfg) {
-	if (typeof cfg.pmInboxInitialized === "object" && cfg.pmInboxInitialized instanceof Array) {
+	if (!cfg || typeof cfg !== 'object') return;
+	if (cfg.pmInboxInitialized instanceof Array) {
 		cfg.pmInboxInitialized = (cfg.pmInboxInitialized.indexOf(this.username) >= 0);
 	}
-	if (typeof cfg.replyInboxInitialized === "object" && cfg.replyInboxInitialized instanceof Array) {
+	if (cfg.replyInboxInitialized instanceof Array) {
 		cfg.replyInboxInitialized = (cfg.replyInboxInitialized.indexOf(this.username) >= 0);
 	}
-	yair_user_cfg[this.username] = cfg;
+	yairAllUserCfgs()[this.username] = cfg;
+	yairUserCfg(this.username);
 	yair_cfg_save();
 };
 yair.cfg_set = function (prop, val) {
-	yair_user_cfg[this.username][prop] = val;
+	if (!Object.prototype.hasOwnProperty.call(yair_default_cfg, prop)) {
+		throw new Error('Unknown config property: ' + prop);
+	}
+	yairUserCfg(this.username)[prop] = val;
 	yair_cfg_save();
-	localStorage['inboxRefreshInterval'] = yair.cfg_user_get('inboxRefreshInterval', this.username);
+	if (prop === 'inboxRefreshInterval') {
+		yairNotifications.setRefreshInterval(val);
+	}
 	this.callback();
 };
 yair.cfg_user_get = function (prop, username) {
-	if (typeof yair_user_cfg[username] === "undefined") {
-		yair_user_cfg[username] = yair_default_cfg;
-	}
-	var cfg = yair_user_cfg[username];
-	for (var attr in yair_default_cfg) {
-		if (typeof cfg[attr] === "undefined") cfg[attr] = yair_default_cfg[attr];
-	}
+	var cfg = yairUserCfg(username);
 	if (typeof prop === 'undefined') {
 		return cfg;
 	}
@@ -56,36 +88,24 @@ yair.cfg_user_get = function (prop, username) {
 yair.cfg_get = function (prop) {
 	return yair.cfg_user_get(prop, this.username);
 };
-var yair_cfg_deleted = {
-	add: function (id) {
-		var index = yair_user_cfg[this.username].deleted.indexOf(id);
-		if (index >= 0) return;
-		yair_user_cfg[this.username].deleted.push(id);
-		yair_cfg_save();
-	}
-	, remove: function (id) {
-		var index;
-		while ((index = yair_user_cfg[this.username].deleted.indexOf(id)) >= 0) {
-			yair_user_cfg[this.username].deleted.splice(index, 1);
+
+function yairCfgList(listName) {
+	return {
+		add: function (id) {
+			var list = yairUserCfg(this.username)[listName];
+			if (list.indexOf(id) >= 0) return;
+			list.push(id);
+			yair_cfg_save();
 		}
-		yair_cfg_save();
-	}
-};
-var yair_cfg_saved = {
-	add: function (id) {
-		var index = yair_user_cfg[this.username].saved.indexOf(id);
-		if (index >= 0) return;
-		yair_user_cfg[this.username].saved.push(id);
-		yair_cfg_save();
-	}
-	, remove: function (id) {
-		var index;
-		while ((index = yair_user_cfg[this.username].saved.indexOf(id)) >= 0) {
-			yair_user_cfg[this.username].saved.splice(index, 1);
+		, remove: function (id) {
+			var list = yairUserCfg(this.username)[listName];
+			var index;
+			while ((index = list.indexOf(id)) >= 0) {
+				list.splice(index, 1);
+			}
+			yair_cfg_save();
 		}
-		yair_cfg_save();
-	}
-};
-yair_cfg_save = function () {
-	localStorage['YAIR_USER_CONFIG'] = JSON.stringify(yair_user_cfg);
-};
+	};
+}
+var yair_cfg_deleted = yairCfgList('deleted');
+var yair_cfg_saved = yairCfgList('saved');

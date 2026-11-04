@@ -24,87 +24,60 @@
 		return r;
 	}
 	yair.model.updateDb = function (success, error) {
-		var callback = function () {
-			success();
-		};
 		yair.proxy(['yair', 'db', 'countObjectsInStore'], [db_tables.privateMessages.name], function (num) {
 			if (yair.cfg.data.pmInboxInitialized && num > 10) {
-				indexNexPrivateMessages(callback, error);
+				// Only fetch until we reach messages we already have
+				crawlPrivateMessages(true, success, error);
 			}
 			else {
-				if (typeof localStorage['YAIR_CONFIG'] !== "undefined") {
-					var oldConfig = JSON.parse(localStorage['YAIR_CONFIG']);
-				}
-				new PMIndexer(function () {
+				// First run (or after a reset): index everything Reddit will give us
+				crawlPrivateMessages(false, function () {
 					yair.cfg.set('pmInboxInitialized', true);
-					callback();
-				}, 'after');
+					success();
+				}, error);
 			}
 		});
 	};
-
-	function PMIndexer(callback, direction, reference, pageNum) {
-		this.callback = callback;
-		this.direction = direction;
-		this.reference = reference;
-		this.forbidden = null;
-		this.errorCount = 0;
-		if (pageNum) {
-			this.pageNum = pageNum;
-		} else { this.pageNum = 1; }
-
-		var url = '';
-		if (typeof this.direction === "string") {
-			url += '&' + this.direction + '=' + this.reference;
-		}
-		chrome.runtime.sendMessage({
-			action: 'getPrivateMessages', direction: direction, reference: url
-		}, function (response) {
-			if (direction === "before"){
-				var reference = response.data.before;
-			} else {
-				var reference = response.data.after;
-			}
-			this.pageNum++;
-			addPMDataToDatabase(response, callback, reference, this.pageNum, direction);
-		});
-		yair.view.showStatus("Indexing messages from page " + (this.pageNum));
-		
-	};
-
-	function indexNexPrivateMessages(callback, fail) {
-		var queryParams = [ db_tables.privateMessages.name, 'created_utc', true, 0, yair.cfg.data.max403Retries ];
-		yair.proxy(['yair', 'db', 'get'], queryParams, function (latestMessages) {
-			var index = 0;
-
-			function tryNext() {
-				if (index < latestMessages.length) {
-					var indexer = new PMIndexer(callback, 'before', latestMessages[index++].name);
-				}
-				else {
-					fail("Failed to index new private messages, problem requesting forbidden content");
-				}
-			}
-			tryNext();
-		});
-	}
-
 	yair.model.reindexPrivateMessages = function (success, error) {
-		var callback = function () {
-			success();
-		};
-		new PMIndexer(function () { callback();	}, 'after');
+		crawlPrivateMessages(false, success, error);
 	};
 
-	function addPMDataToDatabase(response, callback, reference, pageNum, direction) {
-		var messages = extractPrivateMessages(response);
-		yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, messages], function (numAdded) {
-			if (reference) {
-				PMIndexer(callback, direction, reference, pageNum);
-			} else {
-				callback();
-			}
-		});
+	// Walks Reddit's private message listing from newest to oldest, storing
+	// every message that isn't in the local database yet. Reddit lists threads
+	// by their latest activity, so when `stopWhenNothingNew` is set the walk
+	// ends at the first page that added nothing.
+	function crawlPrivateMessages(stopWhenNothingNew, done, fail) {
+		var pageNum = 1;
+		var totalAdded = 0;
+		var failed = function (message) {
+			if (typeof fail === "function") fail(message);
+		};
+
+		function fetchPage(after) {
+			yair.view.showStatus("Indexing messages from page " + pageNum);
+			yair.request('getPrivateMessages', {
+				direction: after ? 'after' : null
+				, reference: after
+			}, function (response) {
+				if (!response || response.__yairError || !response.data || !response.data.children) {
+					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
+					failed("Couldn't load your messages from Reddit (" + reason + "). Are you still logged in?");
+					return;
+				}
+				var messages = extractPrivateMessages(response);
+				if (!messages.length) return done(totalAdded);
+				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, messages], function (numAdded) {
+					totalAdded += numAdded || 0;
+					var next = response.data.after;
+					if (!next || (stopWhenNothingNew && !numAdded)) {
+						return done(totalAdded);
+					}
+					pageNum++;
+					fetchPage(next);
+				});
+			});
+		}
+		fetchPage(null);
 	}
 
 	function extractPrivateMessages(messageObj) {
@@ -136,7 +109,7 @@
 			return msg.author;
 		}
 		else {
-			return (msg.author[0] === '#') ? msg.dest : msg.author;
+			return (msg.author && msg.author[0] === '#') ? msg.dest : msg.author;
 		}
 	}
 	yair.model.getConversations = function (callback) {
@@ -147,12 +120,6 @@
 		});
 	};
 	yair.model.getConversation = function (name, callback) {
-		var queryParams = [db_tables.privateMessages.name, 'created_utc', true, 0, -1];
-		yair.proxy(['yair', 'db', 'get'], queryParams, function (messages) {
-			var conversations = yair.model.getConversationsFromMessages(messages);
-		});
-
-		//first_message_name
 		var index = {
 			key: 'first_message_name'
 			, value: name
@@ -160,6 +127,10 @@
 		var queryParams = [db_tables.privateMessages.name, index, true, 0, -1];
 		yair.proxy(['yair', 'db', 'get'], queryParams, function (messages) {
 			var conversations = yair.model.getConversationsFromMessages(messages);
+			if (!conversations.length) {
+				yair.view.showNotification("That conversation isn't in your local inbox yet. Try Reindex Inbox in Settings.", 4000);
+				return;
+			}
 			callback(conversations[0]);
 		});
 	};
@@ -197,7 +168,7 @@
 					conversation.modmail = true;
 				}
 				
-				if (obj.dest.startsWith("#")) {
+				if (obj.dest && obj.dest.charAt(0) === "#") {
 					conversation.modmail = true;
 				}
 

@@ -6,6 +6,56 @@ function isLoggedIn() {
 	return (getUsername() !== "sign in or create an account");
 }
 
+function escapeHtml(str) {
+	return String(str).replace(/[&<>"']/g, function (c) {
+		return {
+			'&': '&amp;'
+			, '<': '&lt;'
+			, '>': '&gt;'
+			, '"': '&quot;'
+			, "'": '&#39;'
+		}[c];
+	});
+}
+
+// Undo the three entities Reddit applies to `body` when raw_json isn't set
+function decodeBasicEntities(str) {
+	return String(str).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+// Make a string safe to use as a download file name on every OS
+function safeFilename(str) {
+	var name = String(str || '').replace(/[\\/:*?"<>|\x00-\x1f]+/g, '_').replace(/\s+/g, ' ').trim();
+	return name.substring(0, 100) || 'conversation';
+}
+
+// URL for a same-site Reddit API call. Firefox content scripts need an
+// absolute URL; Chrome works best with a relative one.
+function redditApiUrl(path) {
+	if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
+		return 'https://www.reddit.com' + path;
+	}
+	return path;
+}
+
+// Trigger a file download of `text` from the page
+function downloadText(filename, text, mimeType) {
+	var blob = new Blob([text], {
+		type: mimeType || 'text/plain'
+	});
+	var url = URL.createObjectURL(blob);
+	var a = document.createElement('a');
+	a.style.display = 'none';
+	a.href = url;
+	a.download = filename;
+	document.body.appendChild(a);
+	a.click();
+	setTimeout(function () {
+		a.remove();
+		URL.revokeObjectURL(url);
+	}, 1000);
+}
+
 function htmlDecode(str) {
 	var ele = document.createElement('span');
 	ele.innerHTML = str;
