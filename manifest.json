@@ -62,8 +62,16 @@
 				"js/content-inbox/config.js",
 				"js/content-inbox/generic.js",
 				"js/content-inbox/search.js",
-				"js/content-inbox/inbox.js",
-				"js/content-inbox/dbhelper.js"
+				"js/content-inbox/view-shell.js",
+				"js/content-inbox/view-list.js",
+				"js/content-inbox/view-conversation.js",
+				"js/content-inbox/view-settings.js",
+				"js/content-inbox/keyboard.js",
+				"js/content-inbox/controller.js",
+				"js/content-inbox/controller-data.js",
+				"js/content-inbox/model.js",
+				"js/content-inbox/dbhelper.js",
+				"js/content-inbox/main.js"
 			],
 			"run_at": "document_start"
 		}
