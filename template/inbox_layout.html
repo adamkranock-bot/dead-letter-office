@@ -81,7 +81,20 @@
 			<div class="yair-search-panel">
 				<div class="yair-search-container">
 					<!-- Input and search button -->
-					<input type="text" id="YAIRSearchInput" placeholder="Search (from:user, subject:words, message:words)" aria-label="Search conversations"><button id="YAIRSearchClear" class="yair-search-clear yair-hide" type="button" title="Clear search" aria-label="Clear search">&times;</button></div>
+					<input type="text" id="YAIRSearchInput" placeholder="Search messages, people, and subjects" aria-label="Search conversations"><button id="YAIRSearchClear" class="yair-search-clear yair-hide" type="button" title="Clear search" aria-label="Clear search">&times;</button>
+					<div class="yair-search-help" role="note">
+						<div class="dlo-help-title">Search tips</div>
+						<dl>
+							<dt><code>"exact phrase"</code></dt><dd>words together, in order</dd>
+							<dt><code>-word</code></dt><dd>leave out conversations with it</dd>
+							<dt><code>cats OR dogs</code></dt><dd>either one</dd>
+							<dt><code>from:name</code> <code>to:name</code> <code>with:me</code></dt><dd>who wrote, received, or took part</dd>
+							<dt><code>subject:word</code> <code>message:word</code></dt><dd>only the subject, or only messages</dd>
+							<dt><code>before:2020</code> <code>after:2019-06</code> <code>during:2021</code></dt><dd>when messages were sent</dd>
+							<dt><code>messages:&gt;20</code> <code>messages:5-10</code></dt><dd>conversation length</dd>
+							<dt><code>has:link</code> <code>is:unread</code> <code>is:saved</code></dt><dd>also <code>is:archived</code>, <code>is:draft</code>, <code>is:modmail</code></dd>
+						</dl>
+					</div></div>
 				<button id="YAIRSearchButton">Search</button>
 			</div>
 			<div class="yair-select-all-toggle">

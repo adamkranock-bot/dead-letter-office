@@ -158,31 +158,6 @@ function parseQueryString(str) {
 	return obj;
 }
 
-function parseSearchQuery(str) {
-	str = decodeURIComponent(str);
-	var obj = {
-		from: null
-		, subject: null
-		, message: null
-	};
-	if (str.length > 5 && str.substring(0, 5) === "from:") {
-		obj.from = str.substring(5);
-		return obj;
-	}
-	if (str.length > 8 && str.substring(0, 8) === "subject:") {
-		obj.subject = str.substring(8).split(' ');
-		return obj;
-	}
-	if (str.length > 8 && str.substring(0, 8) === "message:") {
-		obj.message = str.substring(8).split(' ');
-		return obj;
-	}
-	obj.from = str;
-	obj.subject = str.split(' ');
-	obj.message = str.split(' ');
-	return obj;
-}
-
 function getTime() {
 	return new Date().getTime();
 }

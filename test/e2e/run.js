@@ -108,6 +108,41 @@ async function launch(profile = PROFILE) {
   await page.click('#YAIRSearchClear');
   await page.waitForTimeout(700);
   check('clear button restores the full list', await page.locator('.yair-message-row').count() === 13 && !page.url().includes('search='));
+
+  // 2a. Search syntax
+  const searchFor = async (q) => {
+    await page.fill('#YAIRSearchInput', q);
+    await page.press('#YAIRSearchInput', 'Enter');
+    await page.waitForTimeout(500);
+    return page.locator('.yair-message-row').count();
+  };
+  check('search: "exact phrase" matches words in order', await searchFor('"magicword is"') === 1 && await searchFor('"is magicword"') === 0);
+  check('search: -"phrase" excludes', await searchFor('filler -"thread 3"') === 9);
+  check('search: OR matches either', await searchFor('magicword OR rules') === 2);
+  check('search: from: matches part of a name', await searchFor('from:ali') === 1);
+  check('search: accents are ignored', await searchFor('alicé') === 1);
+  check('search: messages:>1 by thread length', await searchFor('messages:>1') === 1);
+  check('search: during:/before: by date', await searchFor('during:2025') === 13 && await searchFor('before:2020') === 0);
+  check('search: is:unread', await searchFor('is:unread') === 1);
+  check('search: unknown operators are searched as text', await searchFor('http:nothing-here') === 0);
+  await searchFor('"line two"');
+  const snippet = await page.locator('.yair-message-row .yair-text').first().innerText();
+  check('search: row shows the matching message, not the latest one', snippet.startsWith('alice:') && snippet.includes('Line two'), snippet);
+  check('search: match highlighted in the excerpt', (await page.locator('.yair-message-row .yair-text mark').first().innerText()) === 'Line two');
+  await page.click('.yair-message-row:has-text("Hello there")');
+  await page.waitForSelector('.dlo-findbar');
+  check('search: conversation opens on the match with a find bar', (await page.locator('.dlo-findbar-label').innerText()) === '1 of 1 match' && (await page.locator('.yair-pm-body mark.dlo-current').innerText()) === 'Line two');
+  check('search: the matching message is expanded', await page.locator('.dlo-search-hit:not(.yair-collapsed)').count() === 1);
+  await page.click('.dlo-findbar-clear');
+  check('search: Clear removes highlights from the conversation', await page.locator('.yair-conversation mark').count() === 0 && await page.locator('.dlo-findbar').count() === 0);
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.yair-message-row');
+  await page.click('#YAIRSearchClear');
+  await page.waitForTimeout(500);
+  await page.locator('#YAIRSearchInput').focus();
+  check('search: cheat-sheet appears under the empty search box', await page.locator('.yair-search-help').isVisible());
+  await page.locator('#YAIRSearchInput').blur();
+  await page.waitForTimeout(200);
   check('message count badge on multi-message conversations', (await page.locator('.yair-message-row:has-text("Hello there") .yair-message-count').innerText()) === '2');
   await page.locator('body').click({ position: { x: 600, y: 5 } }).catch(() => {});
   await page.keyboard.press('j');
@@ -173,12 +208,13 @@ async function launch(profile = PROFILE) {
   await page.waitForTimeout(400);
 
   // 3. Open a conversation
+  const logBeforeOpen = (await mockLog(page)).length;
   await page.click('.yair-message-row:has-text("Hello there")');
   await page.waitForSelector('.yair-conversation');
   await page.waitForTimeout(800);
   check('conversation shows both messages', await page.locator('.yair-private-message').count() === 2);
   log = await mockLog(page);
-  const readCalls = log.filter(e => e.path === '/api/read_message' && e.body.id.includes('t4_a1'));
+  const readCalls = log.slice(logBeforeOpen).filter(e => e.path === '/api/read_message' && e.body.id.includes('t4_a1'));
   check('read_message sent once, batched, only for received messages', readCalls.length === 1 && readCalls[0].body.id === 't4_a1', readCalls.map(e => e.body));
   const title = await page.locator('.yair-message-date-string').first().getAttribute('title');
   check('date tooltip rendered without moment.js', !!title && /20\d\d/.test(title), title);

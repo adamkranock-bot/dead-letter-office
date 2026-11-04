@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+Much better search.
+
+* **Query language:** `"exact phrases"`, `-word` to exclude, `OR`, and operators that combine freely: `from:`, `to:`, and `with:` (partial names, and `me`), `subject:`, `message:`, `before:`/`after:`/`during:` with a year, month, or day, `messages:>20` or `messages:5-10` for thread length, `has:link`, and `is:unread`, `is:saved`, `is:archived`, `is:draft`, or `is:modmail`. Unknown operators are searched as plain text.
+* Matching ignores case and accents and finds parts of words.
+* Results show an excerpt of the newest message that matched, with the words highlighted and a count when several messages matched.
+* Opening a result expands the matching messages, highlights the words, and adds a find bar ("2 of 7 matches") to step through them with the arrows or `n` / `Shift+N`.
+* A cheat-sheet of the syntax drops down when you click into the empty search box.
+
 ## 1.0.0: Dead Letter Office
 First release under the new name. Dead Letter Office is a fork of YAIR 0.3.3; everything in the YAIR 0.4.0 notes below is included.
 

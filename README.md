@@ -9,7 +9,7 @@ Reddit moved direct messages to Chat and turned years of private messages into a
 ## What it does
 
 * **Reads your whole archive.** It walks Reddit's PM archive, then opens every conversation and follows its "load more" pages, so even 700-message threads come in complete. After the first run it only re-reads conversations with new activity.
-* **Search** as you type, with `from:user`, `subject:words`, and `message:words` for precision. Matches are highlighted.
+* **Search** as you type, ignoring case and accents. Use `"exact phrases"`, `-exclude`, `OR`, `from:`/`to:`/`with:`, `subject:`/`message:`, `before:`/`after:`/`during:` dates, `messages:>20`, `has:link`, and `is:saved` (the full list drops down when you click into the search box). Results show the message that matched, and opening one jumps you to each match in turn.
 * **Sort and filter** by latest activity, when a conversation started, most or fewest messages, or name, and narrow by message count (1, 2+, 5+, 10+, 25+, or any range), year, and who wrote last. Sorting by *Most messages* is the quickest way to find your longest conversations.
 * **Folders** for Saved, Archived, and Drafts, plus bulk actions.
 * **Read comfortably.** Conversations open as a letter at a readable width, in Literata, with light, dark, or match-system themes.

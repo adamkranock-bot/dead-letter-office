@@ -41,7 +41,7 @@ module.exports = [
 				getUsername: 'readonly', isLoggedIn: 'readonly', htmlDecode: 'readonly', escapeHtml: 'readonly',
 				decodeBasicEntities: 'readonly', safeFilename: 'readonly', redditApiUrl: 'readonly', downloadText: 'readonly',
 				isMessageHTMLEncoded: 'readonly', throttle: 'readonly', ObjectValues: 'readonly', replaceAll: 'readonly',
-				parseQueryString: 'readonly', parseSearchQuery: 'readonly', getTime: 'readonly', sysDateStr: 'readonly',
+				parseQueryString: 'readonly', getTime: 'readonly', sysDateStr: 'readonly',
 				sysTimeStr: 'readonly', dateString: 'readonly', longDateString: 'readonly', isElementInViewport: 'readonly',
 				killEvent: 'readonly', stopEvent: 'readonly', onExtLoaded: 'readonly', escapeRegExp: 'readonly',
 			},
