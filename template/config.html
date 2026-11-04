@@ -54,7 +54,7 @@
 						<option value="1800000">30 minutes</option>
 					</select>
 					<label for="YAIRRefreshInterval">Refresh Interval</label>
-					<p class="yair-config-info"> By default, new messages are polled for every minute to update notifications in the menu bar. This setting allows for changing that default.</p>
+					<p class="yair-config-info"> By default, new messages are polled for every minute to update the notification badge on the toolbar icon. This setting allows for changing that default.</p>
 					<p class="yair-config-info">If you switch usernames, this value will not be updated until you view your inbox.</p>
 				</div>
 			</div>
@@ -80,10 +80,17 @@
 						If messages you know you've gotten aren't showing up in your inbox, click this button to reindex all messages without resetting the inbox. This might take a long time if you have a lot of messages!
 					</p>
 				</div>
+				<div id="exportAll">
+					<button class="yair-export-all" data-format="txt">Export All (Text)</button>
+					<button class="yair-export-all" data-format="json">Export All (JSON)</button>
+					<p class="yair-config-info">
+						Download every conversation YAIR has stored for this account. Reddit now keeps private messages as a read-only archive, so this is a good way to keep your own copy. The JSON export includes saved and archived flags.
+					</p>
 				</div>
+			</div>
 			<div class="yair-config-content" data-tab-content="about">
 				<p>
-					YAIR was built by <a href="/u/adhesivecheese">/u/AdhesiveCheese</a>, building off the groundwork laid by Reddit Inbox Revamp and Reddit notifier. YAIR's design is inspired by first and foremost by RIR, but also Gmail and Reddit's Beta Modmail.
+					YAIR was built by <a href="/user/adhesivecheese">/u/AdhesiveCheese</a>, building off the groundwork laid by Reddit Inbox Revamp and Reddit notifier. YAIR's design is inspired by first and foremost by RIR, but also Gmail and Reddit's Beta Modmail.
 				</p>
 				<h3>Feedback and Support</h3>
 				<p>

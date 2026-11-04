@@ -1,85 +1,76 @@
-var all_drafts = {};
-if (typeof localStorage['YAIR_DRAFTS'] !== "undefined") {
-	all_drafts = JSON.parse(localStorage['YAIR_DRAFTS']);
-}
-var drafts = {
-	getAllKeys: function () {
-		var user = this.username;
-		if (typeof all_drafts[user] === "undefined") {
-			all_drafts[user] = [];
-			localStorage['YAIR_DRAFTS'] = JSON.stringify(all_drafts);
+// Reply drafts, persisted in chrome.storage.local under YAIR_DRAFTS as
+// {username: {conversationId: {timestamp, value}}}.
+// Called through the proxy with `this` = {username, callback}.
+var drafts = (function () {
+	function all() {
+		var d = yairStorage.get('YAIR_DRAFTS');
+		if (!d || typeof d !== 'object') {
+			d = {};
+			yairStorage.set('YAIR_DRAFTS', d);
 		}
-		return all_drafts[user];
+		return d;
 	}
-	, get: function (key) {
-		var user = this.username;
-		var obj_raw = localStorage['YAIR_DRAFT_' + user + '_' + key];
-		if (!obj_raw) return false;
-		// Update timestamp
-		var obj = JSON.parse(obj_raw);
-		obj.timestamp = (new Date()).getTime();
-		localStorage['YAIR_DRAFT_' + user + '_' + key] = JSON.stringify(obj);
-		return obj.value;
+
+	function forUser(user) {
+		var d = all();
+		if (!d[user] || typeof d[user] !== 'object' || d[user] instanceof Array) {
+			d[user] = {};
+		}
+		return d[user];
 	}
-	, set: function (key, value) {
-		if (!value) {
-			return drafts.delete.call(this, key);
-		}
-		var user = this.username;
-		localStorage['YAIR_DRAFT_' + user + '_' + key] = JSON.stringify({
-			key: key
-			, timestamp: (new Date()).getTime()
-			, value: value
-		});
-		if (typeof all_drafts[user] === "undefined") {
-			all_drafts[user] = [key];
-		}
-		else if (all_drafts[user].indexOf(key) < 0) {
-			all_drafts[user].push(key);
-		}
-		localStorage['YAIR_DRAFTS'] = JSON.stringify(all_drafts);
-		return true;
+
+	function persist() {
+		return yairStorage.save('YAIR_DRAFTS');
 	}
-	, delete: function (key) {
-		var user = this.username;
-		delete localStorage['YAIR_DRAFT_' + user + '_' + key];
-		var index = all_drafts[user].indexOf(key);
-		if (index >= 0) {
-			all_drafts[user].splice(index, 1);
-			localStorage['YAIR_DRAFTS'] = JSON.stringify(all_drafts);
+	return {
+		getAllKeys: function () {
+			return Object.keys(forUser(this.username));
+		}
+		, get: function (key) {
+			var draft = forUser(this.username)[key];
+			if (!draft) return false;
+			// Reading a draft keeps it from expiring
+			draft.timestamp = Date.now();
+			persist();
+			return draft.value;
+		}
+		, set: function (key, value) {
+			if (!value) {
+				return drafts.delete.call(this, key);
+			}
+			forUser(this.username)[key] = {
+				timestamp: Date.now()
+				, value: value
+			};
+			persist();
 			return true;
 		}
-		return false;
-	}
-	, deleteOld: function () {
-		// iterate through all users
-		var users = Object.keys(all_drafts);
-		for (var i = 0; i < users.length; i++) {
-			var user = users[i];
-			// set cut off time
-			var currentDate = new Date();
-			var cutOffTime = currentDate.setDate(currentDate.getDate() - yair.cfg_user_get('deleteDraftAfterDays', user));
-			// walk through all of this user's drafts
-			var userDrafts = all_drafts[user];
-			for (var j = 0; j < userDrafts.length; j++) {
-				var draftKey = userDrafts[j];
-				var draft_raw = localStorage['YAIR_DRAFT_' + user + '_' + draftKey];
-				// If the draft doesn't exist, delete the index
-				if (!draft_raw) {
-					userDrafts.splice(j--, 1);
-					continue;
-				}
-				// If it does exist, check if it's too old
-				var draft = JSON.parse(draft_raw);
-				if (draft.timestamp < cutOffTime) {
-					// If it is too old, delete it, and its index
-					delete localStorage['YAIR_DRAFT_' + user + '_' + draftKey];
-					userDrafts.splice(j--, 1);
-				}
-			}
+		, delete: function (key) {
+			var userDrafts = forUser(this.username);
+			if (!userDrafts[key]) return false;
+			delete userDrafts[key];
+			persist();
+			return true;
 		}
-		// Update the all_drafts object
-		localStorage['YAIR_DRAFTS'] = JSON.stringify(all_drafts);
-	}
-};
-drafts.deleteOld();
+		, deleteOld: function () {
+			var d = all();
+			var changed = false;
+			Object.keys(d).forEach(function (user) {
+				var days = yair.cfg_user_get('deleteDraftAfterDays', user);
+				var cutOffTime = Date.now() - days * 24 * 60 * 60 * 1000;
+				var userDrafts = forUser(user);
+				Object.keys(userDrafts).forEach(function (key) {
+					var draft = userDrafts[key];
+					if (!draft || !draft.value || draft.timestamp < cutOffTime) {
+						delete userDrafts[key];
+						changed = true;
+					}
+				});
+			});
+			if (changed) persist();
+		}
+	};
+})();
+yairStorage.ready.then(function () {
+	drafts.deleteOld();
+});

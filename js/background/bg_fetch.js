@@ -1,139 +1,179 @@
-// The interval that holds to update notifications task
-var updateNotificationsInterval = null;
-var lastNotificationCount = 0;
-var actions = {
-	getPrivateMessages: function (request, callback) {
-		var url = 'https://old.reddit.com/message/messages.json?raw_json=1&limit=100';
-		url = url + request.reference;
-		
-		$.ajax({
-			type: 'GET'
-			, url: url
-		 }).done(function (data) {
-			callback(data);
-		})
-			
-	}
-	, updateNotifications: function (request, callback) {
-		$.ajax({
-			type: 'GET'
-			, url: 'https://www.reddit.com/message/unread.json?raw_json=1'
-		, }).done(function (data) {
-			// Set the notifications and the current time
-			localStorage.setItem('notifications', JSON.stringify(data));
-			localStorage.setItem('lastUpdate', moment().format('X'));
-			// Sets the notification count
-			var nCount = 0;
-			var messages = data.data.children;
-			for (var i = 0; i < messages.length; i++) {
-				if (messages[i].kind === "t4") {
-					nCount++;
-					if (typeof yair_user_cfg[messages[i].data.dest] === 'undefined') {
-						console.log("YAIR hasn't been initialized for this user yet");
-					} else {
-						addToDatabase(messages[i].data.dest, messages[i]);
-					}
-				}
-			}
-			if (nCount > 0) {
-				localStorage.setItem('notificationCount', '' + nCount);
-				chrome.browserAction.setBadgeBackgroundColor({
-					color: [255, 123, 85, 255]
-				});
-				chrome.browserAction.setBadgeText({
-					text: '' + nCount
-				});
-				lastNotificationCount = nCount;
-			}
-			else {
-				localStorage.setItem('notificationCount', '0');
-				chrome.browserAction.setBadgeText({
-					text: ''
-				});
-				lastNotificationCount = 0;
-			}
-			if (callback) callback(data);
-		});
-	}
-	, markAsRead: function (request, callback) {
-		if (request.name.substring(0, 2) == "t4") {
-			$.ajax({
-				type: 'POST'
-				, url: 'http://www.reddit.com/api/read_message'
-				, data: {
-					id: request.name
-					, uh: request.modhash
-				}
-			}).done(function (data) {
-				if (callback) callback();
-			});
-		}
-		else {
-			$.ajax({
-				type: 'GET'
-				, url: 'http://www.reddit.com/message/unread'
-			, }).done(function (data) {
-				if (callback) callback();
-			});
-		}
-	}
-	, initNotificationsInterval: function () {
-		var inboxRefreshInterval = localStorage.getItem('inboxRefreshInterval');
-		if(inboxRefreshInterval === null) {
-			inboxRefreshInterval = 60000;
-			localStorage['inboxRefreshInterval'] = inboxRefreshInterval;
-		} else {
-			inboxRefreshInterval = +inboxRefreshInterval;
-		}
-		if (updateNotificationsInterval) {
-			clearInterval(updateNotificationsInterval);
-		}
-		updateNotificationsInterval = setInterval(actions.updateNotifications, inboxRefreshInterval);
-	}
-};
-actions.initNotificationsInterval();
+// Network access to Reddit plus the unread-message notifier.
+//
+// Polling uses chrome.alarms because Manifest V3 service workers are stopped
+// when idle, which would silently kill a setInterval timer.
+var REDDIT_ORIGIN = 'https://old.reddit.com';
+var REDDIT_WWW = 'https://www.reddit.com';
+var FULLNAME_RE = /^t\d_[a-z0-9]+$/i;
 
-function addToDatabase(username, message) {
-	if (yair_user_cfg[username].pmInboxInitialized == true) {
-		window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-		window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
-		var db;
-		var request = indexedDB.open("YAIR_Messages" + username);
-		request.onerror = function(event) {
-			console.error("bg_fetch database error: " + event.target.errorCode);
-		};
-		request.onsuccess = function(event) {
-			db = event.target.result;
-			var transaction = db.transaction(["privateMessages"], "readwrite");
-			var objectStore = transaction.objectStore("privateMessages");
-			var formatted_message = [{
-				"id":message.data.id,
-				"author":message.data.author,
-				"body":message.data.body,
-				"body_html":message.data.body_html,
-				"created_utc":message.data.created_utc,
-				"dest":message.data.dest,
-				"distinguished":message.data.distinguished,
-				"first_message_name":message.data.first_message_name,
-				"name":message.data.name,
-				"new":message.data.new,
-				"subject":message.data.subject
-			}];
-			if (!message.data.first_message_name) {
-				formatted_message[0].first_message_name = message.data.name;
-			}
-			var request = objectStore.add(formatted_message[0]);
-			console.log("bg_fetch added " + message.data.id + " to Database");
-		};
-	}
+function redditRequest(url, options) {
+	options = Object.assign({
+		credentials: 'include'
+		, cache: 'no-store'
+	}, options || {});
+	return fetch(url, options).then(function (response) {
+		if (!response.ok) {
+			var err = new Error('Reddit returned HTTP ' + response.status);
+			err.status = response.status;
+			throw err;
+		}
+		var type = response.headers.get('content-type') || '';
+		return type.indexOf('json') >= 0 ? response.json() : response.text();
+	});
 }
 
-// Wire up the listener.
-chrome.runtime.onMessage.addListener(
-	function (request, sender, sendResponse) {
-		if (actions.hasOwnProperty(request.action)) {
-			actions[request.action](request, sendResponse);
-		}
-		return true;
+function toPrivateMessageRecord(data) {
+	return {
+		id: data.id
+		, author: data.author || (data.subreddit ? '#' + data.subreddit : '[unknown]')
+		, body: data.body
+		, body_html: data.body_html
+		, created_utc: data.created_utc
+		, dest: data.dest
+		, distinguished: data.distinguished
+		, first_message_name: data.first_message_name || data.name
+		, name: data.name
+		, 'new': data['new']
+		, subject: data.subject
+	};
+}
+
+var yairNotifications = (function () {
+	var ALARM = 'yair-refresh-notifications';
+	var DEFAULT_INTERVAL = 60000;
+
+	function intervalMinutes() {
+		var ms = +yairStorage.get('inboxRefreshInterval') || DEFAULT_INTERVAL;
+		// Chrome won't fire alarms more often than every 30 seconds
+		return Math.max(0.5, ms / 60000);
 	}
-);
+
+	function schedule() {
+		var minutes = intervalMinutes();
+		chrome.alarms.get(ALARM, function (alarm) {
+			if (alarm && alarm.periodInMinutes === minutes) return;
+			chrome.alarms.create(ALARM, {
+				delayInMinutes: minutes
+				, periodInMinutes: minutes
+			});
+		});
+	}
+
+	function setBadge(count) {
+		chrome.action.setBadgeBackgroundColor({
+			color: [255, 123, 85, 255]
+		});
+		chrome.action.setBadgeText({
+			text: count > 0 ? '' + count : ''
+		});
+	}
+
+	function update() {
+		return redditRequest(REDDIT_WWW + '/message/unread.json?raw_json=1').then(function (data) {
+			if (!data || !data.data || !data.data.children) {
+				throw new Error('Unexpected response from Reddit');
+			}
+			var pms = data.data.children.filter(function (m) {
+				return m.kind === 't4';
+			});
+			yairStorage.set('notifications', data);
+			yairStorage.set('lastUpdate', yairTimeNow());
+			yairStorage.set('notificationCount', pms.length);
+			setBadge(pms.length);
+			// Store new messages for users whose inbox has already been indexed
+			var byUser = {};
+			pms.forEach(function (m) {
+				var user = m.data.dest;
+				if (!yairHasUserCfg(user) || !yairUserCfg(user).pmInboxInitialized) return;
+				(byUser[user] = byUser[user] || []).push(toPrivateMessageRecord(m.data));
+			});
+			return Promise.all(Object.keys(byUser).map(function (user) {
+				return yair.db.addAll.call({
+					username: user
+				}, db_tables.privateMessages.name, byUser[user]).catch(function (e) {
+					console.error('YAIR: could not store new messages for', user, e);
+				});
+			})).then(function () {
+				return data;
+			});
+		});
+	}
+	chrome.alarms.onAlarm.addListener(function (alarm) {
+		if (alarm.name !== ALARM) return;
+		yairStorage.ready.then(update).catch(function (e) {
+			console.warn('YAIR: notification refresh failed', e.message);
+		});
+	});
+	return {
+		update: update
+		, schedule: schedule
+		, setBadge: setBadge
+		, setRefreshInterval: function (ms) {
+			ms = parseInt(ms, 10);
+			if (!(ms > 0)) return;
+			yairStorage.set('inboxRefreshInterval', ms);
+			schedule();
+		}
+	};
+})();
+
+function yairTimeNow() {
+	return Math.floor(Date.now() / 1000);
+}
+
+// Actions the content scripts and popup can request with {action: name, ...}
+var actions = {
+	// One page (up to 100 threads) of the private message listing
+	getPrivateMessages: function (request) {
+		var params = new URLSearchParams({
+			raw_json: '1'
+			, limit: '100'
+		});
+		if ((request.direction === 'before' || request.direction === 'after') && FULLNAME_RE.test(request.reference || '')) {
+			params.set(request.direction, request.reference);
+		}
+		return redditRequest(REDDIT_ORIGIN + '/message/messages.json?' + params.toString());
+	}
+	, updateNotifications: function () {
+		return yairNotifications.update();
+	}
+	, markAsRead: function (request) {
+		var name = String(request.name || '');
+		if (!FULLNAME_RE.test(name)) {
+			return Promise.reject(new Error('Invalid message id'));
+		}
+		var body = new URLSearchParams({
+			id: name
+			, uh: request.modhash || ''
+		});
+		return redditRequest(REDDIT_WWW + '/api/read_message', {
+			method: 'POST'
+			, body: body
+		}).then(function () {
+			var count = Math.max(0, (+yairStorage.get('notificationCount') || 0) - 1);
+			yairStorage.set('notificationCount', count);
+			var notifications = yairStorage.get('notifications');
+			if (notifications && notifications.data && notifications.data.children) {
+				notifications.data.children = notifications.data.children.filter(function (m) {
+					return m.data.name !== name;
+				});
+				yairStorage.save('notifications');
+			}
+			yairNotifications.setBadge(count);
+			return true;
+		});
+	}
+};
+
+function yairStartNotifier() {
+	yairStorage.ready.then(function () {
+		yairNotifications.schedule();
+		return yairNotifications.update();
+	}).catch(function (e) {
+		console.warn('YAIR: initial notification refresh failed', e.message);
+	});
+}
+chrome.runtime.onStartup.addListener(yairStartNotifier);
+chrome.runtime.onInstalled.addListener(yairStartNotifier);
+// Make sure the alarm exists whenever the background context starts
+yairStorage.ready.then(yairNotifications.schedule);

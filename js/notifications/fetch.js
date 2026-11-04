@@ -1,134 +1,134 @@
-function getNotificationHTML(model) {
-	return '<div data-read-url="' + model.url + '" data-id="' + model.id + '" class="notification group">' + '<h4 id="tagline">' + model.title + '<div class="date">' + model.date + '</div>' + '</h4>' + '<div class="body">' + model.body + '</div>' + '</div>';
-}
-// Display the notifications
-function displayNotifications(notifications) {
-	var notificationsHTML = '';
-	// Loop through each notification
-	var messages = 0;
-	var itemNum = notifications.data.children;
-	for (var i = 0; i < itemNum.length; i++) {
-		if (itemNum[i].kind === "t4") messages++;
-	}
-	if (messages == 0) {
-		notificationsHTML = '<div class="no-notifications"><h4>No notifications</h4></div>';
-	}
-	else {
-		for (var i = 0; i < itemNum.length; i++) {
-			if (itemNum[i].kind === "t4") {
-				// Set up notification and its view model
-				var item = notifications.data.children[i];
-				var viewModel = {
-					id: ''
-					, first_message_name: ''
-					, title: ''
-					, body: ''
-					, url: ''
-					, date: ''
-				};
-				if (item.kind == 't4') {
-					// Private Message
-					viewModel.id = item.data.name;
-					if (!item.data.first_message_name) {
-						viewModel.url = "http://old.reddit.com/message/yair_conversation/t4_" + item.data.id;
-					} else {
-						viewModel.url = "http://old.reddit.com/message/yair_conversation/" + item.data.first_message_name;
-					}
-					if (item.data.author != null ) {
-						viewModel.title = '<span class="author">' + item.data.author + '</span> &bull; <span class="subjectLine" id="subject">' + truncate(item.data.subject, 60) + '</span>';
-					} else {
-						viewModel.title = '<span class="author">#' + item.data.subreddit + '</span> &bull; <span class="subjectLine" id="subject">' + truncate(item.data.subject, 60) + '</span>';
-					}
-					viewModel.body = truncate(item.data.body, 256);
-					viewModel.date = moment(item.data.created_utc, 'X').fromNow();
-					notificationsHTML += getNotificationHTML(viewModel);
-				}
-			}
-		}
-	}
-	$("#notifications").html(notificationsHTML);
-}
-// Will force a refresh of notifications and will then display them
-function updateAndDisplayNotifications(callback) {
-	chrome.runtime.sendMessage({
-		action: 'updateNotifications'
-	}, function (response) {
-		displayNotifications(response);
-	});
-}
-// Mark a private message as read
-function markAsRead(name, modhash, callback) {
-	chrome.runtime.sendMessage({
-		action: 'markAsRead'
-		, name: name
-		, modhash: modhash
-	}, callback);
-}
+// Toolbar popup: lists unread private messages and opens them in YAIR.
+// All message text is inserted with textContent, never as HTML.
+(function () {
+	var container = document.getElementById('notifications');
+	var refreshButton = document.querySelector('.forceRefresh');
 
-// truncates input to defined length while ensuring that the text always ends in a full word
-function truncate(text, length) {
-	if (text.length > length) {
+	function el(tag, className, text) {
+		var e = document.createElement(tag);
+		if (className) e.className = className;
+		if (text !== undefined) e.textContent = text;
+		return e;
+	}
+
+	// Truncate to `length` characters, ending on a whole word
+	function truncate(text, length) {
+		text = String(text || '');
+		if (text.length <= length) return text;
 		text = text.substring(0, length);
-		if (text.charAt(text.length - 1) != " ") {
-			var lastSpace = text.lastIndexOf(" ");
-			text = text.substring(0, lastSpace);
-		}
-		text += '<span id="truncate">&hellip;</span>';
+		var lastSpace = text.lastIndexOf(' ');
+		if (lastSpace > length / 2) text = text.substring(0, lastSpace);
+		return text + '…';
 	}
-	return text;
-}
-// Add logic after dom is ready
-$(document).ready(function () {
-	var notifications = localStorage.getItem('notifications');
-	if (notifications === null) {
-		updateAndDisplayNotifications();
+
+	function conversationUrl(data) {
+		var first = data.first_message_name || ('t4_' + data.id);
+		return 'https://old.reddit.com/message/yair_conversation/' + encodeURIComponent(first);
 	}
-	else {
-		notifications = JSON.parse(notifications);
-		displayNotifications(notifications);
+
+	function showEmpty(message) {
+		container.textContent = '';
+		var box = el('div', 'no-notifications');
+		box.appendChild(el('h4', null, message || 'No notifications'));
+		container.appendChild(box);
 	}
-	$("body").on("click", "[data-read-url]", null, function (event) {
-		var notifications = JSON.parse(localStorage.getItem('notifications'));
-		var notification = $(event.target).closest('.notification');
-		var url = notification.data('read-url');
-		var id = notification.data('id');
-		var foundNotification = false;
-		var i = 0;
-		for (; i < notifications.data.children.length; i++) {
-			if (notifications.data.children[i].data.name == id) {
-				foundNotification = true;
-				break;
+
+	function showError(message) {
+		var box = el('div', 'notifications-error', message);
+		container.insertBefore(box, container.firstChild);
+	}
+
+	function display(notifications) {
+		var children = (notifications && notifications.data && notifications.data.children) || [];
+		var pms = children.filter(function (item) {
+			return item.kind === 't4';
+		});
+		if (!pms.length) return showEmpty();
+		container.textContent = '';
+		pms.forEach(function (item) {
+			var data = item.data;
+			var row = el('div', 'notification group');
+			row.tabIndex = 0;
+			row.setAttribute('role', 'link');
+			row.dataset.id = data.name;
+			row.dataset.readUrl = conversationUrl(data);
+			var title = el('h4');
+			title.id = 'tagline';
+			title.appendChild(el('span', 'author', data.author ? data.author : '#' + (data.subreddit || '')));
+			title.appendChild(document.createTextNode(' • '));
+			title.appendChild(el('span', 'subjectLine', truncate(data.subject, 60)));
+			title.appendChild(el('div', 'date', yairTime.fromNow(data.created_utc)));
+			row.appendChild(title);
+			row.appendChild(el('div', 'body', truncate(data.body, 256)));
+			container.appendChild(row);
+		});
+	}
+
+	function refresh() {
+		refreshButton.classList.add('spin');
+		setTimeout(function () {
+			// Spin at least one full turn
+			refreshButton.classList.remove('spin');
+		}, 1500);
+		chrome.runtime.sendMessage({
+			action: 'updateNotifications'
+		}, function (response) {
+			if (chrome.runtime.lastError || !response || response.__yairError) {
+				var reason = chrome.runtime.lastError ? chrome.runtime.lastError.message : (response ? response.__yairError : 'no response');
+				showError("Couldn't reach Reddit (" + reason + "). Are you logged in?");
+				return;
 			}
-		}
-		if (foundNotification) {
-			notifications.data.children.splice(i, 1);
-			localStorage.setItem('notifications', JSON.stringify(notifications));
-		}
-		var count = (+localStorage.getItem('notificationCount')) - 1;
-		if (count <= 0) {
-			localStorage.setItem('notificationCount', '0');
-			chrome.browserAction.setBadgeText({
-				text: ''
-			});
-		}
-		else {
-			localStorage.setItem('notificationCount', '' + count);
-			chrome.browserAction.setBadgeText({
-				text: '' + count
-			});
-		}
-		markAsRead(id, notifications.data.modhash, function () {
+			display(response);
+		});
+	}
+
+	function open(row) {
+		var notifications = cache;
+		var modhash = notifications && notifications.data ? notifications.data.modhash : '';
+		var url = row.dataset.readUrl;
+		row.remove();
+		if (!container.querySelector('.notification')) showEmpty();
+		chrome.runtime.sendMessage({
+			action: 'markAsRead'
+			, name: row.dataset.id
+			, modhash: modhash
+		}, function () {
+			// Ignore failures here; opening the conversation marks it read too
+			void chrome.runtime.lastError;
 			chrome.tabs.create({
 				url: url
 			});
 		});
+	}
+
+	var cache = null;
+	container.addEventListener('click', function (event) {
+		var row = event.target.closest('.notification');
+		if (row) open(row);
 	});
-	$(".forceRefresh").click(function () {
-		$('.forceRefresh').addClass('spin');
-		setTimeout(function () {
-				$('.forceRefresh').removeClass('spin');
-			}, 1500)
-			//causes spinner to go around a minimum of one cycle
-		updateAndDisplayNotifications();
+	container.addEventListener('keydown', function (event) {
+		if (event.key !== 'Enter' && event.key !== ' ') return;
+		var row = event.target.closest('.notification');
+		if (row) {
+			event.preventDefault();
+			open(row);
+		}
 	});
-});
+	refreshButton.addEventListener('click', refresh);
+
+	// Show the cached list straight away, then refresh it if we have nothing
+	chrome.storage.local.get(['notifications'], function (items) {
+		cache = items && items.notifications;
+		if (cache) {
+			display(cache);
+		}
+		else {
+			refresh();
+		}
+	});
+	chrome.storage.onChanged.addListener(function (changes, area) {
+		if (area === 'local' && changes.notifications) {
+			cache = changes.notifications.newValue;
+		}
+	});
+})();

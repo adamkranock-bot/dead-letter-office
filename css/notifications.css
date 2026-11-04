@@ -66,7 +66,7 @@ body.popup {
 
 #control p {
     float: left;
-    font-size: 14;
+    font-size: 14px;
     font-weight: bold;
     color: white;
     margin: 4px;
@@ -77,24 +77,31 @@ body.popup {
 	float: right;
 }
 
-#control i {
+#control .forceRefresh {
 	cursor: pointer;
-}
-
-#control i.forceRefresh {
-    font-style: unset;
-	background-repeat: no-repeat;
+	font-style: unset;
+	border: 0;
+	padding: 0;
 	width: 17px;
 	height: 17px;
 	margin: 4px;
-	background: url("chrome-extension://__MSG_@@extension_id__/images/sprites.png");
-
+	/* Relative to this stylesheet, so it works in Chrome and Firefox alike */
+	background: url("../images/sprites.png") no-repeat;
 }
 
-/*Firefox Hack*/
-@media screen and (min--moz-device-pixel-ratio:0) {
-	#control i.forceRefresh { background: url("moz-extension://__MSG_@@extension_id__/images/sprites.png"); } }
+#control .forceRefresh:focus-visible {
+	outline: 2px solid white;
+}
 
+.notification:focus-visible {
+	outline: 2px solid #0DD3BB;
+}
+
+.notifications-error {
+	padding: 5px;
+	color: #a33;
+	font-size: 12px;
+}
 
 .spin {
 	transition: all 1.5s ease;

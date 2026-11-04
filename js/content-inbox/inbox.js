@@ -1,19 +1,21 @@
 (function ($) {
 	yair.templates.add({
-		inbox_layout: chrome.extension.getURL('template/inbox_layout.html'),
-		inbox_message_row: chrome.extension.getURL('template/inbox_message_row.html'),
-		conversation: chrome.extension.getURL('template/conversation.html'),
-		conversation_reverse: chrome.extension.getURL('template/conversation_reverse.html'),
-		private_message: chrome.extension.getURL('template/private_message.html'),
-		load_more_messages: chrome.extension.getURL('template/load_more_messages.html'),
-		config: chrome.extension.getURL('template/config.html')
+		inbox_layout: chrome.runtime.getURL('template/inbox_layout.html'),
+		inbox_message_row: chrome.runtime.getURL('template/inbox_message_row.html'),
+		conversation: chrome.runtime.getURL('template/conversation.html'),
+		conversation_reverse: chrome.runtime.getURL('template/conversation_reverse.html'),
+		private_message: chrome.runtime.getURL('template/private_message.html'),
+		load_more_messages: chrome.runtime.getURL('template/load_more_messages.html'),
+		config: chrome.runtime.getURL('template/config.html')
 	});
 	yair.init.funcs.push(yair.functions.DOMReady);
 	yair.init.funcs.push(yair.functions.preloadTemplatesReady);
 	yair.view = {
 		scrollToUnread: function () {
 			var $firstUnread = $('.yair-private-message:not(.yair-collapsed)').first();
+			if (!$firstUnread.length) { return; }
 			var rect = $firstUnread[0].getClientRects();
+			if (!rect.length) { return; }
 			var top = rect[0].top + window.scrollY;
 			var scrollTo = top - 190;
 			if (scrollTo <= 100) { return; }
@@ -86,17 +88,23 @@
 			var responseId = null;
 			for (var i = 1; i <= numMessages; i++) {
 				(function (pm) {
-					var $pm = $(replaceAll(yair.templates.private_message, '{author}', pm.author));
+					var $pm = $(replaceAll(yair.templates.private_message, '{author}', escapeHtml(pm.author)));
 					$pm.find('.yair-pm-body').html(pm.body_html);
 					$pm.find('.yair-pm-body-short').text(pm.body);
 					$pm.find('.yair-message-date-string').text(longDateString(pm.created_utc)).attr('data-timestamp', pm.created_utc);
-					$pm.find('.yair-message-date-string').attr("title", moment.utc(pm.created_utc * 1000).local().format("ddd MMM DD LTS YYYY Z"));
+					$pm.find('.yair-message-date-string').attr("title", yairTime.full(pm.created_utc));
 					$pm.find('.yair-pm-header').on('click', function () {
 						$pm.toggleClass('yair-collapsed');
 					});
 					$pm.find('.yair-title-text h4').on('click', function (e) {
 						e.stopPropagation();
-						window.open('/user/' + this.innerText, '_blank');
+						var name = this.innerText;
+						if (name.charAt(0) === '#') {
+							window.open('/r/' + encodeURIComponent(name.substring(1)), '_blank');
+						}
+						else if (name !== '[unknown]') {
+							window.open('/user/' + encodeURIComponent(name), '_blank');
+						}
 					});
 					$pm.appendTo($messageArea);
 					if (pm.author !== getUsername()) {
@@ -147,60 +155,54 @@
 				
 				// TODO: This should be a function
 				$submit.on('click', function () {
+					var text = $input.val();
+					if (!text || !text.trim()) { return; }
+					$submit.attr('disabled', 'disabled');
 					yair.view.showLoading("Message is being sent");
-					var browser=navigator.userAgent.toLowerCase(); //Firefox browser detection bodge
-					var postUrl = null;
-					if (browser.indexOf('firefox') > -1) {
-						postUrl = 'https://www.reddit.com/api/comment';
-					} else {
-						postUrl = '/api/comment';
-					}
-					var postXhr = $.post(postUrl, {
+					var postXhr = $.post(redditApiUrl('/api/comment'), {
 						thing_id: responseId
 						, uh: yair.model.uh
-						, text: $input.val()
+						, text: text
 						, api_type: 'json'
 					});
 					postXhr.done(function (response) {
-						if (!response.json.errors || !response.json.errors.length) {
+						var errors = (response && response.json && response.json.errors) || [];
+						if (response && response.json && !errors.length) {
 							yair.proxy(['drafts', 'delete'], [conversation.id]);
 							yair.model.updateDb(yair.view.update, yair.view.showNotification);
 						}
 						else {
-							// TODO: Show relevant error message
-							yair.alerts.error('Error', 'Something went wrong, the error handler here is not implemented yet. Sorry!');
+							// Reddit errors look like [code, message, field]. Your draft is kept.
+							var details = errors.map(function (err) {
+								return (err instanceof Array) ? (err[1] || err[0]) : String(err);
+							}).join('\n');
+							yair.alerts.error('Reddit did not send your reply', details || 'Reddit returned an unexpected response. Your draft has been kept.');
+							$submit.removeAttr('disabled');
 						}
 					});
-					postXhr.fail(function () {
-						// TODO: Show relevant error message
-						yair.alerts.error('Error', 'Something went wrong, the error handler here is not implemented yet. Sorry!');
+					postXhr.fail(function (xhr) {
+						var status = xhr && xhr.status ? ' (HTTP ' + xhr.status + ')' : '';
+						yair.alerts.error('Reddit did not send your reply', 'The request failed' + status + '. Reddit has been moving private messages to Chat, so some conversations may no longer accept replies. Your draft has been kept.');
+						$submit.removeAttr('disabled');
 					});
 				});
 			}
 
 			yair.view.updateBodyClass();
 			yair.model.setConversationStatus(conversation, true);
-			
-			//Mark Conversation read on Reddit
-			var browser = navigator.userAgent.toLowerCase(); //Firefox browser detection bodge
-			var postUrl = null;
-			if (browser.indexOf('firefox') > -1) { postUrl = 'https://www.reddit.com/api/read_message'; }
-			else { postUrl = '/api/read_message'; }
-			conversation.messages.forEach(function(element) {
-				if (element.author !== getUsername()){
-					var postXhr = $.post(postUrl, {id: element.name, uh: yair.model.uh});
-				}
-			});
-			
+			yair.model.markReadOnReddit(conversation);
+
+			// Only bind the buttons in the conversation header; the sidebar uses the same icon classes
+			var $headerButtons = $conversation.find('.conversation-header-right');
 			if (yair.cfg.deleted.contains(conversation.id)){
-				$('.conversation-header-right .icon-archive').hide();
+				$headerButtons.find('.icon-archive').hide();
 			} else {
-				$('.icon-restore').hide();
+				$headerButtons.find('.icon-restore').hide();
 			}
-			$('.icon-archive').on('click', yair.controller.action.bulkDelete);
-			$('.icon-restore').on('click', yair.controller.action.bulkRestore);
-			$('.icon-markUnread').on('click', yair.controller.action.bulkMarkUnread);
-			$('.yair-conversation-input').autogrow();
+			$headerButtons.find('.icon-archive').on('click', yair.controller.action.bulkDelete);
+			$headerButtons.find('.icon-restore').on('click', yair.controller.action.bulkRestore);
+			$headerButtons.find('.icon-markUnread').on('click', yair.controller.action.bulkMarkUnread);
+			$conversation.find('.yair-conversation-input').autogrow();
 			
 			if (yair.cfg.data.showModmail) {
 				$(".yair-modmail").removeClass("yair-hide");
@@ -213,17 +215,17 @@
 			// Cache the fetched conversations
 			yair.model.cache.conversations = conversations;
 			yair.view.setFavicon();
-			//update the inboxRefreshInterval, in case we've changed user
-			//TODO: Find a better way to do this
-			yair.cfg.set('inboxRefreshInterval', yair.cfg.data.inboxRefreshInterval);
-			// Filter conversations
-			var filteredConversations = conversations.slice();
-			yair.model.searchFilter(filteredConversations);
-			yair.model.directoryFilter(filteredConversations);
-			yair.model.showModmailInInbox(filteredConversations);
-			// Show conversations
+			// Drafts are needed for filtering, so fetch them before filtering and rendering
 			yair.proxy(['drafts', 'getAllKeys'], [], function (draftsKeys) {
-				yair.model.cache.draftsKeys = draftsKeys;
+				yair.model.cache.draftsKeys = draftsKeys || [];
+				var filteredConversations = conversations.slice();
+				yair.model.searchFilter(filteredConversations);
+				yair.model.directoryFilter(filteredConversations);
+				yair.model.showModmailInInbox(filteredConversations);
+				yair.$e.mainPanel.empty();
+				if (!filteredConversations.length) {
+					$('<div class="yair-load-more">').text(yair._get.searchObj ? 'No conversations match your search.' : 'Nothing here.').appendTo(yair.$e.mainPanel);
+				}
 				yair.view.addConversationsToInbox(filteredConversations);
 			});
 			// Hide overlay
@@ -235,7 +237,7 @@
 			var link = document.createElement('link');
 			link.type = 'image/png';
 			link.rel = 'shortcut icon';
-			link.href = chrome.extension.getURL('images/icons/' + icon);
+			link.href = chrome.runtime.getURL('images/icons/' + icon);
 			document.querySelector('head').appendChild(link);
 		}
 		, update: function () {
@@ -257,7 +259,7 @@
 				, id = conversation.id
 				, correspondent = conversation.correspondent
 				, subject = conversation.subject
-				, message = conversation.text.replace('&amp;', "&").replace('&lt;', "<").replace('&gt;', ">")
+				, message = decodeBasicEntities(conversation.text || '')
 				, datetime = conversation.last_update
 				, hasDraft = (yair.model.cache.draftsKeys.indexOf(id) >= 0)
 				, modmail = conversation.modmail;
@@ -288,12 +290,10 @@
 			if (hasDraft) $row.addClass('yair-has-draft');
 			if (modmail) $row.addClass('yair-modmail');
 			$row.data('conversation', conversation);
-			if (correspondent && correspondent.charAt(0) == "#") {
-				var subreddit = correspondent.substring(1);
-				$row.find('.yair-correspondent').html("<a href='https://www.reddit.com/r/" + subreddit + "' class='author'>" + correspondent + "</a>");
-			} else {
-				$row.find('.yair-correspondent').html("<a href='https://www.reddit.com/user/" + correspondent + "' class='author'>" + correspondent + "</a>");
-			}
+			var correspondentHref = (correspondent && correspondent.charAt(0) === "#") ?
+				'https://www.reddit.com/r/' + encodeURIComponent(correspondent.substring(1)) :
+				'https://www.reddit.com/user/' + encodeURIComponent(correspondent || '');
+			$row.find('.yair-correspondent').empty().append($('<a class="author">').attr('href', correspondentHref).text(correspondent || '[unknown]'));
 			$row.find('.yair-subject').text(subject);
 			$row.find('.yair-text').text(message);
 			$row.find('.yair-datetime').text(dateString(datetime));
@@ -390,8 +390,8 @@
 		, bindActionButtons: function(){
             $('#YAIRBulkDelete').on('click', yair.controller.action.bulkDelete);
             $('#YAIRBulkRestore').on('click', yair.controller.action.bulkRestore);
-            $('#YAIRBulkMarkRead').on('click', yair.controller.action.bulkMarkUnread);
-            $('#YAIRBulkMarkUnread').on('click', yair.controller.action.bulkMarkRead);
+            $('#YAIRBulkMarkUnread').on('click', yair.controller.action.bulkMarkUnread);
+            $('#YAIRBulkMarkRead').on('click', yair.controller.action.bulkMarkRead);
             $('#YAIRShowConfig').on('click', yair.view.showConfig);
 			$(document).on('change', '.styled-checkbox', yair.view.showBulkOptions);
 			$('#select-all').on('change', yair.view.selectAll);
@@ -440,6 +440,9 @@
 				yair.$e.overlay.empty().off();
 				yair.controller.reindexMessages();
 			});
+			$config.find('.yair-export-all').on('click', function () {
+				yair.controller.exportAll($(this).data('format'));
+			});
 			$config.find('#YAIRCancelResetInbox').on('click', function () {
 				$config.find('#YAIRConfirmReset').addClass('yair-hide');
 			});
@@ -466,11 +469,8 @@
 				var nightMode = $nightMode.prop('checked');
 				var showNewFirst = $showNewFirst.prop('checked');
 				var inboxRefreshInterval = $inboxRefreshInterval.val();
-				if (compactMode) {
-					yair.$e.content.addClass('yair-compact-mode'); 
-				} else {
-					yair.$e.content.removeClass('yair-compact-mode');
-				}
+				// Same element initLayout uses, so the setting can be turned off again
+				yair.$e.body.toggleClass('yair-compact-mode', compactMode);
 				if (nightMode) {
 					yair.$e.body.addClass('yair-nightmode'); 
 				} else {
@@ -487,6 +487,7 @@
 				else {
 					yair.view.showInbox(yair.model.cache.conversations, false);
 				}
+				yair.$e.body.removeClass('yair-modal-open');
 				yair.view.hideOverlay();
 			});
 			yair.$e.body.addClass('yair-modal-open');
@@ -622,50 +623,71 @@
 				yair.controller.reloadInbox();
 			});
 		}
-		, exportConversation: function(e){
-			var $ele = $(this);
-			var format = $ele.data('format');
-			var conversations = [$('.yair-conversation').data('conversation')];
-			var data = '';
-
-			for(var i = 0; i < conversations.length; i++) {
-				if(i > 0) { data += "\r\n---\r\n---\r\n"; }
-				var conversation = conversations[i];
-				data += '# ' + conversation.subject + "\r\n\r\n";
-				var messages = conversation.messages;
-				messages.sort(function(a, b){
-					if(a.created_utc === b.created_utc) { return 0; }
-					return (a.created_utc > b.created_utc) ? 1 : -1;
-				});
-				for(var j = 0; j < messages.length; j++) {
-					if(j > 0) { data += "\r\n---\r\n"; }
-					var message = messages[j];
-					data += '## From: ' + message.author + ' | Date: ' + sysDateStr(message.created_utc * 1000) + ' ' + sysTimeStr(message.created_utc * 1000, ':') + "\r\n\r\n";
-					data += message.body.replace("\r", "").replace("\n", "\r\n") + "\r\n";
-				}
+		, conversationToText: function (conversation) {
+			var data = '# ' + conversation.subject + "\r\n\r\n";
+			var messages = conversation.messages.slice().sort(function (a, b) {
+				return a.created_utc - b.created_utc;
+			});
+			for (var j = 0; j < messages.length; j++) {
+				if (j > 0) { data += "\r\n---\r\n"; }
+				var message = messages[j];
+				data += '## From: ' + message.author + ' | To: ' + (message.dest || '') + ' | Date: ' + sysDateStr(message.created_utc * 1000) + ' ' + sysTimeStr(message.created_utc * 1000, ':') + "\r\n\r\n";
+				data += String(message.body || '').replace(/\r\n?/g, "\n").replace(/\n/g, "\r\n") + "\r\n";
 			}
-
-			var dataBlob = new Blob([data], {type : 'text/plain'});
-			var downloadUrl = URL.createObjectURL(dataBlob);
-			const a = document.createElement('a');
-			a.style.display = 'none';
-			a.href = downloadUrl;
-			var subject = $('.yair-conversation-title').text();
-			a.download = subject + '_' + sysDateStr(message.created_utc * 1000) + '_' + sysTimeStr(message.created_utc * 1000, ':') + '.txt';
-			document.body.appendChild(a);
-			a.click();
-			window.URL.revokeObjectURL(downloadUrl);
-
+			return data;
+		}
+		, exportConversation: function () {
+			var conversation = $('.yair-conversation').data('conversation');
+			if (!conversation) { return; }
+			var last = conversation.last_update || getTime() / 1000;
+			var filename = safeFilename(conversation.subject) + '_' + sysDateStr(last * 1000) + '_' + sysTimeStr(last * 1000, '-') + '.txt';
+			downloadText(filename, yair.controller.conversationToText(conversation));
+		}
+		// Download every stored conversation, as plain text or JSON
+		, exportAll: function (format) {
+			yair.view.showLoading('Preparing export');
+			yair.model.getConversations(function (conversations) {
+				conversations.sort(function (a, b) {
+					return b.last_update - a.last_update;
+				});
+				var stamp = sysDateStr() + '_' + sysTimeStr(undefined, '-');
+				var base = 'yair_' + safeFilename(getUsername()) + '_' + stamp;
+				if (format === 'json') {
+					var payload = conversations.map(function (c) {
+						return {
+							id: c.id
+							, subject: c.subject
+							, correspondent: c.correspondent
+							, modmail: c.modmail
+							, saved: yair.cfg.saved.contains(c.id)
+							, archived: yair.cfg.deleted.contains(c.id)
+							, messages: c.messages.slice().sort(function (a, b) {
+								return a.created_utc - b.created_utc;
+							})
+						};
+					});
+					downloadText(base + '.json', JSON.stringify({
+						exported_utc: Math.floor(getTime() / 1000)
+						, username: getUsername()
+						, conversations: payload
+					}, null, 2), 'application/json');
+				}
+				else {
+					downloadText(base + '.txt', conversations.map(yair.controller.conversationToText).join("\r\n---\r\n---\r\n"));
+				}
+				yair.view.showNotification('Exported ' + conversations.length + ' conversations');
+			});
 		}
 		, reindexMessages: function () {
-				yair.model.reindexPrivateMessages(function () {
-					yair.view.update();
-					yair.view.setFavicon();
-				}, function (errorMessage) {
-					yair.view.showNotification(errorMessage, -1);
-					console.error("DB has NOT been updated", arguments);
-				});
-				yair.controller.reloadInbox();
+			yair.view.showLoading('Reindexing inbox');
+			yair.model.reindexPrivateMessages(function (added) {
+				yair.view.update();
+				yair.view.setFavicon();
+				yair.view.showNotification('Reindex complete: ' + (added || 0) + ' new messages found', 2500);
+			}, function (errorMessage) {
+				yair.view.showNotification(errorMessage, -1);
+				console.error("DB has NOT been updated", arguments);
+			});
 		}
 		, showMessageClick: function () {
 			var conversation = $(this).data('conversation');
@@ -686,7 +708,7 @@
 			});
 		}
 		, search: function (query) {
-			history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox?search=' + query);
+			history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox?search=' + encodeURIComponent(query));
 			yair.view.update();
 		}
 		, parseUrl: function () {
@@ -760,7 +782,7 @@
 				if (!yair.cfg.deleted.contains(id)) {
 					yair.cfg.deleted.add(id);
 					conversation.closest(".yair-message-row").find('.styled-checkbox').prop("checked", false);
-					if (yair.show !== "archived" || yair.show !== "modarchived") {
+					if (yair.show !== "archived" && yair.show !== "modarchived") {
 						conversation.closest('.yair-message-row').slideUp(function () {
 							conversation.closest('.yair-message-row').remove();
 						});
@@ -783,10 +805,7 @@
 					var id = conversation.id;
 					if (!yair.cfg.deleted.contains(id)) {
 						yair.cfg.deleted.add(id);
-						if (yair.show === "conversation") {
-							history.back();
-						}
-						else if (yair.show !== "archived" || yair.show !=="modarchived") {
+						if (yair.show !== "conversation" && yair.show !== "archived" && yair.show !== "modarchived") {
 							conversation.$e.slideUp(function () {
 								conversation.$e.remove();
 							});
@@ -900,7 +919,7 @@
 				for (var i = 0; i < conversations.length; i++) {
 					var conversation = conversations[i];
 					if (conversation.$e) {
-						conversation.$e.removeClass('yair-unread');
+						conversation.$e.removeClass('yair-unread').addClass('yair-read');
 						delete conversation['$e'];
 					}
 					yair.model.setConversationStatus(conversation, true);
@@ -925,7 +944,7 @@
 				for (var i = 0; i < conversations.length; i++) {
 					var conversation = conversations[i];
 					if (conversation.$e) {
-						conversation.$e.addClass('yair-unread');
+						conversation.$e.addClass('yair-unread').removeClass('yair-read');
 						delete conversation['$e'];
 					}
 					yair.model.setConversationStatus(conversation, false);
@@ -948,7 +967,28 @@
 		}
 	};
 	yair.model = {
-		setConversationStatus: function (conversation, read) {
+		// Tell Reddit the received messages in this conversation have been read,
+		// in batches rather than one request per message, then refresh the badge.
+		markReadOnReddit: function (conversation) {
+			var me = getUsername();
+			var names = conversation.messages.filter(function (m) {
+				return m.author !== me && /^t4_/.test(m.name || '');
+			}).map(function (m) {
+				return m.name;
+			});
+			var requests = [];
+			for (var i = 0; i < names.length; i += 25) {
+				requests.push($.post(redditApiUrl('/api/read_message'), {
+					id: names.slice(i, i + 25).join(',')
+					, uh: yair.model.uh
+				}));
+			}
+			if (!requests.length) return;
+			$.when.apply($, requests).always(function () {
+				yair.request('updateNotifications');
+			});
+		}
+		, setConversationStatus: function (conversation, read) {
 			var updated = [];
 			for (var i = 0; i < conversation.messages.length; i++) {
 				if (conversation.messages[i]['new'] === read) {
@@ -979,24 +1019,21 @@
 			if (typeof directory === "undefined") {
 				directory = yair.show;
 			}
-			yair.proxy(['drafts', 'getAllKeys'], [], function (draftsKeys) {
-				yair.model.cache.draftsKeys = draftsKeys;
-				for (var i = 0; i < conversations.length; i++) {
-					var conversation = conversations[i];
-					var saved = yair.cfg.saved.contains(conversation.id);
-					var archived = yair.cfg.deleted.contains(conversation.id);
-					var drafts = (yair.model.cache.draftsKeys.indexOf(conversation.id) >= 0);
-					var modmail = conversation.modmail;
-					if (directory !== "archived" && directory !== "modarchived"  && archived  ||
-						directory === "saved"       && !saved    ||
-						directory === "archived"    && !archived ||
-						directory === "drafts"      && !drafts   ||
-						directory === "modsaved"    && !saved    ||
-						directory === "moddrafts"   && !drafts   ||
-						directory === "modarchived" && !archived
-					   ) { conversations.splice(i--, 1); }
-				}
-			});
+			var draftsKeys = yair.model.cache.draftsKeys || [];
+			for (var i = 0; i < conversations.length; i++) {
+				var conversation = conversations[i];
+				var saved = yair.cfg.saved.contains(conversation.id);
+				var archived = yair.cfg.deleted.contains(conversation.id);
+				var drafts = (draftsKeys.indexOf(conversation.id) >= 0);
+				if (directory !== "archived" && directory !== "modarchived"  && archived  ||
+					directory === "saved"       && !saved    ||
+					directory === "archived"    && !archived ||
+					directory === "drafts"      && !drafts   ||
+					directory === "modsaved"    && !saved    ||
+					directory === "moddrafts"   && !drafts   ||
+					directory === "modarchived" && !archived
+				   ) { conversations.splice(i--, 1); }
+			}
 		}
 		, searchFilter: function (conversations) {
 			if (!yair._get.searchObj) return;
@@ -1013,7 +1050,7 @@
 				return true;
 			}
 			if (searchObj.subject) {
-				var subject = conversation.subject.toLowerCase();
+				var subject = String(conversation.subject || '').toLowerCase();
 				var terms = yair._get.searchObj.subject;
 				var termsFound = 0;
 				for (var j = 0; j < terms.length; j++) {
@@ -1027,11 +1064,11 @@
 				}
 			}
 			if (searchObj.message) {
-				var terms = searchObj.subject;
+				var terms = searchObj.message;
 				var termsFound = 0;
 				for (var j = 0; j < terms.length; j++) {
 					for (var k = 0; k < conversation.messages.length; k++) {
-						var message = conversation.messages[k].body.toLowerCase();
+						var message = String(conversation.messages[k].body || '').toLowerCase();
 						var term = terms[j].toLowerCase();
 						if (message.indexOf(term) >= 0) {
 							termsFound++;
@@ -1101,6 +1138,8 @@
 			yair.view.setFavicon();
 			yair.view.initLayout(); // To set the page title, we need our config
 			yair.view.bindActionButtons();
+			// The notifier polls with the interval of whichever user last opened YAIR
+			yair.cfg.set('inboxRefreshInterval', yair.cfg.data.inboxRefreshInterval);
 			yair.view.showLoading();
 			yair.proxy(['yair', 'db', 'init'], [], yair.controller.reloadInbox);
 		});

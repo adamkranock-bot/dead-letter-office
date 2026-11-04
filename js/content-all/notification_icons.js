@@ -25,7 +25,8 @@
 				return 0;
 			}
 			else {
-				if (document.querySelector('#NREMail').classList.contains('havemail')) {
+				var nreMail = document.querySelector('#NREMail');
+				if (nreMail && nreMail.classList.contains('havemail')) {
 					return 1;
 				}
 				return 0;
@@ -96,7 +97,9 @@
 			xhr.open('GET', '/message/unread.json', true);
 			xhr.onreadystatechange = function () {
 				if (this.readyState === 4 && this.status === 200) {
-					var json = JSON.parse(this.responseText);
+					var json;
+					try { json = JSON.parse(this.responseText); } catch (e) { return; }
+					if (!json || !json.data || !json.data.children) { return; }
 					data.lastJsonCache = json;
 					callback(json);
 				}
@@ -203,10 +206,11 @@
 	}
 		
 	function initDefaultDOMChangesForNewReddit() {
-		var nightModeDetect = window.getComputedStyle(document.querySelector("#SHORTCUT_FOCUSABLE_DIV > div:nth-child(2)")).getPropertyValue('--newCommunityTheme-body');
+		var themeElement = document.querySelector("#SHORTCUT_FOCUSABLE_DIV > div:nth-child(2)");
+		var nightModeDetect = themeElement ? window.getComputedStyle(themeElement).getPropertyValue('--newCommunityTheme-body') : ' #FFFFFF';
 		var ori_mail = document.querySelector('#HeaderUserActions--Messages');
+		if (!ori_mail) { return; }
 		var new_pm = document.createElement('a');
-		console.log(nightModeDetect);
 		if (nightModeDetect != ' #FFFFFF') {
 			new_pm.style.fill = "#d7dadc";
 		}
@@ -221,10 +225,11 @@
 		const request = async () => {
 			var new_reply_count_num = 0
 			var new_pm_count_num = 0;
-			const response = await fetch('https://www.reddit.com/message/unread.json');
+			const response = await fetch('/message/unread.json');
+			if (!response.ok) { return; }
 			const json = await response.json();
-			var messages = json.data.children;
-			for (var i = 0; i < Object.keys(messages).length; i++) {
+			var messages = (json && json.data && json.data.children) || [];
+			for (var i = 0; i < messages.length; i++) {
 				if (messages[i].kind === "t4") { new_pm_count_num++; } else {new_reply_count_num++; }
 			}
 			if (new_pm_count_num > 0) {
@@ -233,21 +238,18 @@
 				new_pm.classList.add('yair-privatemessages-newredit-newmail');
 				new_pm.appendChild(new_pm_count);
 			}
-			new_pm_count.innerHTML = new_pm_count_num;
+			new_pm_count.textContent = new_pm_count_num;
 			var ori_badge = document.querySelector("#HeaderUserActions--Messages > a > span");
 			if (ori_badge != null) {
 				if (new_reply_count_num > 0) {
-					ori_badge.innerHTML = new_reply_count_num;
+					ori_badge.textContent = new_reply_count_num;
 				} else {
 					ori_badge.style.display = "none";
 				}
 			}
-			if (new_pm_count_num > 0 && new_reply_count_num == 0) {
-				if (nightModeDetect != ' #FFFFFF') {
-					document.querySelector("#HeaderUserActions--Messages > a > svg").style.fill = "rgb(215, 218, 220)";
-				} else {
-					document.querySelector("#HeaderUserActions--Messages > a > svg").style.fill = "rgb(26, 26, 27)"
-				}
+			var ori_icon = document.querySelector("#HeaderUserActions--Messages > a > svg");
+			if (ori_icon && new_pm_count_num > 0 && new_reply_count_num == 0) {
+				ori_icon.style.fill = (nightModeDetect != ' #FFFFFF') ? "rgb(215, 218, 220)" : "rgb(26, 26, 27)";
 			}
 			if (ori_mail !== null) {
 				referenceElement(ori_mail.previousSibling).insertAfter(new_pm_holder);
@@ -255,7 +257,9 @@
 			elements.yairInboxIcons.push(new_pm);
 			elements.yairInboxCounts.push(new_pm_count);
 		}
-		request();
+		request().catch(function (e) {
+			console.warn('YAIR: could not check unread messages', e);
+		});
 	}
 	
 	var initialMessageCount = 0;
