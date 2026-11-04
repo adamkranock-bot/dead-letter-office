@@ -67,9 +67,13 @@ const ARCHIVE_PAGE = 4;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const who = n => n && n.charAt(0) === '#' ? `/r/${n.slice(1)}/` : `/user/${n}/`;
 // Mirrors the markup captured from the real archive page (Nov 2026)
-function archiveConversation(t) {
+// Like Reddit, the archive list previews only the latest few messages of a
+// conversation; the conversation's own page has all of them.
+const PREVIEW = 3;
+function archiveConversation(t, full) {
   const permalink = '/message/messages/' + t.root.id;
-  const msgs = [t.root, ...t.replies].map(m => {
+  const all = [t.root, ...t.replies];
+  const msgs = (full ? all : all.slice(-PREVIEW)).map(m => {
     const author = m.author || '#' + m.subreddit;
     const iso = new Date(m.created_utc * 1000).toISOString();
     return `<div class="px-md py-xs " data-test-id="pm-archive-message-template"><div class="text-12 flex items-center justify-between"><div class="text-neutral-content-weak"><span class="font-semibold"><a href="${who(author)}" class="text-12 font-semibold w-fit text-primary-plain">${author.charAt(0) === '#' ? 'r/' + author.slice(1) : 'u/' + author}</a> to <a href="${who(m.dest)}" class="text-12 font-semibold">u/${m.dest}</a></span><span> · </span><faceplate-timeago ts="${iso.replace('Z', '000+0000')}" short=""><time datetime="${iso}" title="x">1y</time></faceplate-timeago></div><faceplate-dropdown-menu><button id="pm-archive-overflow-menu-${m.name}" aria-haspopup="true"><svg viewBox="0 0 20 20"></svg></button><faceplate-menu slot="menu" hidden=""><shreddit-share-list-item permalink="${permalink}"><li>Share</li></shreddit-share-list-item></faceplate-menu></faceplate-dropdown-menu></div><span class="text-14"><div id="-post-rtjson-content" class="[--emote-size:20px]" dir="auto">${m.body.split('\n').map(l => `<p onclick="window.__xss=1">${esc(l)}</p>`).join('')}<p><a href="javascript:window.__xss=1">bad link</a> <a href="https://example.com/x" rel="noopener nofollow ugc" target="_blank">good link</a></p></div></span></div>`;
@@ -90,6 +94,11 @@ return https.createServer({ key, cert }, async (req, res) => {
   log.push(entry);
   if (url.pathname === '/__log') return json(res, log);
   if (url.pathname === '/__replyMode') { replyMode = url.searchParams.get('m'); return json(res, { replyMode }); }
+  if (url.pathname === '/__longthread') {
+    const t = threads.find(t => t.root.id === 'f3');
+    for (let i = 0; i < 10; i++) t.replies.push(Object.assign(msg('f3r' + i, i % 2 ? 'filler3' : ME, i % 2 ? ME : 'filler3', 're: Filler thread 3', 'long thread reply ' + i), { first_message_name: t.root.name }));
+    return json(res, { replies: t.replies.length });
+  }
   if (url.pathname === '/__seed') { seedDemo(); return json(res, { seeded: threads.length }); }
   if (url.pathname === '/__source') { source = url.searchParams.get('s'); return json(res, { source }); }
   if (req.headers.host.startsWith('www.') && url.pathname === '/message/messages/') {
@@ -97,6 +106,13 @@ return https.createServer({ key, cert }, async (req, res) => {
     return res.end(source === 'archive'
       ? `<!DOCTYPE html><html><head><title>Reddit - The heart of the internet</title><script>window.__xss=1</script></head><body><faceplate-partial name="ReportFlow" src="/svc/shreddit/report-flow/:thing_id" loading="programmatic"></faceplate-partial><shreddit-app><main class="main w-full">${archiveChunk(0)}</main></shreddit-app></body></html>`
       : '<!DOCTYPE html><html><body><main></main></body></html>');
+  }
+  const threadPage = url.pathname.match(/^\/message\/messages\/([a-z0-9]+)\/?$/);
+  if (req.headers.host.startsWith('www.') && threadPage && source === 'archive') {
+    const t = threads.find(t => t.root.id === threadPage[1]);
+    if (!t) { res.writeHead(404, { 'content-type': 'text/plain' }); return res.end('not found'); }
+    res.writeHead(200, { 'content-type': 'text/html' });
+    return res.end(`<!DOCTYPE html><html><body><shreddit-app><main>${archiveConversation(t, true)}<infinite-loader></infinite-loader></main></shreddit-app></body></html>`);
   }
   if (req.headers.host.startsWith('www.') && url.pathname.startsWith('/svc/shreddit/pm-archive/')) {
     const all = listing();
