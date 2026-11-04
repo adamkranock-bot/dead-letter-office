@@ -91,7 +91,7 @@ var yairNotifications = (function () {
 				return yair.db.addAll.call({
 					username: user
 				}, db_tables.privateMessages.name, byUser[user]).catch(function (e) {
-					console.error('YAIR: could not store new messages for', user, e);
+					console.error('DLO: could not store new messages for', user, e);
 				});
 			})).then(function () {
 				return data;
@@ -101,7 +101,7 @@ var yairNotifications = (function () {
 	chrome.alarms.onAlarm.addListener(function (alarm) {
 		if (alarm.name !== ALARM) return;
 		yairStorage.ready.then(update).catch(function (e) {
-			console.warn('YAIR: notification refresh failed', e.message);
+			console.warn('DLO: notification refresh failed', e.message);
 		});
 	});
 	return {
@@ -219,7 +219,7 @@ function yairStartNotifier() {
 		yairNotifications.schedule();
 		return yairNotifications.update();
 	}).catch(function (e) {
-		console.warn('YAIR: initial notification refresh failed', e.message);
+		console.warn('DLO: initial notification refresh failed', e.message);
 	});
 }
 chrome.runtime.onStartup.addListener(yairStartNotifier);

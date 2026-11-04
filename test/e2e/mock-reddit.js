@@ -147,7 +147,7 @@ return https.createServer({ key, cert }, async (req, res) => {
     res.writeHead(200, { 'content-type': 'text/html' });
     return res.end(source === 'archive' ? archiveChunk(start) : '');
   }
-  if (url.pathname.startsWith('/message/yair_')) {
+  if (/^\/message\/(yair|dlo)_/.test(url.pathname)) {
     res.writeHead(200, { 'content-type': 'text/html' });
     return res.end(page('messages: inbox'));
   }

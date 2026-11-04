@@ -1,9 +1,9 @@
-/* Toolbar popup, in the same "Airmail" style as the inbox (css/yair.css) */
+/* Dead Letter Office toolbar popup, in the same "Airmail" style as the inbox (css/yair.css) */
 
-@font-face { font-family: 'YAIR Public Sans'; src: url('../fonts/public-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-@font-face { font-family: 'YAIR Public Sans'; src: url('../fonts/public-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
-@font-face { font-family: 'YAIR Public Sans'; src: url('../fonts/public-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
-@font-face { font-family: 'YAIR Literata'; src: url('../fonts/literata-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'DLO Public Sans'; src: url('../fonts/public-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'DLO Public Sans'; src: url('../fonts/public-sans-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'DLO Public Sans'; src: url('../fonts/public-sans-latin-700-normal.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'DLO Literata'; src: url('../fonts/literata-latin-600-normal.woff2') format('woff2'); font-weight: 600; font-display: swap; }
 
 :root {
 	--paper: #F5F6F8;
@@ -44,7 +44,7 @@ body {
 	overflow-y: auto;
 	background: var(--sheet);
 	color: var(--ink);
-	font: 14px/1.4 'YAIR Public Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
+	font: 14px/1.4 'DLO Public Sans', -apple-system, 'Segoe UI', Roboto, sans-serif;
 	-webkit-font-smoothing: antialiased;
 }
 
@@ -72,7 +72,9 @@ body {
 		var(--air-blue) 12px 19px, transparent 19px 24px);
 }
 .brand { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.wordmark { font: 600 20px/1.1 'YAIR Literata', Georgia, serif; color: var(--ink); }
+.wordmark { display: flex; align-items: center; gap: 8px; font: 600 18px/1.1 'DLO Literata', Georgia, serif; color: var(--ink); }
+.wordmark .mark { flex: none; width: 24px; height: 24px; background: url('../images/icons/icon-small.svg') center / contain no-repeat; }
+.status { padding-left: 32px; }
 .status { margin-top: 2px; font-size: 12px; color: var(--postmark); }
 
 .icon-button {
@@ -106,7 +108,7 @@ body {
 	border-radius: 8px;
 	background: var(--air-blue);
 	color: var(--air-blue-ink);
-	font: 600 13px 'YAIR Public Sans', sans-serif;
+	font: 600 13px 'DLO Public Sans', sans-serif;
 	white-space: nowrap;
 	cursor: pointer;
 }

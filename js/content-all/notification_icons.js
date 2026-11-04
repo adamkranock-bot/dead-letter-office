@@ -57,7 +57,8 @@
 			parent_li.style.display = 'none';
 			var new_pm = document.createElement('a');
 			new_pm.classList.add('yair-privatemessages');
-			new_pm.setAttribute('href', '/message/yair_inbox');
+			new_pm.setAttribute('href', '/message/dlo_inbox');
+		new_pm.setAttribute('title', 'Dead Letter Office');
 			var pm_li = document.createElement('li');
 			pm_li.appendChild(new_pm);
 			var new_reply = document.createElement('a');
@@ -188,8 +189,8 @@
 		}
 		var new_pm = document.createElement('a');
 		new_pm.classList.add('yair-privatemessages');
-		new_pm.setAttribute('href', '/message/yair_inbox');
-		var new_pm_count = HelpFuncs.createMessageCount('/message/yair_inbox');
+		new_pm.setAttribute('href', '/message/dlo_inbox');
+		var new_pm_count = HelpFuncs.createMessageCount('/message/dlo_inbox');
 		var new_reply = document.createElement('a');
 		new_reply.classList.add('yair-mail');
 		new_reply.setAttribute('href', '/message/inbox/');
@@ -214,13 +215,13 @@
 		if (nightModeDetect != ' #FFFFFF') {
 			new_pm.style.fill = "#d7dadc";
 		}
-		new_pm.innerHTML = "<svg viewBox=\"0 0 16 16\" xmlns=\"http://www.w3.org/2000/svg\"><path class=\"st0\" d=\"M8,0C3.58,0,0,3.58,0,8s3.58,8,8,8s8-3.58,8-8S12.42,0,8,0z M11.08,4.89L8,12.08 c-0.24,0.55-0.41,0.99-1.13,0.99c-0.75,0-1.03-0.59-1.03-0.93c0-0.36,0.11-0.6,0.35-1.15l0.69-1.56L5.11,5.2 C4.87,4.64,4.67,4.15,4.67,3.91c0-0.61,0.49-0.97,1.01-0.97c0.51,0,0.87,0.27,1.07,0.79L7.98,6.9l1.16-2.83 c0.27-0.64,0.56-1.13,1.13-1.13c0.64,0,1.07,0.41,1.07,1.05C11.33,4.29,11.19,4.65,11.08,4.89z\"/></svg>";
+		new_pm.innerHTML = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"> <defs>  <pattern id=\"airmail\" width=\"4.2\" height=\"4.2\" patternUnits=\"userSpaceOnUse\" patternTransform=\"rotate(45)\">   <rect width=\"4.2\" height=\"4.2\" fill=\"#FFFFFF\"/>   <rect width=\"1.6\" height=\"4.2\" fill=\"#C9353D\"/>   <rect x=\"2.1\" width=\"1.6\" height=\"4.2\" fill=\"#2F55A4\"/>  </pattern> </defs> <rect x=\"0.5\" y=\"2.5\" width=\"15\" height=\"11\" rx=\"1.6\" fill=\"url(#airmail)\" stroke=\"#22283A\" stroke-width=\"1\"/> <rect x=\"2.5\" y=\"4.5\" width=\"11\" height=\"7\" rx=\".6\" fill=\"#FFFFFF\"/> <path d=\"M2.8 5l5.2 3.6L13.2 5\" fill=\"none\" stroke=\"#22283A\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>";
 		new_pm.classList.add('yair-privatemessages-newredit');
-		new_pm.setAttribute('href', 'https://old.reddit.com/message/yair_inbox');
+		new_pm.setAttribute('href', 'https://old.reddit.com/message/dlo_inbox');
 		var new_pm_count = document.createElement('span');
 		new_pm_count.classList.add('count_badge');
 		var new_pm_holder = document.createElement('span');
-		new_pm_holder.setAttribute('id', 'HeaderUserActions--YAIR');
+		new_pm_holder.setAttribute('id', 'HeaderUserActions--DLO');
 		new_pm_holder.appendChild(new_pm);
 		const request = async () => {
 			var new_reply_count_num = 0
@@ -258,7 +259,7 @@
 			elements.yairInboxCounts.push(new_pm_count);
 		}
 		request().catch(function (e) {
-			console.warn('YAIR: could not check unread messages', e);
+			console.warn('DLO: could not check unread messages', e);
 		});
 	}
 	

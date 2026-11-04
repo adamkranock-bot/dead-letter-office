@@ -33,7 +33,7 @@ var yairStorage = (function () {
 		var obj = {};
 		obj[key] = state[key];
 		return chromeCall(chrome.storage.local.set, chrome.storage.local, obj).catch(function (e) {
-			console.error('YAIR: failed to persist', key, e);
+			console.error('DLO: failed to persist', key, e);
 		});
 	}
 
@@ -54,7 +54,7 @@ var yairStorage = (function () {
 		return chromeCall(chrome.offscreen.createDocument, chrome.offscreen, {
 			url: OFFSCREEN_URL
 			, reasons: ['LOCAL_STORAGE']
-			, justification: 'Copy YAIR settings and drafts from the old Manifest V2 storage'
+			, justification: 'Copy settings and drafts from the old Manifest V2 storage'
 		}).catch(function (e) {
 			// A document left over from an interrupted run is fine to reuse
 			if (!/single offscreen/i.test(e.message)) throw e;
@@ -112,7 +112,7 @@ var yairStorage = (function () {
 			migrated.push('refresh interval');
 		}
 		if (migrated.length) {
-			console.log('YAIR: migrated ' + migrated.join(', ') + ' from Manifest V2 storage');
+			console.log('DLO: migrated ' + migrated.join(', ') + ' from Manifest V2 storage');
 			return chromeCall(chrome.storage.local.set, chrome.storage.local, {
 				YAIR_USER_CONFIG: state.YAIR_USER_CONFIG || {}
 				, YAIR_DRAFTS: state.YAIR_DRAFTS || {}
@@ -129,10 +129,10 @@ var yairStorage = (function () {
 			return save('migratedFromMV2');
 		}).catch(function (e) {
 			// Leave the flag unset so the migration is retried on the next start
-			console.warn('YAIR: could not migrate Manifest V2 storage', e);
+			console.warn('DLO: could not migrate Manifest V2 storage', e);
 		});
 	}).catch(function (e) {
-		console.error('YAIR: failed to load storage', e);
+		console.error('DLO: failed to load storage', e);
 	});
 
 	return {

@@ -34,7 +34,7 @@
 					</select>
 					<label for="YairNightMode">Theme</label>
 					<p class="yair-config-info">
-						YAIR also follows Reddit Enhancement Suite's night mode. "Match system" switches with your operating system's light/dark setting.
+						Dead Letter Office also follows Reddit Enhancement Suite's night mode. "Match system" switches with your operating system's light/dark setting.
 					</p>
 				</div>
 				<div id="MessageOrder-config">
@@ -68,7 +68,7 @@
 					</p>
 					<br>
 					<p class="yair-config-info">
-						Do note however: Reddit normally will not store more than 1000 private messages. YAIR stores messages locally, and thus will store more than 1000 messages. If you have more than a thousand messages, using this option means that you will lose your oldest messages.
+						Reset clears the local copy and reads everything from Reddit again. Anything Reddit no longer has (for example messages that were deleted there) will be gone from the copy too, so consider exporting first.
 					</p>
 					<div id="YAIRConfirmReset" class="yair-hide">
 						<p>Are you sure? This action can't be undone.</p>
@@ -86,26 +86,32 @@
 					<button class="yair-export-all" data-format="txt">Export All (Text)</button>
 					<button class="yair-export-all" data-format="json">Export All (JSON)</button>
 					<p class="yair-config-info">
-						Download every conversation YAIR has stored for this account. Reddit now keeps private messages as a read-only archive, so this is a good way to keep your own copy. The JSON export includes saved and archived flags.
+						Download every conversation stored for this account. Reddit now keeps private messages as a read-only archive, so this is a good way to keep your own copy. The JSON export includes saved and archived flags.
 					</p>
 				</div>
 			</div>
 			<div class="yair-config-content" data-tab-content="about">
-				<p>
-					YAIR was built by <a href="/user/adhesivecheese">/u/AdhesiveCheese</a>, building off the groundwork laid by Reddit Inbox Revamp and Reddit notifier. YAIR's design is inspired by first and foremost by RIR, but also Gmail and Reddit's Beta Modmail.
-				</p>
-				<h3>Keyboard shortcuts</h3>
-				<p>
-					<kbd>j</kbd>/<kbd>k</kbd> next/previous conversation, <kbd>Enter</kbd> or <kbd>o</kbd> open, <kbd>x</kbd> select, <kbd>/</kbd> search, <kbd>Esc</kbd> or <kbd>u</kbd> back to the list.
-				</p>
-				<h3>Feedback and Support</h3>
-				<p>
-					YAIR has a subreddit (<a href="/r/yair">/r/YAIR</a>) for providing feedback and getting support. Feeling shy? Feel free to PM the subreddit instead.
-				</p>
-				<h3>Developers</h3>
-				<p>
-					YAIR is an open source project, and the full source code can be found on <a href="https://github.com/adhesivecheese/YAIR">Github</a>. Please feel free to submit bug reports or pull requests!
-				</p>
+				<div>
+					<h3>Dead Letter Office</h3>
+					<p>
+						Reddit moved direct messages to Chat and turned your old private messages into a read-only archive. Dead Letter Office keeps a copy of that archive in your browser, so you can search, sort, and export years of conversations. Nothing leaves your computer except requests to reddit.com.
+					</p>
+				</div>
+				<div>
+					<h3>Keyboard shortcuts</h3>
+					<p>
+						<kbd>j</kbd>/<kbd>k</kbd> next/previous conversation, <kbd>Enter</kbd> or <kbd>o</kbd> open, <kbd>x</kbd> select, <kbd>/</kbd> search, <kbd>Esc</kbd> or <kbd>u</kbd> back to the list.
+					</p>
+				</div>
+				<div>
+					<h3>Credits</h3>
+					<p>
+						Dead Letter Office began as a fork of <a href="https://github.com/adhesivecheese/YAIR" target="_blank" rel="noopener">YAIR</a> by <a href="https://www.reddit.com/user/adhesivecheese" target="_blank" rel="noopener">/u/AdhesiveCheese</a>, itself built on Goctionni's Reddit Inbox Revamp and Reddit Notifier. It is open source under the MIT license.
+					</p>
+					<p>
+						Not affiliated with or endorsed by Reddit.
+					</p>
+				</div>
 			</div>
 		</div>
 	</div>

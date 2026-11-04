@@ -24,7 +24,7 @@ var yair = {
 		yair.sendToBackground(cmdObj, function (response) {
 			if (!response || response.__yairError) {
 				var message = response ? response.__yairError : 'No response from the extension';
-				console.error("YAIR background call " + path.join('.') + " failed:", message);
+				console.error("DLO background call " + path.join('.') + " failed:", message);
 				yair.reportBackgroundProblem(message);
 				return;
 			}
@@ -73,7 +73,7 @@ var yair = {
 		}
 	}
 	, CONTEXT_GONE: 'context-gone'
-	// False once YAIR has been reloaded, updated, or removed under this page
+	// False once the extension has been reloaded, updated, or removed under this page
 	, extensionAlive: function () {
 		try {
 			return !!(chrome.runtime && chrome.runtime.id);
@@ -86,10 +86,10 @@ var yair = {
 		if (!(yair.view && yair.view.showNotification && yair.$e)) return;
 		if (message === yair.CONTEXT_GONE) {
 			// Stays up: nothing on this page can work until it is reloaded
-			yair.view.showNotification("YAIR was updated or reloaded. Reload this page to keep going.", -1);
+			yair.view.showNotification("Dead Letter Office was updated or reloaded. Reload this page to keep going.", -1);
 			return;
 		}
-		yair.view.showNotification("YAIR couldn't finish that (" + message + "). Reload the page if this keeps happening.", 5000);
+		yair.view.showNotification("Dead Letter Office couldn't finish that (" + message + "). Reload the page if this keeps happening.", 5000);
 	}
 	, helper: {}
 	, manifest: chrome.runtime.getManifest()
@@ -99,13 +99,13 @@ var yair = {
 (function () {
 	if (typeof FontFace === 'undefined' || !document.fonts) return;
 	[
-		['YAIR Public Sans', 'public-sans-latin-400-normal', '400', 'normal']
-		, ['YAIR Public Sans', 'public-sans-latin-500-normal', '500', 'normal']
-		, ['YAIR Public Sans', 'public-sans-latin-600-normal', '600', 'normal']
-		, ['YAIR Public Sans', 'public-sans-latin-700-normal', '700', 'normal']
-		, ['YAIR Literata', 'literata-latin-400-normal', '400', 'normal']
-		, ['YAIR Literata', 'literata-latin-400-italic', '400', 'italic']
-		, ['YAIR Literata', 'literata-latin-600-normal', '600', 'normal']
+		['DLO Public Sans', 'public-sans-latin-400-normal', '400', 'normal']
+		, ['DLO Public Sans', 'public-sans-latin-500-normal', '500', 'normal']
+		, ['DLO Public Sans', 'public-sans-latin-600-normal', '600', 'normal']
+		, ['DLO Public Sans', 'public-sans-latin-700-normal', '700', 'normal']
+		, ['DLO Literata', 'literata-latin-400-normal', '400', 'normal']
+		, ['DLO Literata', 'literata-latin-400-italic', '400', 'italic']
+		, ['DLO Literata', 'literata-latin-600-normal', '600', 'normal']
 	].forEach(function (f) {
 		var face = new FontFace(f[0], 'url("' + chrome.runtime.getURL('fonts/' + f[1] + '.woff2') + '") format("woff2")', {
 			weight: f[2]

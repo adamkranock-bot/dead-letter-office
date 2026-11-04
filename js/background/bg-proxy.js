@@ -71,14 +71,14 @@
 			result = func.apply(context, params);
 		}
 		catch (e) {
-			console.error('YAIR: proxy call failed', request.path.join('.'), e);
+			console.error('DLO: proxy call failed', request.path.join('.'), e);
 			return sendResponse(errorResponse(e));
 		}
 		if (result && typeof result.then === 'function') {
 			result.then(function (value) {
 				context.callback(value);
 			}, function (e) {
-				console.error('YAIR: proxy call failed', request.path.join('.'), e);
+				console.error('DLO: proxy call failed', request.path.join('.'), e);
 				if (!responded) {
 					responded = true;
 					sendResponse(errorResponse(e));
@@ -106,7 +106,7 @@
 			}).then(function (result) {
 				sendResponse(result);
 			}, function (e) {
-				console.warn('YAIR: action failed', request.action, e.message);
+				console.warn('DLO: action failed', request.action, e.message);
 				sendResponse(errorResponse(e));
 			});
 			return true;

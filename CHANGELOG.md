@@ -1,6 +1,14 @@
 # Changelog
 
-## 0.4.0
+## 1.0.0: Dead Letter Office
+First release under the new name. Dead Letter Office is a fork of YAIR 0.3.3; everything in the YAIR 0.4.0 notes below is included.
+
+* **New name and identity:** Dead Letter Office, with a new airmail-envelope icon for the toolbar, extension page, favicon, and Reddit header, a new wordmark in the sidebar and popup, and updated settings and About text that credit YAIR.
+* **New addresses:** the archive lives at `old.reddit.com/message/dlo_inbox` (and `dlo_saved`, `dlo_conversation/…`, and so on). Old `yair_` links still work and switch to the new address.
+* Page title is now "Dead Letter Office"; exports are named `dead-letter-office_<user>_<date>`.
+* Fresh README and screenshots; license carries both the new and the original copyright notices.
+
+## YAIR 0.4.0 (unreleased, folded into 1.0.0)
 Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manifest V2 support in 2025). Firefox uses the same code.
 
 **Platform**

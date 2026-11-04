@@ -404,8 +404,8 @@
 		}
 		, initLayout: function () {
 			//  Set page title
+			if (!yair.cfg.data.pageTitle || yair.cfg.data.pageTitle === 'Reddit - YAIR') yair.cfg.data.pageTitle = 'Dead Letter Office';
 			document.title = yair.cfg.data.pageTitle;
-			$('<title>').text(yair.cfg.data.pageTitle);
 			// Establish container for saved DOM elements
 			yair.$e = {
 				body: $('body')
@@ -918,7 +918,7 @@
 					return b.last_update - a.last_update;
 				});
 				var stamp = sysDateStr() + '_' + sysTimeStr(undefined, '-');
-				var base = 'yair_' + safeFilename(getUsername()) + '_' + stamp;
+				var base = 'dead-letter-office_' + safeFilename(getUsername()) + '_' + stamp;
 				if (format === 'json') {
 					var payload = conversations.map(function (c) {
 						return {
@@ -959,7 +959,7 @@
 		, showMessageClick: function () {
 			var conversation = $(this).data('conversation');
 			yair.model.cache.listUrl = location.pathname + location.search;
-			history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_conversation/' + conversation.id);
+			history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_conversation/' + conversation.id);
 			yair.controller.parseUrl();
 			yair.view.showConversation(conversation);
 			// Scroll to the top
@@ -978,7 +978,7 @@
 		// Searches within the current folder. Live (as-you-type) searches replace
 		// the history entry instead of adding one per keystroke.
 		, search: function (query, live) {
-			var folder = (yair.show && yair.show !== 'conversation') ? location.pathname : '/message/yair_inbox';
+			var folder = (yair.show && yair.show !== 'conversation') ? location.pathname : '/message/dlo_inbox';
 			var url = query ? folder + '?search=' + encodeURIComponent(query) : folder;
 			if (url === location.pathname + location.search) return;
 			history[live ? 'replaceState' : 'pushState']({}, yair.cfg.data.pageTitle, url);
@@ -1001,24 +1001,29 @@
 				yair.view.update();
 			}
 			else {
-				history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+				history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 				yair.view.update();
 			}
 		}
 		, parseUrl: function () {
 			delete yair['showid'];
+			// Old YAIR addresses (/message/yair_*) still work; show the new ones
+			if (/^\/message\/yair_/.test(location.pathname)) {
+				history.replaceState(history.state, document.title, location.pathname.replace('/message/yair_', '/message/dlo_') + location.search);
+			}
 			var pathParts = location.pathname.split('/');
-			if (pathParts[2] === "yair_conversation" && pathParts.length >= 4) {
+			var page = String(pathParts[2] || '').replace(/^(yair|dlo)_/, '');
+			if (page === "conversation" && pathParts.length >= 4) {
 				yair.show = "conversation";
 				yair.showid = pathParts[3];
 			}
-			else if (pathParts[2] === "yair_modarchived") { window.scrollTo(0, 0); yair.show = "modarchived"; }
-			else if (pathParts[2] === "yair_modsaved") { window.scrollTo(0, 0); yair.show = "modsaved"; }
-			else if (pathParts[2] === "yair_moddrafts") { window.scrollTo(0, 0); yair.show = "moddrafts"; }
-			else if (pathParts[2] === "yair_modmail") { window.scrollTo(0, 0); yair.show = "modmail"; }
-			else if (pathParts[2] === "yair_saved") { window.scrollTo(0, 0); yair.show = "saved"; }
-			else if (pathParts[2] === "yair_archived") { window.scrollTo(0, 0); yair.show = "archived"; }
-			else if (pathParts[2] === "yair_drafts") { window.scrollTo(0, 0); yair.show = "drafts"; }
+			else if (page === "modarchived") { window.scrollTo(0, 0); yair.show = "modarchived"; }
+			else if (page === "modsaved") { window.scrollTo(0, 0); yair.show = "modsaved"; }
+			else if (page === "moddrafts") { window.scrollTo(0, 0); yair.show = "moddrafts"; }
+			else if (page === "modmail") { window.scrollTo(0, 0); yair.show = "modmail"; }
+			else if (page === "saved") { window.scrollTo(0, 0); yair.show = "saved"; }
+			else if (page === "archived") { window.scrollTo(0, 0); yair.show = "archived"; }
+			else if (page === "drafts") { window.scrollTo(0, 0); yair.show = "drafts"; }
 			else { window.scrollTo(0, 0); yair.show = "inbox"; }
 			yair._get = parseQueryString(location.search);
 			if (yair._get.search) {
@@ -1085,7 +1090,7 @@
 				yair.view.showNotification('Archived');
 				if (yair.show === "conversation") {
 					// Go to inbox
-					history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+					history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 					yair.view.update();
 				}
 				if(!$('.yair-main-panel .styled-checkbox').is(":checked")) {
@@ -1111,7 +1116,7 @@
 				yair.view.showNotification('Archived');
 				if (yair.show === "conversation") {
 					// Go to inbox
-					history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+					history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 					yair.view.update();
 				}
 				$('.styled-checkbox').prop('checked', false);
@@ -1140,7 +1145,7 @@
 				yair.view.showNotification('Restored');
 				if (yair.show === "conversation") {
 					// Go to inbox
-					history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+					history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 					yair.view.update();
 				}
 			}
@@ -1163,7 +1168,7 @@
 				yair.view.showNotification('Restored');
 				if (yair.show === "conversation") {
 					// Go to inbox
-					history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+					history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 					yair.view.update();
 				}
 				$('.styled-checkbox').prop('checked', false);
@@ -1223,7 +1228,7 @@
 				if (yair.show === "conversation") {
 					// Go to inbox
 					yair.view.showNotification('Marked read');
-					history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+					history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 					yair.view.update();
 				}
 				else {
@@ -1248,7 +1253,7 @@
 				if (yair.show === "conversation") {
 					// Go to inbox
 					yair.view.showNotification('Marked unread');
-					history.pushState({}, yair.cfg.data.pageTitle, '/message/yair_inbox');
+					history.pushState({}, yair.cfg.data.pageTitle, '/message/dlo_inbox');
 					yair.view.update();
 				}
 				else {
@@ -1513,7 +1518,7 @@
 			yair.view.setFavicon();
 			yair.view.initLayout(); // To set the page title, we need our config
 			yair.view.bindActionButtons();
-			// The notifier polls with the interval of whichever user last opened YAIR
+			// The notifier polls with the interval of whichever user last opened the archive
 			yair.cfg.set('inboxRefreshInterval', yair.cfg.data.inboxRefreshInterval);
 			yair.view.showLoading();
 			yair.proxy(['yair', 'db', 'init'], [], yair.controller.reloadInbox);
