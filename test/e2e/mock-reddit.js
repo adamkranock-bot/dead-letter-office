@@ -23,6 +23,23 @@ for (let i = 0; i < 10; i++) thread(msg('f' + i, 'filler' + i, ME, 'Filler threa
 thread(msg('m1', null, ME, 'A note from the mods', 'Please read the rules', { subreddit: 'modsub', distinguished: 'moderator' }));
 thread(msg('b1', 'bob', ME, 'Project & <stuff> <img src=x onerror="window.__xss=1">', 'the magicword is here', { new: true }));
 
+// Fictional, multi-year data for design review screenshots (GET /__seed?set=demo)
+function seedDemo() {
+  threads.length = 0;
+  const at = (iso) => Math.floor(Date.parse(iso) / 1000);
+  const m = (id, author, dest, subject, body, iso, extra = {}) => Object.assign(msg(id, author, dest, subject, body, extra), { created_utc: at(iso) });
+  thread(m('d1', 'quietharbor', ME, 'Your photos from the meetup', 'Hey! I finally got around to sorting the photos from Saturday. There are a few good ones of the lighthouse at dusk.\nWant me to send the full-resolution versions?', '2025-03-27T14:26:00Z', { new: true }),
+    [m('d1r', ME, 'quietharbor', 're: Your photos from the meetup', 'Yes please, the dusk ones especially.', '2025-03-27T18:02:00Z')]);
+  thread(m('d2', null, ME, 'Your post was approved', 'Thanks for your patience. A moderator has reviewed and approved your post in r/mechanicalkeyboards.', '2025-02-11T09:15:00Z', { subreddit: 'mechanicalkeyboards', distinguished: 'moderator' }));
+  thread(m('d3', 'fernandmoss', ME, 'Trade: GMK Olivia for your Botanical set?', 'Saw your post in the trade thread. I have a mostly unused Olivia base kit. Interested in a straight swap?', '2024-11-02T20:40:00Z'),
+    [m('d3a', ME, 'fernandmoss', 're: Trade', 'Possibly! Any shine on the spacebar?', '2024-11-02T21:10:00Z'), m('d3b', 'fernandmoss', ME, 're: Trade', 'None at all, I can send pictures tonight.', '2024-11-03T01:12:00Z'), m('d3c', ME, 'fernandmoss', 're: Trade', 'Deal. Shipping Monday.', '2024-11-04T16:30:00Z')]);
+  thread(m('d4', 'tidewatcher', ME, 'Question about your Unraid build', 'How are you handling parity with the mixed drive sizes? Did you hit any trouble with the cache pool?', '2024-06-18T12:00:00Z'));
+  thread(m('d5', 'northbound_ella', ME, 'Boston food recs?', 'Moving to Roslindale next month. Any bakeries I absolutely have to try?', '2023-09-05T15:20:00Z'),
+    [m('d5r', ME, 'northbound_ella', 're: Boston food recs?', 'Fornax for bread, no question. Also the farmers market on Saturdays.', '2023-09-05T19:44:00Z')]);
+  thread(m('d6', 'paper_lantern', ME, 'Secret Santa 2022', 'Your gift arrived and the cat has already claimed the box. Thank you!', '2022-12-21T10:05:00Z'));
+  thread(m('d7', 'gridlocked', ME, 'Re: the subway map project', 'I made the corrections you suggested to the Green Line branches.', '2021-04-14T22:11:00Z'));
+  thread(m('d8', 'oldmaplover', ME, 'Hello from 2016', 'Found your comment about antique maps. I have a 1890s atlas of Massachusetts you might like to see.', '2016-02-08T13:00:00Z'));
+}
 function latest(t) { return Math.max(t.root.created_utc, ...t.replies.map(r => r.created_utc)); }
 function listing() { return threads.slice().sort((a, b) => latest(b) - latest(a)); }
 
@@ -73,6 +90,7 @@ return https.createServer({ key, cert }, async (req, res) => {
   log.push(entry);
   if (url.pathname === '/__log') return json(res, log);
   if (url.pathname === '/__replyMode') { replyMode = url.searchParams.get('m'); return json(res, { replyMode }); }
+  if (url.pathname === '/__seed') { seedDemo(); return json(res, { seeded: threads.length }); }
   if (url.pathname === '/__source') { source = url.searchParams.get('s'); return json(res, { source }); }
   if (req.headers.host.startsWith('www.') && url.pathname === '/message/messages/') {
     res.writeHead(200, { 'content-type': 'text/html' });

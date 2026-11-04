@@ -92,7 +92,7 @@ async function launch(profile = PROFILE) {
 
   // 2b. Archive-viewer UI
   const summary = await page.locator('.yair-summary').innerText();
-  check('summary line shows counts and date range', /13 conversations · 14 messages · Oct 2025/.test(summary), summary);
+  check('summary line shows counts and date range', /13 conversations, 14 messages from Oct 2025/.test(summary), summary);
   await page.fill('#YAIRSearchInput', 'filler');
   await page.waitForTimeout(900);
   rows = await page.locator('.yair-message-row').count();

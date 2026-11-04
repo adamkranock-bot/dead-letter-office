@@ -50,6 +50,28 @@ var yair = {
 	, helper: {}
 	, manifest: chrome.runtime.getManifest()
 };
+// Register the bundled typefaces. Done from script so the font URLs resolve
+// in both Chrome (chrome-extension://) and Firefox (moz-extension://).
+(function () {
+	if (typeof FontFace === 'undefined' || !document.fonts) return;
+	[
+		['YAIR Public Sans', 'public-sans-latin-400-normal', '400', 'normal']
+		, ['YAIR Public Sans', 'public-sans-latin-500-normal', '500', 'normal']
+		, ['YAIR Public Sans', 'public-sans-latin-600-normal', '600', 'normal']
+		, ['YAIR Public Sans', 'public-sans-latin-700-normal', '700', 'normal']
+		, ['YAIR Literata', 'literata-latin-400-normal', '400', 'normal']
+		, ['YAIR Literata', 'literata-latin-400-italic', '400', 'italic']
+		, ['YAIR Literata', 'literata-latin-600-normal', '600', 'normal']
+	].forEach(function (f) {
+		var face = new FontFace(f[0], 'url("' + chrome.runtime.getURL('fonts/' + f[1] + '.woff2') + '") format("woff2")', {
+			weight: f[2]
+			, style: f[3]
+			, display: 'swap'
+		});
+		document.fonts.add(face);
+		face.load().catch(function () {});
+	});
+})();
 (function ($, undefined) {
 	yair.functions = {};
 	var startTime;
