@@ -79,13 +79,16 @@
 				if (!page.messages.length) return done(totalAdded);
 				yair.proxy(['yair', 'db', 'addAll'], [db_tables.privateMessages.name, page.messages], function (numAdded) {
 					totalAdded += numAdded || 0;
-					if (!page.next || seen[page.next] || (stopWhenNothingNew && !numAdded)) {
+					var next = page.nextCandidates.filter(function (p) {
+						return !seen[p];
+					})[0];
+					if (!next || (stopWhenNothingNew && !numAdded)) {
 						return done(totalAdded);
 					}
 					pageNum++;
 					// Pace requests so Reddit doesn't rate limit the crawl
 					setTimeout(function () {
-						fetchPage(page.next);
+						fetchPage(next);
 					}, 400);
 				});
 			});
@@ -160,19 +163,31 @@
 		return '<div class="md">' + clone.innerHTML + '</div>';
 	}
 
-	function findNextPage(doc) {
-		var candidates = doc.querySelectorAll('infinite-loader faceplate-partial[src], faceplate-partial[src], [src*="after="], [src*="cursor="], a[href*="after="]');
-		for (var i = 0; i < candidates.length; i++) {
-			var val = candidates[i].getAttribute('src') || candidates[i].getAttribute('href') || '';
-			if (/(after|cursor)=/.test(val) || /\/svc\/shreddit\/[^?]*message/.test(val)) {
-				try {
-					var url = new URL(val, 'https://www.reddit.com');
-					if (url.origin === 'https://www.reddit.com') return url.pathname + url.search;
-				}
-				catch (e) {}
-			}
+	// Older pages load from /svc/shreddit/pm-archive/<cursor>, where the cursor
+	// is base64 of "<id>:<id>". Find the link in the markup (it lives on a
+	// lazy faceplate-partial), falling back to a scan of the raw HTML.
+	var ARCHIVE_PAGE_RE = /\/svc\/shreddit\/pm-archive\/[^"'\s<>]+/g;
+
+	function findNextPage(doc, html) {
+		var found = [];
+		doc.querySelectorAll('[src*="/svc/shreddit/pm-archive/"], [href*="/svc/shreddit/pm-archive/"]').forEach(function (el) {
+			found.push(el.getAttribute('src') || el.getAttribute('href'));
+		});
+		if (!found.length) {
+			found = (html.match(ARCHIVE_PAGE_RE) || []).map(function (u) {
+				return u.replace(/&amp;/g, '&');
+			});
 		}
-		return null;
+		var pages = [];
+		for (var i = found.length - 1; i >= 0; i--) {
+			try {
+				var url = new URL(found[i], 'https://www.reddit.com');
+				if (url.origin === 'https://www.reddit.com') pages.push(url.pathname + url.search);
+			}
+			catch (e) {}
+		}
+		// Most likely "next" first
+		return pages;
 	}
 
 	yair.helper.parseArchiveHtml = function (html) {
@@ -221,7 +236,7 @@
 		});
 		return {
 			messages: messages
-			, next: findNextPage(doc)
+			, nextCandidates: findNextPage(doc, html)
 		};
 	};
 
