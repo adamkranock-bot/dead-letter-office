@@ -7,6 +7,7 @@ Runs on Manifest V3, so YAIR loads in current Chrome again (Chrome removed Manif
 * Background page replaced by a service worker (Chrome) / event page (Firefox) built from the same files.
 * Settings and drafts moved from `localStorage` to `chrome.storage.local`. Existing settings, saved/archived lists, drafts, and the refresh interval are copied over automatically on first run.
 * Notification polling uses `chrome.alarms`, so it keeps working after the service worker goes idle.
+* Calls from the inbox to the background retry quietly when Chrome has stopped or restarted the service worker mid-call, instead of showing "the message channel closed before a response was received". If YAIR itself was reloaded or updated under an open tab, the page says to reload it.
 * Database connections reopen on demand, so the inbox keeps working after the browser stops the idle service worker.
 * jQuery updated from 3.4.1 to 3.7.1 (fixes CVE-2020-11022 and CVE-2020-11023). moment.js removed in favour of built-in `Intl` date formatting.
 

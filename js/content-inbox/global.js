@@ -21,14 +21,11 @@ var yair = {
 		if (!cmdObj.username) {
 			console.error("yair.proxy(...); requires the username (from DOM) for most features");
 		}
-		chrome.runtime.sendMessage(cmdObj, function (response) {
-			var err = chrome.runtime.lastError;
-			if (err || !response || response.__yairError) {
-				var message = err ? err.message : (response ? response.__yairError : 'No response from the extension');
+		yair.sendToBackground(cmdObj, function (response) {
+			if (!response || response.__yairError) {
+				var message = response ? response.__yairError : 'No response from the extension';
 				console.error("YAIR background call " + path.join('.') + " failed:", message);
-				if (yair.view && yair.view.showNotification && yair.$e) {
-					yair.view.showNotification("Something went wrong talking to the YAIR extension: " + message, 5000);
-				}
+				yair.reportBackgroundProblem(message);
 				return;
 			}
 			callback.apply(this, response);
@@ -39,13 +36,60 @@ var yair = {
 		var msg = Object.assign({}, data || {}, {
 			action: action
 		});
-		chrome.runtime.sendMessage(msg, function (response) {
-			var err = chrome.runtime.lastError;
-			if (err) response = {
-				__yairError: err.message
-			};
+		yair.sendToBackground(msg, function (response) {
 			if (typeof callback === "function") callback(response);
 		});
+	}
+	// Message the background, retrying when its service worker was stopped or
+	// restarted mid-call (Chrome does this to idle workers). Every background
+	// call is safe to repeat. Calls back with the response, or {__yairError}.
+	, sendToBackground: function (msg, callback, attempt) {
+		attempt = attempt || 0;
+		var TRANSIENT = /message channel closed|message port closed|Receiving end does not exist|Could not establish connection/i;
+		var fail = function (message) {
+			callback({
+				__yairError: message
+			});
+		};
+		if (!yair.extensionAlive()) return fail(yair.CONTEXT_GONE);
+		try {
+			chrome.runtime.sendMessage(msg, function (response) {
+				var err = chrome.runtime.lastError;
+				if (err) {
+					if (TRANSIENT.test(err.message) && attempt < 3) {
+						setTimeout(function () {
+							yair.sendToBackground(msg, callback, attempt + 1);
+						}, 300 * (attempt + 1));
+						return;
+					}
+					return fail(yair.extensionAlive() ? err.message : yair.CONTEXT_GONE);
+				}
+				callback(response);
+			});
+		}
+		catch (e) {
+			// Thrown synchronously once the extension has been reloaded or removed
+			fail(yair.extensionAlive() ? (e && e.message) || String(e) : yair.CONTEXT_GONE);
+		}
+	}
+	, CONTEXT_GONE: 'context-gone'
+	// False once YAIR has been reloaded, updated, or removed under this page
+	, extensionAlive: function () {
+		try {
+			return !!(chrome.runtime && chrome.runtime.id);
+		}
+		catch (e) {
+			return false;
+		}
+	}
+	, reportBackgroundProblem: function (message) {
+		if (!(yair.view && yair.view.showNotification && yair.$e)) return;
+		if (message === yair.CONTEXT_GONE) {
+			// Stays up: nothing on this page can work until it is reloaded
+			yair.view.showNotification("YAIR was updated or reloaded. Reload this page to keep going.", -1);
+			return;
+		}
+		yair.view.showNotification("YAIR couldn't finish that (" + message + "). Reload the page if this keeps happening.", 5000);
 	}
 	, helper: {}
 	, manifest: chrome.runtime.getManifest()

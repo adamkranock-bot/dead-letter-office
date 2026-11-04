@@ -72,6 +72,7 @@
 			}, function (response) {
 				if (!response || response.__yairError || typeof response.html !== "string") {
 					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
+					if (reason === yair.CONTEXT_GONE) return fail("YAIR was updated or reloaded. Reload this page to keep going.");
 					fail("Couldn't load your message archive from Reddit (" + reason + "). Are you logged in on www.reddit.com?");
 					return;
 				}
@@ -259,6 +260,7 @@
 			}, function (response) {
 				if (!response || response.__yairError || !response.data || !response.data.children) {
 					var reason = (response && response.__yairError) ? response.__yairError : "unexpected response";
+					if (reason === yair.CONTEXT_GONE) return failed("YAIR was updated or reloaded. Reload this page to keep going.");
 					failed("Couldn't load your messages from Reddit (" + reason + "). Are you still logged in?");
 					return;
 				}
