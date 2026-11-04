@@ -116,6 +116,56 @@ async function launch(profile = PROFILE) {
   check('Esc returns to the list', page.url().endsWith('/message/yair_inbox'));
   await page.screenshot({ path: path.join(DIR, 'inbox-light.png') });
 
+  // 2c. Sort and filter by thread length, year, and who wrote last
+  const rowCount = () => page.locator('.yair-message-row').count();
+  await page.selectOption('#YAIRSort', 'most');
+  await page.waitForTimeout(400);
+  check('sort by most messages puts the longest thread first', (await page.locator('.yair-message-row .yair-subject').first().innerText()) === 'Hello there');
+  check('length sort groups by thread size', (await page.locator('.yair-year-divider').first().innerText()) === '2 to 4 messages', await page.locator('.yair-year-divider').allInnerTexts());
+  await page.selectOption('#YAIRSort', 'fewest');
+  await page.waitForTimeout(400);
+  check('sort by fewest messages puts it last', (await page.locator('.yair-message-row .yair-subject').last().innerText()) === 'Hello there');
+  await page.click('.yair-length-preset:text-is("2+")');
+  await page.waitForTimeout(400);
+  check('"2+" preset keeps only multi-message threads', await rowCount() === 1 && (await page.locator('.yair-summary').innerText()).includes('1 of 13 conversations match'));
+  await page.click('.yair-length-preset:text-is("1")');
+  await page.waitForTimeout(400);
+  check('"1" preset keeps only single-message threads', await rowCount() === 12);
+  await page.click('.yair-length-preset:text-is("Any")');
+  await page.fill('#YAIRMinMessages', '2');
+  await page.fill('#YAIRMaxMessages', '3');
+  await page.waitForTimeout(700);
+  check('min/max message range filters', await rowCount() === 1);
+  await page.fill('#YAIRMinMessages', '3');
+  await page.waitForTimeout(700);
+  check('range with no matches shows a hint', await rowCount() === 0 && (await page.locator('.yair-empty-state').innerText()).includes('widening'));
+  await page.click('.yair-summary-clear:text-is("Clear filters")');
+  await page.waitForTimeout(400);
+  check('Clear filters restores everything and empties the inputs', await rowCount() === 13 && (await page.inputValue('#YAIRMinMessages')) === '');
+  await page.selectOption('#YAIRLastFrom', 'me');
+  await page.waitForTimeout(400);
+  check('"last message from me" filter', await rowCount() === 1);
+  await page.selectOption('#YAIRLastFrom', 'them');
+  await page.waitForTimeout(400);
+  check('"last message from them" filter', await rowCount() === 12);
+  await page.selectOption('#YAIRLastFrom', '');
+  const years = await page.locator('#YAIRYear option').allInnerTexts();
+  await page.selectOption('#YAIRYear', '2025');
+  await page.waitForTimeout(400);
+  check('year filter lists the years present and filters by them', years.includes('2025') && await rowCount() === 13, years);
+  await page.selectOption('#YAIRYear', '');
+  await page.selectOption('#YAIRSort', 'az');
+  await page.waitForTimeout(400);
+  const names = await page.locator('.yair-correspondent a.author').allInnerTexts();
+  check('A to Z sort orders by name', names[0] === 'alice' && names[names.length - 1] === '#modsub', names);
+  await page.selectOption('#YAIRSort', 'most');
+  await page.waitForTimeout(400);
+  await page.reload();
+  await page.waitForSelector('.yair-message-row');
+  check('chosen sort is remembered after a reload', (await page.inputValue('#YAIRSort')) === 'most');
+  await page.selectOption('#YAIRSort', 'newest');
+  await page.waitForTimeout(400);
+
   // 3. Open a conversation
   await page.click('.yair-message-row:has-text("Hello there")');
   await page.waitForSelector('.yair-conversation');

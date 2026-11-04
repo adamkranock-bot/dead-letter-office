@@ -14,6 +14,8 @@ A picture's worth a thousand words, so let's start there:
       
 YAIR isn't just a pretty frontend for your inbox; it provides functionality on top, largely inspired by Gmail. You can save or archive message threads on a thread-by-thread basis, or select multiple message threads to perform bulk actions on them. YAIR saves drafts for you automatically, so if you get interrupted writing your message, you can close the page and pick up right where you left off later.
 
+The bar above the list sorts conversations by activity, length, or name, and filters them by how many messages they hold, by year, and by who wrote last. Sorting by *Most messages* is a quick way to find your longest-running conversations.
+
 Keyboard people can use j/k to move through conversations, Enter to open one, / to search, and Esc to go back.
 
 Think the interface takes up too much room? There's a toggle for compact mode, suitable for smaller screens. Too much white? There's also a night mode, which also integrates with the Reddit Enhancement Suite's night mode.
