@@ -148,13 +148,28 @@ var actions = {
 		if (url.origin !== REDDIT_WWW || !/^\/(message\/messages|svc\/shreddit\/)/.test(url.pathname)) {
 			return Promise.reject(new Error('Refusing to fetch ' + url.pathname));
 		}
-		return fetch(url.toString(), {
-			credentials: 'include'
-			, cache: 'no-store'
-			, headers: {
-				'Accept': 'text/html'
-			}
-		}).then(function (response) {
+		function attempt(triesLeft, delayMs) {
+			return fetch(url.toString(), {
+				credentials: 'include'
+				, cache: 'no-store'
+				, headers: {
+					'Accept': 'text/html'
+				}
+			}).then(function (response) {
+				// Reddit rate limits quick successive page loads; back off and retry
+				if ((response.status === 429 || response.status >= 500) && triesLeft > 0) {
+					var retryAfter = parseInt(response.headers.get('retry-after'), 10);
+					var wait = retryAfter > 0 ? Math.min(retryAfter * 1000, 60000) : delayMs;
+					return new Promise(function (resolve) {
+						setTimeout(resolve, wait);
+					}).then(function () {
+						return attempt(triesLeft - 1, delayMs * 2);
+					});
+				}
+				return response;
+			});
+		}
+		return attempt(4, 2000).then(function (response) {
 			if (!response.ok) {
 				var err = new Error('Reddit returned HTTP ' + response.status);
 				err.status = response.status;

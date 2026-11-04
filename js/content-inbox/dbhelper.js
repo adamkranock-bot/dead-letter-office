@@ -83,7 +83,10 @@
 						return done(totalAdded);
 					}
 					pageNum++;
-					fetchPage(page.next);
+					// Pace requests so Reddit doesn't rate limit the crawl
+					setTimeout(function () {
+						fetchPage(page.next);
+					}, 400);
 				});
 			});
 		}
