@@ -1,7 +1,7 @@
 {
 	"manifest_version": 3,
 	"name": "Dead Letter Office",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"version_name": "1.2.0",
 	"description": "A searchable, exportable archive of your Reddit private messages.",
 	"icons": {

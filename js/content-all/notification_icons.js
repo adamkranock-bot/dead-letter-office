@@ -93,19 +93,24 @@
 		, getTime: function () {
 			return new Date().getTime();
 		}
+		// The background already checks unread messages on its own schedule and
+		// keeps the result in chrome.storage.local. Reading that instead of
+		// fetching unread.json means loading Reddit pages costs no extra requests
+		// (and no extra rate limit). With checks turned off, there's no count.
 		, getUnreadMessagesJson: function (callback) {
-			var xhr = new XMLHttpRequest();
-			xhr.open('GET', '/message/unread.json', true);
-			xhr.onreadystatechange = function () {
-				if (this.readyState === 4 && this.status === 200) {
-					var json;
-					try { json = JSON.parse(this.responseText); } catch (e) { return; }
-					if (!json || !json.data || !json.data.children) { return; }
+			try {
+				chrome.storage.local.get(['notifications', 'inboxRefreshInterval'], function (items) {
+					if (chrome.runtime.lastError || !items) return;
+					var json = items.notifications;
+					if (+items.inboxRefreshInterval === 0) json = null;
+					if (!json || !json.data || !json.data.children) json = { data: { children: [] } };
 					data.lastJsonCache = json;
 					callback(json);
-				}
-			};
-			xhr.send();
+				});
+			}
+			catch (e) {
+				// The extension was reloaded under this page; leave the header alone
+			}
 		}
 		, getTypedMessageCount: function (json) {
 			var numPm = 0;
@@ -156,7 +161,7 @@
 		}
 		, checkMail: function () {
 			var curTime = HelpFuncs.getTime();
-			if ((curTime - data.lastMailCheck) < 10000) {
+			if ((curTime - data.lastMailCheck) < 1000) {
 				if (data.lastJsonCache) {
 					var count = HelpFuncs.getTypedMessageCount(data.lastJsonCache);
 					HelpFuncs.updateMailElements(count);
@@ -226,9 +231,9 @@
 		const request = async () => {
 			var new_reply_count_num = 0
 			var new_pm_count_num = 0;
-			const response = await fetch('/message/unread.json');
-			if (!response.ok) { return; }
-			const json = await response.json();
+			const json = await new Promise(function (resolve) {
+				HelpFuncs.getUnreadMessagesJson(resolve);
+			});
 			var messages = (json && json.data && json.data.children) || [];
 			for (var i = 0; i < messages.length; i++) {
 				if (messages[i].kind === "t4") { new_pm_count_num++; } else {new_reply_count_num++; }

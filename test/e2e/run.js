@@ -35,6 +35,8 @@ async function launch(profile = PROFILE) {
   let [sw] = ctx.serviceWorkers();
   if (!sw) sw = await ctx.waitForEvent('serviceworker');
   const extId = sw.url().split('/')[2];
+  // Real installs space archive requests a second apart; the mock doesn't need that
+  await sw.evaluate(() => dloStorage.ready.then(() => dloStorage.set('archiveRequestGapMs', 0)));
   return { ctx, sw, extId };
 }
 
@@ -357,6 +359,44 @@ async function launch(profile = PROFILE) {
   await newTab.screenshot({ path: path.join(DIR, 'conversation.png') });
   await page.bringToFront();
   await page.screenshot({ path: path.join(DIR, 'inbox.png') });
+
+  // 12-rl. Rate limits: Reddit pages cost no extra requests, and archive requests are paced
+  {
+    const unreadCalls = async () => (await mockLog(page)).filter(e => e.path === '/message/unread.json').length;
+    const before = await unreadCalls();
+    const savedNotifications = await sw.evaluate(() => {
+      const prev = dloStorage.get('notifications');
+      return dloStorage.set('notifications', { data: { children: [{ kind: 't4', data: {} }, { kind: 't4', data: {} }] } }).then(() => prev);
+    });
+    const other = await ctx.newPage();
+    await other.goto('https://old.reddit.com/r/test/');
+    await other.waitForSelector('.dlo-privatemessages');
+    await other.waitForTimeout(500);
+    const headerCount = await other.locator('.dlo-privatemessages + .message-count').innerText();
+    await other.close();
+    await page.bringToFront();
+    await sw.evaluate((prev) => dloStorage.set('notifications', prev), savedNotifications);
+    check('rate limits: loading a Reddit page makes no unread request of its own', await unreadCalls() === before, (await unreadCalls()) - before);
+    check('rate limits: the header still shows the unread count, from the background\'s last check', headerCount === '2', headerCount);
+    const paced = await sw.evaluate(async () => {
+      await dloStorage.set('archiveRequestGapMs', 300);
+      const times = [];
+      await Promise.all([1, 2, 3].map(() => actions.getArchivePage({ path: '/message/messages/' }).then(() => times.push(Date.now()))));
+      await dloStorage.set('archiveRequestGapMs', 0);
+      times.sort((a, b) => a - b);
+      return Math.min(times[1] - times[0], times[2] - times[1]);
+    });
+    check('rate limits: archive requests from anywhere are queued and spaced out', paced >= 280, paced);
+    await page.goto('https://old.reddit.com/__429?n=1');
+    const retried = await sw.evaluate(async () => {
+      const r = await actions.getArchivePage({ path: '/message/messages/' });
+      return { ok: typeof r.html === 'string', gap: archivePacer.currentGap() };
+    });
+    check('rate limits: a 429 is retried and slows later requests down', retried.ok && retried.gap > 0, retried);
+    await sw.evaluate(() => { for (let i = 0; i < 100 && archivePacer.currentGap() > 0; i++) archivePacer.succeeded(); });
+    await page.goto('https://old.reddit.com/message/dlo_inbox');
+    await page.waitForSelector('.dlo-message-row');
+  }
 
   // 12a. Unread checks can be turned off
   await page.goto('https://old.reddit.com/message/dlo_inbox');

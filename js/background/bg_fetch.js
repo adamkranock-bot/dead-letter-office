@@ -133,6 +133,52 @@ function dloTimeNow() {
 	return Math.floor(Date.now() / 1000);
 }
 
+// Every archive request, from every tab, goes through one queue spaced at
+// least `gap` apart. A 429 doubles the gap (up to 15 s) and each success
+// eases it back, so indexing slows down instead of competing with your own
+// browsing for Reddit's rate limit.
+var archivePacer = (function () {
+	var BASE_GAP = 1000;
+	var MAX_GAP = 15000;
+	var gap = BASE_GAP;
+	var tail = Promise.resolve();
+	var last = 0;
+
+	function baseGap() {
+		var override = dloStorage.get('archiveRequestGapMs');
+		return typeof override === 'number' && override >= 0 ? override : BASE_GAP;
+	}
+
+	function wait(ms) {
+		return new Promise(function (resolve) {
+			setTimeout(resolve, ms);
+		});
+	}
+	return {
+		// Runs fn once it's this request's turn
+		schedule: function (fn) {
+			var run = tail.then(function () {
+				var delay = Math.max(0, last + Math.max(gap, baseGap()) - Date.now());
+				return wait(delay);
+			}).then(function () {
+				last = Date.now();
+				return fn();
+			});
+			tail = run.catch(function () {});
+			return run;
+		}
+		, rateLimited: function () {
+			gap = Math.min(MAX_GAP, Math.max(gap, baseGap(), 500) * 2);
+		}
+		, succeeded: function () {
+			gap = Math.max(baseGap(), Math.floor(gap * 0.8));
+		}
+		, currentGap: function () {
+			return Math.max(gap, baseGap());
+		}
+	};
+})();
+
 // Actions the content scripts and popup can request with {action: name, ...}
 var actions = {
 	// One page (up to 100 threads) of the private message listing
@@ -161,17 +207,21 @@ var actions = {
 			return Promise.reject(new Error('Refusing to fetch ' + url.pathname));
 		}
 		function attempt(triesLeft, delayMs) {
-			return fetch(url.toString(), {
-				credentials: 'include'
-				, cache: 'no-store'
-				, headers: {
-					'Accept': 'text/html'
-				}
+			return archivePacer.schedule(function () {
+				return fetch(url.toString(), {
+					credentials: 'include'
+					, cache: 'no-store'
+					, headers: {
+						'Accept': 'text/html'
+					}
+				});
 			}).then(function (response) {
+				if (response.status === 429) archivePacer.rateLimited();
+				else if (response.ok) archivePacer.succeeded();
 				// Reddit rate limits quick successive page loads; back off and retry
 				if ((response.status === 429 || response.status >= 500) && triesLeft > 0) {
 					var retryAfter = parseInt(response.headers.get('retry-after'), 10);
-					var wait = retryAfter > 0 ? Math.min(retryAfter * 1000, 60000) : delayMs;
+					var wait = retryAfter > 0 ? Math.min(retryAfter * 1000, 60000) : Math.max(delayMs, archivePacer.currentGap());
 					return new Promise(function (resolve) {
 						setTimeout(resolve, wait);
 					}).then(function () {
@@ -181,7 +231,7 @@ var actions = {
 				return response;
 			});
 		}
-		return attempt(4, 2000).then(function (response) {
+		return attempt(4, 5000).then(function (response) {
 			if (!response.ok) {
 				var err = new Error('Reddit returned HTTP ' + response.status);
 				err.status = response.status;

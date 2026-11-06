@@ -63,6 +63,7 @@ let replyMode = 'ok';
 // 'json': PM history via messages.json (pre-2025 Reddit)
 // 'archive': messages.json is empty and history lives on www.reddit.com/message/messages/ (current Reddit)
 let source = 'json';
+let throttle = 0; // the next N archive requests get a 429
 const ARCHIVE_PAGE = 4;
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const who = n => n && n.charAt(0) === '#' ? `/r/${n.slice(1)}/` : `/user/${n}/`;
@@ -119,6 +120,13 @@ return https.createServer({ key, cert }, async (req, res) => {
     return json(res, { replies: t.replies.length });
   }
   if (url.pathname === '/__seed') { seedDemo(); return json(res, { seeded: threads.length }); }
+  if (url.pathname === '/__429') { throttle = +url.searchParams.get('n'); return json(res, { throttle }); }
+  if (url.pathname === '/r/test/') { res.writeHead(200, { 'content-type': 'text/html' }); return res.end(page('test')); }
+  if (throttle > 0 && req.headers.host.startsWith('www.') && /^\/(message\/messages|svc\/shreddit)/.test(url.pathname)) {
+    throttle--;
+    res.writeHead(429, { 'content-type': 'text/plain' });
+    return res.end('Too Many Requests');
+  }
   if (url.pathname === '/__source') { source = url.searchParams.get('s'); return json(res, { source }); }
   if (req.headers.host.startsWith('www.') && url.pathname === '/message/messages/') {
     res.writeHead(200, { 'content-type': 'text/html' });

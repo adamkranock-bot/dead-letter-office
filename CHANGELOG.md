@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.0.1
+Fewer "Too Many Requests" (429) errors from Reddit.
+
+* The envelope icon in Reddit's header no longer fetches your unread messages on every page load. It shows the count from the background's regular check instead, so browsing Reddit costs no extra requests. With unread checks turned off, the icon shows no count.
+* Every request to Reddit's message archive, from every open tab, now goes through one queue spaced at least a second apart. After a 429 the spacing doubles (up to 15 seconds) and eases back as requests succeed, so indexing slows down instead of competing with your own browsing. First-time indexing of a large archive takes longer as a result.
+
 ## 2.0.0
 A leaner, sturdier archive. Reddit's message archive is read-only, so the parts of the extension that wrote to it are gone, and the rest has been tightened up.
 

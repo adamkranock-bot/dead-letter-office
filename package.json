@@ -1,6 +1,6 @@
 {
   "name": "dead-letter-office",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "private": true,
   "description": "Dead Letter Office: a searchable, exportable archive of your Reddit private messages (browser extension, forked from YAIR)",
   "license": "MIT",
